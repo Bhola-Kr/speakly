@@ -15,8 +15,15 @@
     "@react-navigation/native-stack": "^7.17.10",
     "react": "19.2.3",
     "react-native": "0.86.0",
+    "react-native-country-picker-modal": "^2.0.0",
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-reanimated-carousel": "4.0.2",
     "react-native-safe-area-context": "^5.8.0",
-    "react-native-screens": "^4.26.0"
+    "react-native-screens": "^4.26.0",
+    "react-native-reanimated": "4.5.1",
+    "react-native-worklets": "0.10.0",
+    "react-native-gesture-handler": "^2.27.1",
+    "react-native-size-matters": "^0.4.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
