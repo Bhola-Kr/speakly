@@ -29,14 +29,22 @@ import { moderateScale, verticalScale } from 'react-native-size-matters';
 const { width } = Dimensions.get('window');
 
 const slides = [
-  require('../assets/onboarding1.png'),
-
-  require('../assets/onboarding1.png'),
-
-  require('../assets/onboarding1.png'),
+  {
+    image: require('../assets/onboarding1.png'),
+    title: 'First Call @ just ₹1/min',
+  },
+  {
+    image: require('../assets/onboarding2.png'),
+    title: 'Your Avatar is your identity',
+  },
 ];
 
-const LoginScreen = () => {
+interface Props {
+  navigation: any;
+  route: any;
+}
+
+const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const [mobile, setMobile] = useState('');
 
   const [country, setCountry] = useState<CountryCode>('IN');
@@ -57,8 +65,6 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -74,12 +80,15 @@ const LoginScreen = () => {
           onSnapToItem={index => setActiveSlide(index)}
           renderItem={({ item }) => (
             <View style={styles.slide}>
-              <Image source={item} resizeMode="contain" style={styles.image} />
+              <Image
+                source={item.image}
+                resizeMode="contain"
+                style={styles.image}
+              />
+              <Text style={styles.heading}>{item.title}</Text>
             </View>
           )}
         />
-
-        <Text style={styles.heading}>First Call @ just ₹1/min</Text>
 
         <View style={styles.dots}>
           {slides.map((_, index) => (
@@ -140,6 +149,12 @@ const LoginScreen = () => {
         </LinearGradient>
 
         <TouchableOpacity
+          onPress={() => {
+            if (isValid) {
+              // Navigate to OTP screen with the mobile number and calling code
+              navigation.navigate('Otp', { mobile, callingCode });
+            }
+          }}
           disabled={!isValid}
           activeOpacity={0.8}
           style={[
@@ -192,22 +207,19 @@ const styles = StyleSheet.create({
 
   image: {
     width: moderateScale(340),
-    height: verticalScale(300),
+    height: verticalScale(280),
   },
 
   heading: {
-    marginTop: verticalScale(5),
     textAlign: 'center',
-    fontSize: moderateScale(24),
-    fontWeight: '700',
-    color: '#111111',
+    fontSize: moderateScale(16),
   },
 
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: verticalScale(18),
+    marginTop: verticalScale(28),
     marginBottom: verticalScale(90),
   },
 
@@ -220,7 +232,8 @@ const styles = StyleSheet.create({
   },
 
   activeDot: {
-    width: moderateScale(25),
+    width: moderateScale(8),
+    height: moderateScale(8),
     backgroundColor: '#5B7CFF',
   },
 

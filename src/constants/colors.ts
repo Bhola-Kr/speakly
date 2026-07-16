@@ -24,6 +24,7 @@ const Colors = {
   gradient: ['#5B6CFF', '#F5407A'],
 
   buttonGradient: ['#5B6CFF', '#3F82FF'],
+  inputBackground: '#FFF9FF',
 };
 
 export default Colors;
