@@ -35,6 +35,16 @@ const AvatarScreen: React.FC<Props> = ({ navigation }) => {
       { id: 8, image: require('../assets/avatars/avatar8.png') },
       { id: 9, image: require('../assets/avatars/avatar9.png') },
       { id: 10, image: require('../assets/avatars/avatar10.png') },
+      { id: 11, image: require('../assets/avatars/avatar11.png') },
+      { id: 12, image: require('../assets/avatars/avatar12.png') },
+      { id: 13, image: require('../assets/avatars/avatar13.png') },
+      { id: 14, image: require('../assets/avatars/avatar14.png') },
+      { id: 15, image: require('../assets/avatars/avatar15.png') },
+      { id: 16, image: require('../assets/avatars/avatar16.png') },
+      { id: 17, image: require('../assets/avatars/avatar17.png') },
+      { id: 18, image: require('../assets/avatars/avatar18.png') },
+      { id: 19, image: require('../assets/avatars/avatar19.png') },
+      { id: 20, image: require('../assets/avatars/avatar20.png') },
     ],
     [],
   );
@@ -50,7 +60,9 @@ const AvatarScreen: React.FC<Props> = ({ navigation }) => {
         style={[styles.avatarContainer, selected && styles.selectedAvatar]}
         onPress={() => setSelectedAvatar(item.id)}
       >
-        <Image source={item.image} style={styles.avatar} />
+        <View style={styles.imageWrapper}>
+          <Image source={item.image} style={styles.avatar} />
+        </View>
 
         {selected && (
           <View style={styles.checkBadge}>
@@ -76,9 +88,9 @@ const AvatarScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Header */}
 
-      <Text style={styles.title}>Select your Avatar</Text>
+      <Text style={styles.smallTitle}>Select your Avatar</Text>
 
-      <Text style={styles.subtitle}>
+      <Text style={styles.title}>
         This will be displayed as your profile{'\n'}
         during calls.
       </Text>
@@ -98,6 +110,7 @@ const AvatarScreen: React.FC<Props> = ({ navigation }) => {
       <GradientButton
         style={{
           marginBottom: 25,
+          marginTop: 10,
         }}
         title="Proceed"
         disabled={!selectedAvatar}
@@ -115,11 +128,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 24,
   },
+  imageWrapper: {
+    width: '100%',
+    height: '100%',
+
+    borderRadius: 72.5,
+
+    overflow: 'hidden',
+
+    backgroundColor: '#F5F5F5',
+  },
 
   backButton: {
     width: 40,
     height: 40,
-    marginTop: 12,
+    marginVertical: 15,
     justifyContent: 'center',
   },
 
@@ -130,21 +153,18 @@ const styles = StyleSheet.create({
     marginTop: -5,
   },
 
-  title: {
-    marginTop: 8,
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111',
+  smallTitle: {
+    fontSize: 20,
+    color: Colors.text,
+    fontWeight: '400',
   },
 
-  subtitle: {
-    marginTop: 10,
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#808080',
-    lineHeight: 25,
-    marginBottom: 28,
+  title: {
+    marginTop: 6,
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.text,
+    letterSpacing: -1,
   },
 
   list: {
@@ -165,47 +185,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
 
-    backgroundColor: '#F4F4F4',
+    borderWidth: 1,
+    borderColor: 'gray',
 
-    overflow: 'hidden',
-
-    borderWidth: 2,
-    borderColor: 'transparent',
+    position: 'relative',
   },
 
   selectedAvatar: {
     borderColor: '#4D73F8',
+    borderWidth: 3,
   },
 
   avatar: {
-    width: '100%',
-    height: '100%',
+    width: '105%',
+    height: '105%',
     resizeMode: 'cover',
   },
 
   checkBadge: {
     position: 'absolute',
 
-    right: 6,
-    top: 6,
+    top: -2,
+    right: -2,
 
-    width: 28,
-    height: 28,
+    width: 34,
+    height: 34,
 
-    borderRadius: 14,
+    borderRadius: 17,
 
     backgroundColor: '#4D73F8',
 
     justifyContent: 'center',
     alignItems: 'center',
 
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#FFFFFF',
+
+    zIndex: 999,
   },
 
   check: {
     color: '#FFF',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
   },
 });

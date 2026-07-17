@@ -119,12 +119,11 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    width: 42,
-    height: 42,
-    marginTop: 18,
     marginLeft: 18,
+    marginTop: 15,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
-    alignItems: 'center',
   },
 
   backIcon: {
@@ -139,14 +138,14 @@ const styles = StyleSheet.create({
   },
 
   smallTitle: {
-    fontSize: 18,
-    color: '#808080',
+    fontSize: 20,
+    color: Colors.text,
     fontWeight: '400',
   },
 
   title: {
     marginTop: 6,
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: '800',
     color: Colors.text,
     letterSpacing: -1,

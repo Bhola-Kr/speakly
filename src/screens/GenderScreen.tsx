@@ -101,16 +101,16 @@ const styles = StyleSheet.create({
 
   smallTitle: {
     fontSize: 20,
-    color: '#737373',
+    color: Colors.text,
     fontWeight: '400',
   },
 
   title: {
-    marginTop: 2,
+    marginTop: 6,
     fontSize: 32,
     fontWeight: '800',
-    color: '#111',
-    letterSpacing: -0.5,
+    color: Colors.text,
+    letterSpacing: -1,
   },
 
   card: {

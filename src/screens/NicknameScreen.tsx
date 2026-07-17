@@ -14,6 +14,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
+import colors from '../constants/colors';
 
 interface Props {
   navigation: any;
@@ -90,8 +91,8 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    marginTop: 20,
-    marginLeft: 20,
+    marginLeft: 18,
+    marginTop: 15,
     width: 40,
     height: 40,
     justifyContent: 'center',
@@ -104,21 +105,21 @@ const styles = StyleSheet.create({
   },
 
   titleContainer: {
-    marginTop: 90,
+    marginTop: 50,
     marginHorizontal: 25,
   },
 
   smallTitle: {
-    fontSize: 24,
-    color: '#7D7D7D',
+    fontSize: 20,
+    color: Colors.text,
     fontWeight: '400',
   },
 
   title: {
-    marginTop: 8,
-    fontSize: 40,
-    color: Colors.text,
+    marginTop: 6,
+    fontSize: 32,
     fontWeight: '800',
+    color: Colors.text,
     letterSpacing: -1,
   },
 
