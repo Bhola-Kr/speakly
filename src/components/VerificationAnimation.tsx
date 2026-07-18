@@ -1,0 +1,143 @@
+// VerificationAnimation.tsx
+
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  SafeAreaView,
+  Animated,
+  Easing,
+  Image,
+} from 'react-native';
+import styles from '../screens/styles';
+
+const Bar = ({ delay }: { delay: number }) => {
+  const scale = useRef(new Animated.Value(0.35)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+
+        Animated.timing(scale, {
+          toValue: 0.35,
+          duration: 300,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    animation.start();
+
+    return () => animation.stop();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.equalizerBar,
+        {
+          transform: [
+            {
+              scaleY: scale,
+            },
+          ],
+        },
+      ]}
+    />
+  );
+};
+
+const VerificationAnimation = () => {
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1.08,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, []);
+
+  return (
+    <SafeAreaView style={styles.verifyContainer}>
+      <Animated.View
+        style={{
+          transform: [
+            {
+              scale: pulse,
+            },
+          ],
+        }}
+      >
+        <View
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            backgroundColor: '#EEF3FF',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              width: 92,
+              height: 92,
+              borderRadius: 46,
+              backgroundColor: '#5B7CFF',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Image
+              source={require('../assets/sound.png')}
+              style={{
+                width: 42,
+                height: 42,
+                resizeMode: 'contain',
+                tintColor: '#FFFFFF',
+              }}
+            />
+          </View>
+        </View>
+      </Animated.View>
+
+      <Text style={styles.verifyTitle}>Verifying your voice...</Text>
+
+      <Text style={styles.verifySubTitle}>
+        Please wait while we compare your recording with our verification model.
+      </Text>
+
+      <View style={styles.equalizerRow}>
+        <Bar delay={0} />
+        <Bar delay={80} />
+        <Bar delay={160} />
+        <Bar delay={240} />
+        <Bar delay={320} />
+        <Bar delay={400} />
+        <Bar delay={480} />
+      </View>
+    </SafeAreaView>
+  );
+};
+
+export default VerificationAnimation;

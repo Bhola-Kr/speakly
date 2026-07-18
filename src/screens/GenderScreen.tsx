@@ -79,7 +79,7 @@ const GenderScreen: React.FC<Props> = ({ navigation }) => {
           marginBottom: 25,
         }}
         title="Proceed"
-        onPress={() => navigation.navigate('Language')}
+        onPress={() => navigation.navigate('Avatar')}
       />
     </SafeAreaView>
   );

@@ -11,6 +11,7 @@ import {
   Platform,
   Dimensions,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -65,119 +66,121 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <Carousel
-          loop
-          autoPlay
-          autoPlayInterval={3000}
-          width={width}
-          height={verticalScale(300)}
-          data={slides}
-          scrollAnimationDuration={800}
-          onSnapToItem={index => setActiveSlide(index)}
-          renderItem={({ item }) => (
-            <View style={styles.slide}>
-              <Image
-                source={item.image}
-                resizeMode="contain"
-                style={styles.image}
-              />
-              <Text style={styles.heading}>{item.title}</Text>
-            </View>
-          )}
-        />
-
-        <View style={styles.dots}>
-          {slides.map((_, index) => (
-            <View
-              key={index}
-              style={[styles.dot, activeSlide === index && styles.activeDot]}
-            />
-          ))}
-        </View>
-
-        <LinearGradient
-          colors={['#5B7CFF', '#FF4D5A']}
-          start={{
-            x: 0,
-            y: 0,
-          }}
-          end={{
-            x: 1,
-            y: 0,
-          }}
-          style={styles.gradientBorder}
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.inputBox}>
-            <TouchableOpacity
-              style={styles.countryContainer}
-              onPress={() => setPickerVisible(true)}
-            >
-              <CountryPicker
-                countryCode={country}
-                withFlag
-                withCallingCode
-                withFilter
-                withEmoji
-                visible={pickerVisible}
-                onSelect={onSelectCountry}
-                onClose={() => setPickerVisible(false)}
+          <Carousel
+            loop
+            autoPlay
+            autoPlayInterval={3000}
+            width={width}
+            height={verticalScale(300)}
+            data={slides}
+            scrollAnimationDuration={800}
+            onSnapToItem={index => setActiveSlide(index)}
+            renderItem={({ item }) => (
+              <View style={styles.slide}>
+                <Image
+                  source={item.image}
+                  resizeMode="contain"
+                  style={styles.image}
+                />
+                <Text style={styles.heading}>{item.title}</Text>
+              </View>
+            )}
+          />
+
+          <View style={styles.dots}>
+            {slides.map((_, index) => (
+              <View
+                key={index}
+                style={[styles.dot, activeSlide === index && styles.activeDot]}
               />
-
-              <Text style={styles.callingCode}>+{callingCode}</Text>
-
-              <Text style={styles.arrow}>▼</Text>
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            <TextInput
-              value={mobile}
-              onChangeText={text => {
-                setMobile(text.replace(/[^0-9]/g, ''));
-              }}
-              keyboardType="number-pad"
-              maxLength={10}
-              placeholder="Your Mobile Number"
-              placeholderTextColor="#999"
-              style={styles.input}
-            />
+            ))}
           </View>
-        </LinearGradient>
 
-        <TouchableOpacity
-          onPress={() => {
-            if (isValid) {
-              // Navigate to OTP screen with the mobile number and calling code
-              navigation.navigate('Otp', { mobile, callingCode });
-            }
-          }}
-          disabled={!isValid}
-          activeOpacity={0.8}
-          style={[
-            styles.button,
+          <LinearGradient
+            colors={['#5B7CFF', '#FF4D5A']}
+            start={{
+              x: 0,
+              y: 0,
+            }}
+            end={{
+              x: 1,
+              y: 0,
+            }}
+            style={styles.gradientBorder}
+          >
+            <View style={styles.inputBox}>
+              <TouchableOpacity
+                style={styles.countryContainer}
+                onPress={() => setPickerVisible(true)}
+              >
+                <CountryPicker
+                  countryCode={country}
+                  withFlag
+                  withCallingCode
+                  withFilter
+                  withEmoji
+                  visible={pickerVisible}
+                  onSelect={onSelectCountry}
+                  onClose={() => setPickerVisible(false)}
+                />
 
-            {
-              backgroundColor: isValid ? '#5B7CFF' : '#D0D0D0',
-            },
-          ]}
-        >
-          <Text style={styles.buttonText}>Get OTP</Text>
-        </TouchableOpacity>
+                <Text style={styles.callingCode}>+{callingCode}</Text>
 
-        <Text style={styles.footer}>
-          By continuing you agree to our{' '}
-          <Text style={styles.link}>Terms of Use</Text> and{' '}
-          <Text style={styles.link}>Privacy Policy</Text>
-        </Text>
+                <Text style={styles.arrow}>▼</Text>
+              </TouchableOpacity>
 
-        <Text style={styles.safeText}>
-          All your details are 100% safe & secure.
-        </Text>
-      </KeyboardAvoidingView>
+              <View style={styles.divider} />
+
+              <TextInput
+                value={mobile}
+                onChangeText={text => {
+                  setMobile(text.replace(/[^0-9]/g, ''));
+                }}
+                keyboardType="number-pad"
+                maxLength={10}
+                placeholder="Your Mobile Number"
+                placeholderTextColor="#999"
+                style={styles.input}
+              />
+            </View>
+          </LinearGradient>
+
+          <TouchableOpacity
+            onPress={() => {
+              if (isValid) {
+                // Navigate to OTP screen with the mobile number and calling code
+                navigation.navigate('Otp', { mobile, callingCode });
+              }
+            }}
+            disabled={!isValid}
+            activeOpacity={0.8}
+            style={[
+              styles.button,
+
+              {
+                backgroundColor: isValid ? '#5B7CFF' : '#D0D0D0',
+              },
+            ]}
+          >
+            <Text style={styles.buttonText}>Get OTP</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.footer}>
+            By continuing you agree to our{' '}
+            <Text style={styles.link}>Terms of Use</Text> and{' '}
+            <Text style={styles.link}>Privacy Policy</Text>
+          </Text>
+
+          <Text style={styles.safeText}>
+            All your details are 100% safe & secure.
+          </Text>
+        </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 };

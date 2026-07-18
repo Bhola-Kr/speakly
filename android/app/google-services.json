@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "487291370238",
+    "project_id": "voice-tamil",
+    "storage_bucket": "voice-tamil.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:487291370238:android:5122bc3d31b854aa4943af",
+        "android_client_info": {
+          "package_name": "com.cozyds.voicetamil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvs95vpSlZ7S-45vKmDeHnn6I02CEl0FQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

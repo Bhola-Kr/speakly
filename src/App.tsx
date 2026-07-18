@@ -9,13 +9,14 @@ import OtpScreen from './screens/OtpScreen';
 import GenderScreen from './screens/GenderScreen';
 import LanguageScreen from './screens/LanguageScreen';
 import AvatarScreen from './screens/AvatarScreen';
+import AudioVerificationScreen from './screens/AudioVerificationScreen';
 
 const Stack = createNativeStackNavigator();
 
 function RootStack() {
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName="AudioVerification"
       screenOptions={{
         headerShown: false,
       }}
@@ -25,8 +26,12 @@ function RootStack() {
       <Stack.Screen name="BirthYear" component={BirthYearScreen} />
       <Stack.Screen name="Nickname" component={NicknameScreen} />
       <Stack.Screen name="Gender" component={GenderScreen} />
-      <Stack.Screen name="Language" component={LanguageScreen} />
+      {/* <Stack.Screen name="Language" component={LanguageScreen} /> */}
       <Stack.Screen name="Avatar" component={AvatarScreen} />
+      <Stack.Screen
+        name="AudioVerification"
+        component={AudioVerificationScreen}
+      />
     </Stack.Navigator>
   );
 }

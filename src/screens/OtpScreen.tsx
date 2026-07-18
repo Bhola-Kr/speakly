@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ScrollView,
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
@@ -49,82 +50,91 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}>
+        <StatusBar
+          backgroundColor={Colors.background}
+          barStyle="dark-content"
+        />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        {/* Back */}
-
-        <TouchableOpacity
-          style={styles.backButton}
-          activeOpacity={0.8}
-          onPress={() => navigation.goBack()}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+          {/* Back */}
 
-        {/* Illustration */}
+          <TouchableOpacity
+            style={styles.backButton}
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backIcon}>‹</Text>
+          </TouchableOpacity>
 
-        <Image
-          source={require('../assets/otp.png')}
-          resizeMode="contain"
-          style={styles.image}
-        />
+          {/* Illustration */}
 
-        {/* Description */}
+          <Image
+            source={require('../assets/otp.png')}
+            resizeMode="contain"
+            style={styles.image}
+          />
 
-        <Text style={styles.description}>
-          Your login OTP is sent to{' '}
-          <Text style={styles.bold}>{phoneNumber}</Text>
-        </Text>
+          {/* Description */}
 
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.changeText}>
-            Not your number? <Text style={styles.changeLink}>Change here.</Text>
+          <Text style={styles.description}>
+            Your login OTP is sent to{' '}
+            <Text style={styles.bold}>{phoneNumber}</Text>
           </Text>
-        </TouchableOpacity>
 
-        {/* OTP */}
-
-        <LinearGradient colors={Colors.gradient} style={styles.gradientBorder}>
-          <View style={styles.inputContainer}>
-            <TextInput
-              value={otp}
-              onChangeText={text => setOtp(text.replace(/[^0-9]/g, ''))}
-              keyboardType="number-pad"
-              maxLength={6}
-              placeholder="Enter OTP"
-              placeholderTextColor={Colors.placeholder}
-              style={styles.input}
-            />
-          </View>
-        </LinearGradient>
-
-        {/* Button */}
-
-        <GradientButton
-          title="Proceed"
-          disabled={!isValid}
-          onPress={() => navigation.navigate('Nickname')}
-        />
-
-        {/* Timer */}
-
-        <View style={styles.timerContainer}>
-          {timer === 0 ? (
-            <TouchableOpacity onPress={resendOtp}>
-              <Text style={styles.resend}>Resend OTP</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.timerText}>
-              Didn't receive an OTP?{' '}
-              <Text style={styles.timer}>Resend in {timer} seconds.</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.changeText}>
+              Not your number?{' '}
+              <Text style={styles.changeLink}>Change here.</Text>
             </Text>
-          )}
-        </View>
-      </KeyboardAvoidingView>
+          </TouchableOpacity>
+
+          {/* OTP */}
+
+          <LinearGradient
+            colors={Colors.gradient}
+            style={styles.gradientBorder}
+          >
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={otp}
+                onChangeText={text => setOtp(text.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                maxLength={6}
+                placeholder="Enter OTP"
+                placeholderTextColor={Colors.placeholder}
+                style={styles.input}
+              />
+            </View>
+          </LinearGradient>
+
+          {/* Button */}
+
+          <GradientButton
+            title="Proceed"
+            disabled={!isValid}
+            onPress={() => navigation.navigate('Nickname')}
+          />
+
+          {/* Timer */}
+
+          <View style={styles.timerContainer}>
+            {timer === 0 ? (
+              <TouchableOpacity onPress={resendOtp}>
+                <Text style={styles.resend}>Resend OTP</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.timerText}>
+                Didn't receive an OTP?{' '}
+                <Text style={styles.timer}>Resend in {timer} seconds.</Text>
+              </Text>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 };
