@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
 
   header: {
     marginTop: 50,
-    marginBottom: 28,
+    marginBottom: 5,
   },
 
   smallTitle: {
@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    marginTop: 6,
     fontSize: 32,
     fontWeight: '800',
     color: Colors.text,

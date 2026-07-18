@@ -15,7 +15,7 @@ const Stack = createNativeStackNavigator();
 function RootStack() {
   return (
     <Stack.Navigator
-      initialRouteName="Avatar"
+      initialRouteName="Login"
       screenOptions={{
         headerShown: false,
       }}

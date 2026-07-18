@@ -12,6 +12,10 @@ import styles from './styles';
 import AnimatedWaveform from '../components/AnimatedWaveform';
 import VerificationAnimation from '../components/VerificationAnimation';
 
+import { PermissionsAndroid, Platform } from 'react-native';
+
+import VoiceDetector from './voiceDetector';
+
 enum ScreenState {
   IDLE,
   RECORDING,
@@ -28,6 +32,24 @@ const AudioVerificationScreen = ({ navigation }: any) => {
   const glow = useRef(new Animated.Value(0.3)).current;
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const requestMicPermission = async () => {
+    if (Platform.OS !== 'android') {
+      return true;
+    }
+
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      {
+        title: 'Microphone Permission',
+        message: 'Voice verification needs access to your microphone.',
+        buttonPositive: 'Allow',
+        buttonNegative: 'Cancel',
+      },
+    );
+
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  };
 
   useEffect(() => {
     if (screenState === ScreenState.RECORDING) {
@@ -80,9 +102,20 @@ const AudioVerificationScreen = ({ navigation }: any) => {
     return `${m}:${s}`;
   };
 
-  const onMicPress = () => {
+  const onMicPress = async () => {
     if (screenState === ScreenState.IDLE) {
+      const permission = await requestMicPermission();
+
+      if (!permission) {
+        setScreenState(ScreenState.FAILED);
+
+        return;
+      }
+
+      setSeconds(0);
+
       setScreenState(ScreenState.RECORDING);
+
       return;
     }
 
@@ -91,9 +124,21 @@ const AudioVerificationScreen = ({ navigation }: any) => {
 
       setScreenState(ScreenState.VERIFYING);
 
-      setTimeout(() => {
-        setScreenState(ScreenState.SUCCESS);
-      }, 3000);
+      try {
+        const result = await VoiceDetector.detectGender();
+
+        console.log('VOICE RESULT', result);
+
+        if (result.gender !== 'unknown' && result.confidence >= 0.5) {
+          setScreenState(ScreenState.SUCCESS);
+        } else {
+          setScreenState(ScreenState.FAILED);
+        }
+      } catch (error) {
+        console.log('Voice error', error);
+
+        setScreenState(ScreenState.FAILED);
+      }
     }
   };
 
