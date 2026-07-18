@@ -10,7 +10,17 @@ export interface VoiceResult {
 }
 
 export default {
-  detectGender(): Promise<VoiceResult> {
-    return VoiceDetector.detectGender();
+  /**
+   * Starts microphone recording.
+   */
+  startRecording(): Promise<boolean> {
+    return VoiceDetector.startRecording();
+  },
+
+  /**
+   * Stops recording and verifies the recorded voice.
+   */
+  stopAndVerify(): Promise<VoiceResult> {
+    return VoiceDetector.stopAndVerify();
   },
 };

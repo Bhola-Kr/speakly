@@ -89,7 +89,13 @@ const AudioVerificationScreen = ({ navigation }: any) => {
       clearInterval(timerRef.current);
     }
 
-    return () => clearInterval(timerRef.current);
+    return () => {
+      clearInterval(timerRef.current!);
+
+      if (screenState === ScreenState.RECORDING) {
+        VoiceDetector.stopAndVerify().catch(() => {});
+      }
+    };
   }, [screenState]);
 
   const formatTime = () => {
@@ -108,34 +114,46 @@ const AudioVerificationScreen = ({ navigation }: any) => {
 
       if (!permission) {
         setScreenState(ScreenState.FAILED);
-
         return;
       }
 
-      setSeconds(0);
+      try {
+        await VoiceDetector.startRecording();
 
-      setScreenState(ScreenState.RECORDING);
+        setSeconds(0);
+
+        setScreenState(ScreenState.RECORDING);
+      } catch (error) {
+        console.log('Start Recording Error:', error);
+
+        setScreenState(ScreenState.FAILED);
+      }
 
       return;
     }
 
     if (screenState === ScreenState.RECORDING) {
-      clearInterval(timerRef.current);
+      clearInterval(timerRef.current!);
 
       setScreenState(ScreenState.VERIFYING);
 
       try {
-        const result = await VoiceDetector.detectGender();
+        const result = await VoiceDetector.stopAndVerify();
 
         console.log('VOICE RESULT', result);
 
-        if (result.gender !== 'unknown' && result.confidence >= 0.5) {
+        /**
+         * For female verification only.
+         * Change to "male" if verifying male users.
+         */
+
+        if (result.gender === 'female' && result.confidence >= 0.5) {
           setScreenState(ScreenState.SUCCESS);
         } else {
           setScreenState(ScreenState.FAILED);
         }
       } catch (error) {
-        console.log('Voice error', error);
+        console.log('Verification Error:', error);
 
         setScreenState(ScreenState.FAILED);
       }
