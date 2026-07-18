@@ -15,6 +15,7 @@ import LinearGradient from 'react-native-linear-gradient';
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
+import authData from '../firebase/authData';
 
 interface Props {
   navigation: any;
@@ -30,6 +31,7 @@ const BirthYearScreen: React.FC<Props> = ({ navigation }) => {
   const scrollRef = useRef<ScrollView>(null);
 
   const [selectedYear, setSelectedYear] = useState(2000);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const index = years.indexOf(selectedYear);
@@ -49,6 +51,33 @@ const BirthYearScreen: React.FC<Props> = ({ navigation }) => {
 
     if (years[index]) {
       setSelectedYear(years[index]);
+    }
+  };
+
+  const updateBirthYear = async (birthYear: number) => {
+    try {
+      setLoading(true);
+      if (!birthYear) {
+        throw new Error('Birth year is required.');
+      }
+
+      const currentYear = new Date().getFullYear();
+
+      if (birthYear < 1900 || birthYear > currentYear) {
+        throw new Error('Please select a valid birth year.');
+      }
+
+      await authData.updateProfile({
+        birthYear,
+      });
+
+      navigation.navigate('Avatar');
+    } catch (error: any) {
+      console.error('updateBirthYear:', error);
+
+      throw new Error(error?.message || 'Unable to update birth year.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -104,8 +133,9 @@ const BirthYearScreen: React.FC<Props> = ({ navigation }) => {
       </LinearGradient>
 
       <GradientButton
-        title="Next"
-        onPress={() => navigation.navigate('Gender')}
+        title={loading ? 'Please wait...' : 'Next'}
+        disabled={loading || !selectedYear}
+        onPress={() => updateBirthYear(selectedYear)}
       />
     </SafeAreaView>
   );

@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "487291370238",
+    "firebase_url": "https://voice-tamil-default-rtdb.firebaseio.com",
     "project_id": "voice-tamil",
     "storage_bucket": "voice-tamil.firebasestorage.app"
   },

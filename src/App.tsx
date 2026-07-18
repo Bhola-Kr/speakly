@@ -10,13 +10,12 @@ import GenderScreen from './screens/GenderScreen';
 import LanguageScreen from './screens/LanguageScreen';
 import AvatarScreen from './screens/AvatarScreen';
 import AudioVerificationScreen from './screens/AudioVerificationScreen';
-
 const Stack = createNativeStackNavigator();
 
 function RootStack() {
   return (
     <Stack.Navigator
-      initialRouteName="AudioVerification"
+      initialRouteName="Avatar"
       screenOptions={{
         headerShown: false,
       }}

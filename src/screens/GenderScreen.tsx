@@ -7,18 +7,45 @@ import {
   TouchableOpacity,
   View,
   Image,
+  Alert,
 } from 'react-native';
+
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
+import authData from '../firebase/authData';
 
 type Gender = 'male' | 'female';
 
 interface Props {
   navigation: any;
+  route: any;
 }
 
-const GenderScreen: React.FC<Props> = ({ navigation }) => {
+const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
+  const user = route.params.user;
+
   const [gender, setGender] = useState<Gender>('male');
+  const [loading, setLoading] = useState(false);
+
+  const updateGender = async () => {
+    if (loading) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await authData.createUser(user, gender);
+      await authData.updateProfile({
+        gender,
+      });
+
+      navigation.navigate('Nickname');
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Unable to update gender.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderCard = (
     type: Gender,
@@ -78,8 +105,9 @@ const GenderScreen: React.FC<Props> = ({ navigation }) => {
         style={{
           marginBottom: 25,
         }}
-        title="Proceed"
-        onPress={() => navigation.navigate('Avatar')}
+        title={loading ? 'Please wait...' : 'Proceed'}
+        disabled={loading}
+        onPress={updateGender}
       />
     </SafeAreaView>
   );
@@ -164,6 +192,7 @@ const styles = StyleSheet.create({
     borderRadius: 75,
     resizeMode: 'cover',
   },
+
   genderText: {
     marginTop: 14,
     fontSize: 20,

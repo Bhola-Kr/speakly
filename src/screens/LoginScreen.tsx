@@ -14,6 +14,9 @@ import {
   ScrollView,
 } from 'react-native';
 
+import { Alert, ActivityIndicator } from 'react-native';
+import AuthData from '../firebase/authData';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import LinearGradient from 'react-native-linear-gradient';
@@ -47,6 +50,7 @@ interface Props {
 
 const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const [mobile, setMobile] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const [country, setCountry] = useState<CountryCode>('IN');
 
@@ -62,6 +66,31 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
     setCountry(country.cca2);
 
     setCallingCode(country.callingCode[0]);
+  };
+
+  const onGetOTP = async () => {
+    if (!isValid || loading) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const phone = `+${callingCode}${mobile}`;
+
+      const confirmation = await AuthData.sendOTP(phone);
+
+      navigation.navigate('Otp', {
+        confirmation,
+        phone,
+      });
+    } catch (error: any) {
+      console.log(error);
+
+      Alert.alert('Unable to send OTP', error?.message || 'Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -151,13 +180,8 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
           </LinearGradient>
 
           <TouchableOpacity
-            onPress={() => {
-              if (isValid) {
-                // Navigate to OTP screen with the mobile number and calling code
-                navigation.navigate('Otp', { mobile, callingCode });
-              }
-            }}
-            disabled={!isValid}
+            onPress={onGetOTP}
+            disabled={!isValid || loading}
             activeOpacity={0.8}
             style={[
               styles.button,
@@ -167,7 +191,11 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
               },
             ]}
           >
-            <Text style={styles.buttonText}>Get OTP</Text>
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>Get OTP</Text>
+            )}
           </TouchableOpacity>
 
           <Text style={styles.footer}>

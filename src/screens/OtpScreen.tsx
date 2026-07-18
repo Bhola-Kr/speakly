@@ -11,12 +11,14 @@ import {
   Platform,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
+import authData from '../firebase/authData';
 
 interface Props {
   navigation: any;
@@ -24,15 +26,18 @@ interface Props {
 }
 
 const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
-  const phoneNumber = route?.params?.phone ?? '+91 9069304407';
+  const phoneNumber = route.params.phone;
+  const [confirmation, setConfirmation] = useState(route.params.confirmation);
 
   const [otp, setOtp] = useState('');
   const [timer, setTimer] = useState(30);
+  const [loading, setLoading] = useState(false);
 
   const isValid = otp.length === 6;
 
   useEffect(() => {
-    if (timer === 0) {
+    if (timer <= 0) {
+      setLoading(false);
       return;
     }
 
@@ -43,14 +48,87 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const resendOtp = () => {
-    setTimer(30);
-    // TODO: Call resend OTP API
+  const verifyOtp = async () => {
+    if (!isValid || loading) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const user = await authData.verifyOTP(confirmation, otp);
+      console.log('verifyOtp -> user', user);
+
+      navigation.replace('Gender', {
+        user,
+      });
+    } catch (e: any) {
+      let message = 'Something went wrong. Please try again.';
+
+      switch (e?.code) {
+        case 'auth/invalid-verification-code':
+          message = 'The OTP you entered is incorrect. Please try again.';
+          break;
+
+        case 'auth/code-expired':
+          message = 'This OTP has expired. Please request a new OTP.';
+          break;
+
+        case 'auth/session-expired':
+          message =
+            'Your verification session has expired. Please resend the OTP.';
+          break;
+
+        case 'auth/too-many-requests':
+          message =
+            'Too many attempts. Please wait a few minutes and try again.';
+          break;
+
+        default:
+          if (e?.message) {
+            message = e.message;
+          }
+      }
+
+      Alert.alert('Verification Failed', message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    if (loading) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const newConfirmation = await authData.sendOTP(phoneNumber);
+
+      setConfirmation(newConfirmation);
+
+      setOtp('');
+
+      setTimer(30);
+
+      Alert.alert('Success', 'OTP has been sent successfully.');
+    } catch (e: any) {
+      Alert.alert('Unable to resend OTP', e?.message || 'Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: 100,
+        }}
+      >
         <StatusBar
           backgroundColor={Colors.background}
           barStyle="dark-content"
@@ -60,8 +138,6 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {/* Back */}
-
           <TouchableOpacity
             style={styles.backButton}
             activeOpacity={0.8}
@@ -70,29 +146,26 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
 
-          {/* Illustration */}
-
           <Image
             source={require('../assets/otp.png')}
             resizeMode="contain"
             style={styles.image}
           />
 
-          {/* Description */}
-
           <Text style={styles.description}>
             Your login OTP is sent to{' '}
             <Text style={styles.bold}>{phoneNumber}</Text>
           </Text>
 
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+          >
             <Text style={styles.changeText}>
               Not your number?{' '}
               <Text style={styles.changeLink}>Change here.</Text>
             </Text>
           </TouchableOpacity>
-
-          {/* OTP */}
 
           <LinearGradient
             colors={Colors.gradient}
@@ -111,19 +184,19 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
           </LinearGradient>
 
-          {/* Button */}
-
           <GradientButton
-            title="Proceed"
-            disabled={!isValid}
-            onPress={() => navigation.navigate('Nickname')}
+            title={loading ? 'Please wait...' : 'Proceed'}
+            disabled={!isValid || loading}
+            onPress={verifyOtp}
           />
-
-          {/* Timer */}
 
           <View style={styles.timerContainer}>
             {timer === 0 ? (
-              <TouchableOpacity onPress={resendOtp}>
+              <TouchableOpacity
+                disabled={loading}
+                activeOpacity={0.8}
+                onPress={resendOtp}
+              >
                 <Text style={styles.resend}>Resend OTP</Text>
               </TouchableOpacity>
             ) : (
@@ -199,7 +272,6 @@ const styles = StyleSheet.create({
     marginTop: 45,
     borderRadius: 18,
     padding: 1.5,
-
     shadowColor: Colors.primary,
     shadowOpacity: 0.08,
     shadowRadius: 12,

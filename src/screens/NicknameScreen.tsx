@@ -9,21 +9,47 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
-import colors from '../constants/colors';
+import authData from '../firebase/authData';
 
 interface Props {
   navigation: any;
+  route: any;
 }
 
-const NicknameScreen: React.FC<Props> = ({ navigation }) => {
+const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
   const [nickname, setNickname] = useState('');
 
+  const [loading, setLoading] = useState(false);
+
   const isValid = nickname.trim().length >= 3;
+
+  const saveUser = async () => {
+    if (!isValid || loading) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await authData.updateProfile({
+        name: nickname,
+      });
+
+      navigation.navigate('BirthYear');
+    } catch (e: any) {
+      console.log('Create User Error:', e);
+
+      Alert.alert('Error', e?.message || 'Unable to continue.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -72,12 +98,10 @@ const NicknameScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </LinearGradient>
 
-        {/* Button */}
-
         <GradientButton
-          title="Next"
-          disabled={!isValid}
-          onPress={() => navigation.navigate('BirthYear')}
+          title={loading ? 'Please wait...' : 'Next'}
+          disabled={!isValid || loading}
+          onPress={saveUser}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

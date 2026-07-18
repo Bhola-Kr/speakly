@@ -21,7 +21,7 @@ enum ScreenState {
 }
 
 const AudioVerificationScreen = ({ navigation }: any) => {
-  const [screenState, setScreenState] = useState(ScreenState.FAILED);
+  const [screenState, setScreenState] = useState(ScreenState.IDLE);
   const [seconds, setSeconds] = useState(0);
 
   const pulse = useRef(new Animated.Value(1)).current;
