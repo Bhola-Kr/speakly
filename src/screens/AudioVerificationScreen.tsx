@@ -204,11 +204,13 @@ const AudioVerificationScreen = ({ navigation }: any) => {
           <Text style={styles.failedTitle}>Voice Verification Failed</Text>
 
           <Text style={styles.failedSubtitle}>
-            We couldn't verify your voice this time.
-            {'\n\n'}• Record in a quiet place{'\n'}• Speak clearly and naturally
-            {'\n'}• Keep the phone 10–15 cm away
+            The recorded voice could not be verified as a female voice.
+            {'\n\n'}
+            Please try again by ensuring:
+            {'\n\n'}• A female speaks during verification.
+            {'\n'}• The voice is clear and natural.
+            {'\n'}• There is minimal background noise.
           </Text>
-
           <TouchableOpacity
             style={styles.continueButton}
             onPress={() => {
@@ -219,12 +221,12 @@ const AudioVerificationScreen = ({ navigation }: any) => {
             <Text style={styles.continueText}>Try Again</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.skipButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.navigate('Main')}
           >
-            <Text style={styles.skipText}>Cancel</Text>
-          </TouchableOpacity>
+            <Text style={styles.skipText}>Skip & Go to Home</Text>
+          </TouchableOpacity> */}
         </View>
       </SafeAreaView>
     );
@@ -249,7 +251,7 @@ const AudioVerificationScreen = ({ navigation }: any) => {
 
       <View style={styles.quoteCard}>
         <Text style={styles.quote}>
-          "Hello, my name is Rahul and this is my voice verification."
+          "Hello, I am verifying my voice. Thank you."
         </Text>
       </View>
 

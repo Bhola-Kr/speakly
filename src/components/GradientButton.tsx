@@ -1,5 +1,10 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -8,20 +13,39 @@ import Colors from '../constants/colors';
 interface Props {
   title: string;
   disabled?: boolean;
+  loading?: boolean;
   onPress: () => void;
   style?: object;
 }
 
-const GradientButton = ({ title, disabled, onPress, style }: Props) => {
+const GradientButton = ({
+  title,
+  disabled = false,
+  loading = false,
+  onPress,
+  style,
+}: Props) => {
+  const isDisabled = disabled || loading;
+
   return (
-    <TouchableOpacity activeOpacity={0.8} disabled={disabled} onPress={onPress}>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      disabled={isDisabled}
+      onPress={onPress}
+    >
       <LinearGradient
         colors={
-          disabled ? [Colors.disabled, Colors.disabled] : Colors.buttonGradient
+          isDisabled
+            ? [Colors.disabled, Colors.disabled]
+            : Colors.buttonGradient
         }
         style={[styles.button, style]}
       >
-        <Text style={styles.text}>{title}</Text>
+        {loading ? (
+          <ActivityIndicator color={Colors.white} />
+        ) : (
+          <Text style={styles.text}>{title}</Text>
+        )}
       </LinearGradient>
     </TouchableOpacity>
   );

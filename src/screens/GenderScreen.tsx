@@ -39,7 +39,7 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         gender,
       });
 
-      navigation.navigate('Nickname');
+      navigation.navigate('Nickname', { user, gender });
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Unable to update gender.');
     } finally {
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   },
 
   selectedCard: {
-    borderColor: '#4D73F8',
+    borderColor: Colors.secondary,
   },
 
   checkContainer: {
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 17,
 
-    backgroundColor: '#4D73F8',
+    backgroundColor: Colors.secondary,
 
     justifyContent: 'center',
     alignItems: 'center',

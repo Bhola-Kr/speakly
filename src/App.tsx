@@ -10,12 +10,14 @@ import GenderScreen from './screens/GenderScreen';
 import LanguageScreen from './screens/LanguageScreen';
 import AvatarScreen from './screens/AvatarScreen';
 import AudioVerificationScreen from './screens/AudioVerificationScreen';
+import BottomTabs from './screens/BottomTabs';
+import Colors from './constants/colors';
 const Stack = createNativeStackNavigator();
 
 function RootStack() {
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName="Main"
       screenOptions={{
         headerShown: false,
       }}
@@ -31,6 +33,7 @@ function RootStack() {
         name="AudioVerification"
         component={AudioVerificationScreen}
       />
+      <Stack.Screen name="Main" component={BottomTabs} />
     </Stack.Navigator>
   );
 }
@@ -38,7 +41,7 @@ function RootStack() {
 export default function App() {
   return (
     <NavigationContainer>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <StatusBar backgroundColor={Colors.white} barStyle="dark-content" />
       <RootStack />
     </NavigationContainer>
   );

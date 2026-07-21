@@ -23,6 +23,7 @@ interface Props {
 }
 
 const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
+  const gender = route.params.gender;
   const [nickname, setNickname] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -41,7 +42,11 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
         name: nickname,
       });
 
-      navigation.navigate('BirthYear');
+      if (gender === 'male') {
+        navigation.navigate('Main');
+      } else {
+        navigation.navigate('BirthYear');
+      }
     } catch (e: any) {
       console.log('Create User Error:', e);
 

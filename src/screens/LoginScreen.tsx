@@ -29,17 +29,19 @@ import CountryPicker, {
 } from 'react-native-country-picker-modal';
 
 import { moderateScale, verticalScale } from 'react-native-size-matters';
+import GradientButton from '../components/GradientButton';
+import Colors from '../constants/colors';
 
 const { width } = Dimensions.get('window');
 
 const slides = [
   {
     image: require('../assets/onboarding1.png'),
-    title: 'First Call @ just ₹1/min',
+    title: 'Talk. Connect. Anytime. Anywhere.',
   },
   {
     image: require('../assets/onboarding2.png'),
-    title: 'Your Avatar is your identity',
+    title: 'Pay Only for What You Use',
   },
 ];
 
@@ -131,7 +133,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
 
           <LinearGradient
-            colors={['#5B7CFF', '#FF4D5A']}
+            colors={Colors.buttonGradient}
             start={{
               x: 0,
               y: 0,
@@ -179,24 +181,12 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
           </LinearGradient>
 
-          <TouchableOpacity
+          <GradientButton
+            title={loading ? 'Please wait...' : 'Next'}
             onPress={onGetOTP}
             disabled={!isValid || loading}
-            activeOpacity={0.8}
-            style={[
-              styles.button,
-
-              {
-                backgroundColor: isValid ? '#5B7CFF' : '#D0D0D0',
-              },
-            ]}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Get OTP</Text>
-            )}
-          </TouchableOpacity>
+            loading={loading}
+          />
 
           <Text style={styles.footer}>
             By continuing you agree to our{' '}
