@@ -15,11 +15,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Colors from '../../constants/colors';
 import GradientButton from '../../components/GradientButton';
 import { femaleAvatars } from '../../constants/constants';
+import { profile } from './dummyData';
 
 export const EditProfileScreen = ({ navigation }: any) => {
   const [avatarId, setAvatarId] = useState(1);
 
-  const [nickname, setNickname] = useState('Aadhilakshmi');
+  const [nickname, setNickname] = useState(profile.englishName);
 
   const [day, setDay] = useState('18');
 
@@ -118,7 +119,10 @@ export const EditProfileScreen = ({ navigation }: any) => {
             })
           }
         >
-          <Image source={avatar.image} style={styles.avatar} />
+          <Image
+            source={require('../../assets/man.png')}
+            style={styles.avatar}
+          />
 
           <View style={styles.cameraView}>
             <MaterialCommunityIcons
@@ -196,6 +200,7 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 40,
   },
 

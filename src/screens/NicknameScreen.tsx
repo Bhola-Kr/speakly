@@ -43,7 +43,10 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
       });
 
       if (gender === 'male') {
-        navigation.navigate('Main');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }], // Home Screen
+        });
       } else {
         navigation.navigate('BirthYear');
       }

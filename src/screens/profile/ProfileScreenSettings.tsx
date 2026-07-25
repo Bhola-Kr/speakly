@@ -26,7 +26,6 @@ import {
   securityMenus,
   femaleAccountMenus,
 } from './dummyData';
-import { femaleAvatars } from '../../constants/constants';
 
 const ProfileSettingScreen = ({ navigation }: any) => {
   const SUPPORT_EMAIL = 'support@voicetamil.com';
@@ -35,8 +34,6 @@ const ProfileSettingScreen = ({ navigation }: any) => {
   const PLAY_STORE_URL =
     'https://play.google.com/store/apps/details?id=com.cozyds.voicetamil';
   const gender = 'male';
-  const avatar =
-    femaleAvatars.find(a => a.id === profile.avatarId) || femaleAvatars[0];
 
   const handleLogout = () => {
     Alert.alert(
@@ -292,7 +289,10 @@ ${PLAY_STORE_URL}`,
         </View>
 
         <View style={styles.profileCard}>
-          <Image source={avatar.image} style={styles.avatar} />
+          <Image
+            source={require('../../assets/man.png')}
+            style={styles.avatar}
+          />
 
           <Text style={styles.tamilName}>{profile.tamilName}</Text>
 

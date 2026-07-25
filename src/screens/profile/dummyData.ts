@@ -1,9 +1,9 @@
 export const profile = {
   avatarId: 1,
 
-  tamilName: 'ஆதிலட்சுமி',
+  tamilName: 'போலா',
 
-  englishName: 'Aadhilakshmi',
+  englishName: 'Bhola',
 
   memberSince: 'July 2026',
 

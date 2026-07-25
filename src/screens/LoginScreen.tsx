@@ -190,8 +190,19 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <Text style={styles.footer}>
             By continuing you agree to our{' '}
-            <Text style={styles.link}>Terms of Use</Text> and{' '}
-            <Text style={styles.link}>Privacy Policy</Text>
+            <Text
+              style={styles.link}
+              onPress={() => navigation.navigate('TermsAndConditions')}
+            >
+              Terms of Use
+            </Text>{' '}
+            and{' '}
+            <Text
+              style={styles.link}
+              onPress={() => navigation.navigate('PrivacyPolicy')}
+            >
+              Privacy Policy
+            </Text>
           </Text>
 
           <Text style={styles.safeText}>
@@ -343,8 +354,8 @@ const styles = StyleSheet.create({
   },
 
   link: {
-    color: '#111111',
-    fontWeight: '700',
+    color: Colors.secondary,
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
 
