@@ -24,10 +24,8 @@ export default StyleSheet.create({
   },
 
   title: {
-    fontSize: 30,
-
-    fontWeight: '700',
-
+    fontSize: 20,
+    fontWeight: '600',
     color: Colors.text,
   },
 
@@ -51,6 +49,20 @@ export default StyleSheet.create({
     fontWeight: '700',
 
     marginHorizontal: 8,
+  },
+
+  leftHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
 
   plus: {

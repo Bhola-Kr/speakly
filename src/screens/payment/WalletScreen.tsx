@@ -196,6 +196,7 @@ const WalletScreen = ({ navigation }: any) => {
         <GradientButton
           title={`Continue ₹${selectedPack.amount}`}
           onPress={onRecharge}
+          style={{ marginTop: 12 }}
         />
       </View>
     </SafeAreaView>
@@ -288,14 +289,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: 22,
+    marginTop: 12,
   },
 
   card: {
     width: '48%',
     backgroundColor: Colors.card,
     borderRadius: 22,
-    padding: 18,
+    padding: 12,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -345,7 +346,7 @@ const styles = StyleSheet.create({
 
   amount: {
     marginTop: 8,
-    fontSize: 30,
+    fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
   },
@@ -402,12 +403,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 18,
   },
 
   summaryTitle: {
     color: Colors.subText,
-    fontSize: 13,
+    fontSize: 12,
   },
 
   summaryAmount: {

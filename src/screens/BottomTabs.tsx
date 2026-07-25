@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import HomeScreen from './home/HomeScreen';
-import RecentScreen from './recentScreen/RecentScreen';
+import ManHistoryScreen from './recentScreen/ManHistoryScreen';
 import Colors from '../constants/colors';
 
 const Tab = createBottomTabNavigator();
@@ -77,7 +77,7 @@ const BottomTabs = () => {
 
       <Tab.Screen
         name="Recents"
-        component={RecentScreen}
+        component={ManHistoryScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <Ionicons

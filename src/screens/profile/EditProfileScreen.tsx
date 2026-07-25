@@ -108,23 +108,6 @@ export const EditProfileScreen = ({ navigation }: any) => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={28}
-              color={Colors.text}
-            />
-          </TouchableOpacity>
-
-          <Text style={styles.title}>Edit Profile</Text>
-
-          <View style={{ width: 28 }} />
-        </View>
-
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.avatarContainer}

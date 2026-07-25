@@ -7,9 +7,10 @@ import Colors from '../../constants/colors';
 
 interface Props {
   item: any;
+  callNow: () => void;
 }
 
-const UserCard = ({ item }: Props) => {
+const UserCard = ({ item, callNow }: Props) => {
   return (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -55,6 +56,7 @@ const UserCard = ({ item }: Props) => {
         </View>
 
         <TouchableOpacity
+          onPress={callNow}
           activeOpacity={0.9}
           style={{
             height: 48,

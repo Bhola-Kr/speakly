@@ -6,7 +6,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../../constants/colors';
 
-const Header = () => {
+interface Props {
+  userProfilePress: () => void;
+  walletPress: () => void;
+}
+
+const Header = ({ userProfilePress, walletPress }: Props) => {
   return (
     <View
       style={{
@@ -33,61 +38,65 @@ const Header = () => {
           alignItems: 'center',
         }}
       >
-        <LinearGradient
-          colors={Colors.buttonGradient}
-          style={{
-            height: 42,
-            borderRadius: 21,
-            paddingHorizontal: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
-        >
-          <MaterialCommunityIcons
-            name="wallet-outline"
-            size={20}
-            color={Colors.secondary}
-          />
-
-          <Text
+        <TouchableOpacity onPress={walletPress}>
+          <LinearGradient
+            colors={Colors.buttonGradient}
             style={{
-              color: Colors.white,
-              fontWeight: '700',
-              marginHorizontal: 8,
-            }}
-          >
-            ₹0.00
-          </Text>
-
-          <TouchableOpacity
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 12,
-              backgroundColor: Colors.secondary,
-              justifyContent: 'center',
+              height: 42,
+              borderRadius: 21,
+              paddingHorizontal: 16,
+              flexDirection: 'row',
               alignItems: 'center',
             }}
           >
             <MaterialCommunityIcons
-              name="plus"
-              size={16}
-              color={Colors.black}
+              name="wallet-outline"
+              size={20}
+              color={Colors.secondary}
             />
-          </TouchableOpacity>
-        </LinearGradient>
 
-        <Image
-          source={{
-            uri: 'https://i.pravatar.cc/300?img=12',
-          }}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            marginLeft: 12,
-          }}
-        />
+            <Text
+              style={{
+                color: Colors.white,
+                fontWeight: '700',
+                marginHorizontal: 8,
+              }}
+            >
+              ₹0.00
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: Colors.secondary,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <MaterialCommunityIcons
+                name="plus"
+                size={16}
+                color={Colors.black}
+              />
+            </TouchableOpacity>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={userProfilePress}>
+          <Image
+            source={{
+              uri: 'https://i.pravatar.cc/300?img=12',
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              marginLeft: 12,
+            }}
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );

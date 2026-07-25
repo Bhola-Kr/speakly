@@ -9,6 +9,7 @@ import {
   StatusBar,
   Alert,
   Clipboard,
+  Linking,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -70,9 +71,43 @@ const STATUS = {
 };
 
 const TransactionScreen = ({ navigation }: any) => {
+  const SUPPORT_EMAIL = 'support@voicetamil.com';
   const copyTxn = (id: string) => {
     Clipboard.setString(id);
     Alert.alert('Copied', 'Transaction ID copied.');
+  };
+
+  const handleContactUs = async () => {
+    const subject = encodeURIComponent('VoiceTamil Support');
+
+    const body = encodeURIComponent(`Hello VoiceTamil Support Team,
+  
+  Please describe your issue below:
+  
+  ----------------------------
+  
+  
+  ----------------------------
+  
+  Thank you.
+  `);
+
+    const url = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+
+    try {
+      const supported = await Linking.canOpenURL(url);
+
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          'Email App Not Found',
+          'No email application is installed on this device.',
+        );
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Unable to open the email application.');
+    }
   };
 
   const renderItem = ({ item }: any) => {
@@ -192,14 +227,14 @@ const TransactionScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons
             name="arrow-left"
-            size={28}
+            size={24}
             color={Colors.text}
           />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Transactions</Text>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleContactUs}>
           <MaterialCommunityIcons
             name="headset"
             size={24}
@@ -239,7 +274,7 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.text,
   },

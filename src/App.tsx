@@ -7,28 +7,31 @@ import BirthYearScreen from './screens/BirthYearScreen';
 import NicknameScreen from './screens/NicknameScreen';
 import OtpScreen from './screens/OtpScreen';
 import GenderScreen from './screens/GenderScreen';
-import LanguageScreen from './screens/LanguageScreen';
 import AvatarScreen from './screens/AvatarScreen';
 import AudioVerificationScreen from './screens/AudioVerificationScreen';
 import BottomTabs from './screens/BottomTabs';
 import Colors from './constants/colors';
-import ProfileScreen from './screens/profile';
+import ProfileSettingScreen from './screens/profile/ProfileScreenSettings';
 import { EditProfileScreen } from './screens/profile/EditProfileScreen';
 import WalletScreen from './screens/payment/WalletScreen';
 import TransactionScreen from './screens/payment/TransactionScreen';
 import CallScreen from './screens/agora';
 import IncomingCallScreen from './screens/agora/incomingCall/IncomingCallScreen';
-import OutgoingCallScreen from './screens/agora/outgoingCall/OutgoingCallScreen';
-import HistoryScreen from './screens/HistoryScreen';
+import { OutgoingCallScreen } from './screens/agora/outgoingCall/OutgoingCallScreen';
+import FemaleHistoryScreen from './screens/FemaleHistoryScreen';
 import FemaleHomeScreen from './screens/FemaleHomeScreen';
 import FemaleBottomTabs from './screens/FemaleBottomTabs';
+import ManHistoryScreen from './screens/recentScreen/ManHistoryScreen';
+import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
+import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
+import FAQScreen from './screens/FAQScreen';
 
 const Stack = createNativeStackNavigator();
 
 function RootStack() {
   return (
     <Stack.Navigator
-      initialRouteName="FemaleBottomTabs"
+      initialRouteName="Main"
       screenOptions={{
         headerShown: false,
       }}
@@ -46,15 +49,56 @@ function RootStack() {
       />
       <Stack.Screen name="Main" component={BottomTabs} />
       <Stack.Screen name="FemaleBottomTabs" component={FemaleBottomTabs} />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="ProfileSetting" component={ProfileSettingScreen} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Edit Profile',
+          headerStyle: { backgroundColor: Colors.background },
+        }}
+        name="EditProfile"
+        component={EditProfileScreen}
+      />
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Transaction" component={TransactionScreen} />
       <Stack.Screen name="Call" component={CallScreen} />
       <Stack.Screen name="IncomingCall" component={IncomingCallScreen} />
       <Stack.Screen name="OutgoingCall" component={OutgoingCallScreen} />
-      <Stack.Screen name="History" component={HistoryScreen} />
       <Stack.Screen name="FemaleHome" component={FemaleHomeScreen} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Recent',
+          headerStyle: { backgroundColor: Colors.background },
+        }}
+        name="ManHistory"
+        component={ManHistoryScreen}
+      />
+      <Stack.Screen name="FemaleHistory" component={FemaleHistoryScreen} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: Colors.background },
+        }}
+        name="TermsAndConditions"
+        component={TermsAndConditionsScreen}
+      />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: Colors.background },
+        }}
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+      />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: Colors.background },
+        }}
+        name="FAQ"
+        component={FAQScreen}
+      />
     </Stack.Navigator>
   );
 }

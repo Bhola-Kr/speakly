@@ -10,7 +10,11 @@ import UserCard from './UserCard';
 import Colors from '../../constants/colors';
 import { categories, experts } from '../../constants/dummyData';
 
-const HomeScreen = () => {
+interface Props {
+  navigation: any;
+}
+
+const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [selected, setSelected] = useState('All');
 
   const filtered =
@@ -29,7 +33,10 @@ const HomeScreen = () => {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
-            <Header />
+            <Header
+              walletPress={() => navigation.navigate('Wallet')}
+              userProfilePress={() => navigation.navigate('ProfileSetting')}
+            />
 
             <Banner />
 
@@ -42,7 +49,14 @@ const HomeScreen = () => {
             />
           </>
         }
-        renderItem={({ item }) => <UserCard item={item} />}
+        renderItem={({ item }) => (
+          <UserCard
+            item={item}
+            callNow={() => {
+              navigation.navigate('OutgoingCall', { user: item });
+            }}
+          />
+        )}
       />
     </SafeAreaView>
   );

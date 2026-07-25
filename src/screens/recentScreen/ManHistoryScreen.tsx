@@ -10,7 +10,7 @@ import EmptyState from './EmptyState';
 import RecentCallCard from './RecentCallCard';
 import { recentCalls } from '../../constants/dummyData';
 
-const RecentScreen = ({ navigation }: any) => {
+const ManHistoryScreen = ({ navigation }: any) => {
   const [online, setOnline] = useState(true);
 
   // Change to [] to see the empty state
@@ -18,7 +18,7 @@ const RecentScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header online={online} onToggle={() => setOnline(!online)} />
+      {/* <Header online={online} onToggle={() => setOnline(!online)} /> */}
 
       {data.length === 0 ? (
         <EmptyState onPress={() => navigation.navigate('Home')} />
@@ -28,7 +28,7 @@ const RecentScreen = ({ navigation }: any) => {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={<StatsCard />}
+          // ListHeaderComponent={<StatsCard />}
           renderItem={({ item }) => <RecentCallCard item={item} />}
         />
       )}
@@ -36,4 +36,4 @@ const RecentScreen = ({ navigation }: any) => {
   );
 };
 
-export default RecentScreen;
+export default ManHistoryScreen;

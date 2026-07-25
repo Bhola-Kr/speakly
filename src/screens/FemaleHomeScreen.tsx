@@ -79,13 +79,13 @@ const FemaleHomeScreen = () => {
           </View>
 
           <View style={styles.rightHeader}>
-            <TouchableOpacity style={styles.notification}>
+            {/* <TouchableOpacity style={styles.notification}>
               <Ionicons
                 name="notifications-outline"
                 size={22}
                 color={Colors.text}
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <Image
               source={require('../assets/avatars/avatar1.png')}

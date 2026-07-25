@@ -17,7 +17,15 @@ import strings from '../../../constants/strings';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
-export default function OutgoingCallScreen() {
+interface Props {
+  navigation: any;
+  route: any;
+}
+
+export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
+  const data = route.params;
+  console.log('data', data);
+
   const ripple = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0)).current;
 
@@ -85,7 +93,9 @@ export default function OutgoingCallScreen() {
 
         <Text style={styles.status}>Connecting{dots}</Text>
 
-        <Text style={styles.statusSub}>Waiting for Isha to answer</Text>
+        <Text style={styles.statusSub}>{`Waiting for ${
+          data.user?.englishName ?? 'Test'
+        }to answer`}</Text>
       </View>
 
       <View style={styles.body}>
@@ -117,9 +127,11 @@ export default function OutgoingCallScreen() {
           </View>
         </Animated.View>
 
-        <Text style={styles.name}>Isha</Text>
+        <Text style={styles.name}>{`${data.user?.tamilName ?? 'Test'}`}</Text>
 
-        <Text style={styles.city}>Chennai • 24 Years</Text>
+        <Text
+          style={styles.city}
+        >{`${data?.user?.city} • ${data?.user?.age} Years`}</Text>
 
         <View style={styles.waveContainer}>
           <Animated.View
@@ -151,10 +163,12 @@ export default function OutgoingCallScreen() {
       <TouchableOpacity
         activeOpacity={0.85}
         style={styles.endButton}
-        onPress={() => {}}
+        onPress={() => {
+          navigation.goBack();
+        }}
       >
         <Text style={styles.endText}>Cancel Call</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
-}
+};

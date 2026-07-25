@@ -41,8 +41,8 @@ export default StyleSheet.create({
   },
 
   avatarWrapper: {
-    width: 240,
-    height: 240,
+    width: 200,
+    height: 200,
     borderRadius: 120,
     justifyContent: 'center',
     alignItems: 'center',

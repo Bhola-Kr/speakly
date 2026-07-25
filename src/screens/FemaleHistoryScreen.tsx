@@ -59,7 +59,7 @@ const historyData: HistoryItem[] = [
   },
 ];
 
-const HistoryScreen = () => {
+const FemaleHistoryScreen = () => {
   const [menuVisible, setMenuVisible] = useState(false);
 
   const groupedData = useMemo(() => {
@@ -114,9 +114,9 @@ const HistoryScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.callButton}>
+        {/* <TouchableOpacity style={styles.callButton}>
           <Ionicons name="call" size={18} color={Colors.secondary} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </TouchableOpacity>
     );
   };
@@ -363,4 +363,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HistoryScreen;
+export default FemaleHistoryScreen;

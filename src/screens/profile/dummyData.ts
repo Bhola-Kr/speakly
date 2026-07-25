@@ -14,7 +14,7 @@ export const profile = {
   version: '1.0.0',
 };
 
-export const accountMenus = [
+export const manAccountMenus = [
   {
     id: 1,
     title: 'Recent Calls',
@@ -26,6 +26,15 @@ export const accountMenus = [
     title: 'Transactions',
     icon: 'cash-multiple',
     screen: 'Transaction',
+  },
+];
+
+export const femaleAccountMenus = [
+  {
+    id: 1,
+    title: 'Recent Calls',
+    icon: 'history',
+    screen: 'Recents',
   },
 ];
 
@@ -42,6 +51,22 @@ export const preferenceMenus = [
     title: 'Notifications',
     icon: 'bell-outline',
     screen: 'Notification',
+  },
+];
+
+export const securityMenus = [
+  {
+    id: 1,
+    title: 'Logout',
+    icon: 'logout',
+    action: 'logout',
+  },
+  {
+    id: 2,
+    title: 'Delete Account',
+    icon: 'delete-outline',
+    action: 'deleteAccount',
+    danger: true,
   },
 ];
 
@@ -65,10 +90,18 @@ export const supportMenus = [
     id: 4,
     title: 'Privacy Policy',
     icon: 'shield-lock-outline',
+    screen: 'PrivacyPolicy',
   },
   {
     id: 5,
     title: 'Terms & Conditions',
     icon: 'file-document-outline',
+    screen: 'TermsAndConditions',
+  },
+  {
+    id: 6,
+    title: 'FAQ',
+    icon: 'file-document-outline',
+    screen: 'FAQ',
   },
 ];
