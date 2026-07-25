@@ -12,12 +12,23 @@ import AvatarScreen from './screens/AvatarScreen';
 import AudioVerificationScreen from './screens/AudioVerificationScreen';
 import BottomTabs from './screens/BottomTabs';
 import Colors from './constants/colors';
+import ProfileScreen from './screens/profile';
+import { EditProfileScreen } from './screens/profile/EditProfileScreen';
+import WalletScreen from './screens/payment/WalletScreen';
+import TransactionScreen from './screens/payment/TransactionScreen';
+import CallScreen from './screens/agora';
+import IncomingCallScreen from './screens/agora/incomingCall/IncomingCallScreen';
+import OutgoingCallScreen from './screens/agora/outgoingCall/OutgoingCallScreen';
+import HistoryScreen from './screens/HistoryScreen';
+import FemaleHomeScreen from './screens/FemaleHomeScreen';
+import FemaleBottomTabs from './screens/FemaleBottomTabs';
+
 const Stack = createNativeStackNavigator();
 
 function RootStack() {
   return (
     <Stack.Navigator
-      initialRouteName="Main"
+      initialRouteName="FemaleBottomTabs"
       screenOptions={{
         headerShown: false,
       }}
@@ -34,6 +45,16 @@ function RootStack() {
         component={AudioVerificationScreen}
       />
       <Stack.Screen name="Main" component={BottomTabs} />
+      <Stack.Screen name="FemaleBottomTabs" component={FemaleBottomTabs} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="Wallet" component={WalletScreen} />
+      <Stack.Screen name="Transaction" component={TransactionScreen} />
+      <Stack.Screen name="Call" component={CallScreen} />
+      <Stack.Screen name="IncomingCall" component={IncomingCallScreen} />
+      <Stack.Screen name="OutgoingCall" component={OutgoingCallScreen} />
+      <Stack.Screen name="History" component={HistoryScreen} />
+      <Stack.Screen name="FemaleHome" component={FemaleHomeScreen} />
     </Stack.Navigator>
   );
 }
@@ -41,7 +62,7 @@ function RootStack() {
 export default function App() {
   return (
     <NavigationContainer>
-      <StatusBar backgroundColor={Colors.white} barStyle="dark-content" />
+      <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
       <RootStack />
     </NavigationContainer>
   );

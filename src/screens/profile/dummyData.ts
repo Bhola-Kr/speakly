@@ -1,0 +1,74 @@
+export const profile = {
+  avatarId: 1,
+
+  tamilName: 'ஆதிலட்சுமி',
+
+  englishName: 'Aadhilakshmi',
+
+  memberSince: 'July 2026',
+
+  balance: 0,
+
+  language: 'Tamil',
+
+  version: '1.0.0',
+};
+
+export const accountMenus = [
+  {
+    id: 1,
+    title: 'Recent Calls',
+    icon: 'history',
+    screen: 'Recents',
+  },
+  {
+    id: 2,
+    title: 'Transactions',
+    icon: 'cash-multiple',
+    screen: 'Transaction',
+  },
+];
+
+export const preferenceMenus = [
+  {
+    id: 1,
+    title: 'Language',
+    value: 'Tamil',
+    icon: 'translate',
+    screen: 'Language',
+  },
+  {
+    id: 2,
+    title: 'Notifications',
+    icon: 'bell-outline',
+    screen: 'Notification',
+  },
+];
+
+export const supportMenus = [
+  {
+    id: 1,
+    title: 'Rate App',
+    icon: 'star-outline',
+  },
+  {
+    id: 2,
+    title: 'Share App',
+    icon: 'share-variant',
+  },
+  {
+    id: 3,
+    title: 'Contact Us',
+    icon: 'headset',
+  },
+  {
+    id: 4,
+    title: 'Privacy Policy',
+    icon: 'shield-lock-outline',
+  },
+  {
+    id: 5,
+    title: 'Terms & Conditions',
+    icon: 'file-document-outline',
+  },
+];

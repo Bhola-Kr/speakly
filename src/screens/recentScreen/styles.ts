@@ -1,0 +1,141 @@
+import { StyleSheet } from 'react-native';
+import Colors from '../../constants/colors';
+
+export default StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: 120,
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 18,
+  },
+
+  card: {
+    backgroundColor: Colors.white,
+
+    borderRadius: 22,
+
+    padding: 18,
+
+    marginBottom: 18,
+
+    shadowColor: '#000',
+
+    shadowOpacity: 0.08,
+
+    shadowRadius: 12,
+
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+
+    elevation: 5,
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  spaceBetween: {
+    flexDirection: 'row',
+
+    justifyContent: 'space-between',
+
+    alignItems: 'center',
+  },
+
+  avatar: {
+    width: 72,
+
+    height: 72,
+
+    borderRadius: 18,
+  },
+
+  info: {
+    flex: 1,
+
+    marginLeft: 14,
+  },
+
+  tamilName: {
+    fontSize: 22,
+
+    fontWeight: '700',
+
+    color: Colors.text,
+  },
+
+  englishName: {
+    fontSize: 16,
+
+    color: Colors.text,
+
+    marginTop: 3,
+  },
+
+  location: {
+    marginTop: 3,
+
+    color: Colors.subText,
+  },
+
+  divider: {
+    height: 1,
+
+    backgroundColor: Colors.border,
+
+    marginVertical: 16,
+  },
+
+  label: {
+    color: Colors.subText,
+
+    fontSize: 13,
+  },
+
+  value: {
+    marginTop: 4,
+
+    fontWeight: '700',
+
+    color: Colors.text,
+
+    fontSize: 16,
+  },
+
+  callButton: {
+    height: 46,
+
+    borderRadius: 23,
+
+    backgroundColor: Colors.primary,
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+
+    flexDirection: 'row',
+
+    paddingHorizontal: 20,
+  },
+
+  callText: {
+    color: Colors.secondary,
+
+    fontWeight: '700',
+
+    marginLeft: 8,
+  },
+});

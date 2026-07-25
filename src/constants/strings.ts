@@ -1,5 +1,5 @@
 export default {
-  appName: 'தமிழ் Voice',
+  appName: 'தமிழ்',
 
   heading: 'Talk Freely',
 
