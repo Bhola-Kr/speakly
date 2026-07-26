@@ -6234,6 +6234,11 @@ react-native-gesture-handler@^2.27.1:
     hoist-non-react-statics "^3.3.0"
     invariant "^2.2.4"
 
+react-native-incall-manager@^4.2.2:
+  version "4.2.2"
+  resolved "https://registry.yarnpkg.com/react-native-incall-manager/-/react-native-incall-manager-4.2.2.tgz#8483e06579f878fae76376628e6d54974830a089"
+  integrity sha512-r8zVNIDEFBcceHkmJKKahTiIdK5fu5ohKSAzt3MV+sltlE9bkYLVD0piJ55NfBusDDywPqRJwvdCHZPWdI8iUg==
+
 react-native-is-edge-to-edge@^1.3.1:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/react-native-is-edge-to-edge/-/react-native-is-edge-to-edge-1.3.1.tgz#feb9a6a8faf0874298947edd556e5af22044e139"

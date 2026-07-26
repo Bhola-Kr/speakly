@@ -25,7 +25,7 @@ enum ScreenState {
 }
 
 const AudioVerificationScreen = ({ navigation }: any) => {
-  const [screenState, setScreenState] = useState(ScreenState.IDLE);
+  const [screenState, setScreenState] = useState(ScreenState.SUCCESS);
   const [seconds, setSeconds] = useState(0);
 
   const pulse = useRef(new Animated.Value(1)).current;
@@ -182,7 +182,12 @@ const AudioVerificationScreen = ({ navigation }: any) => {
 
           <TouchableOpacity
             style={styles.continueButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'FemaleBottomTabs' }], // Home Screen
+              });
+            }}
           >
             <Text style={styles.continueText}>Continue</Text>
           </TouchableOpacity>

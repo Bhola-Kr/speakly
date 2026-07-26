@@ -56,7 +56,11 @@ const leaderboardData = [
   },
 ];
 
-const FemaleHomeScreen = () => {
+interface Props {
+  navigation: any;
+}
+
+const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [page, setPage] = useState(0);
 
   const bannerRef = useRef<FlatList>(null);
@@ -142,7 +146,12 @@ const FemaleHomeScreen = () => {
 
         {/* GO ONLINE */}
 
-        <TouchableOpacity activeOpacity={0.9}>
+        <TouchableOpacity
+          onPress={() => {
+            navigation.navigate('OnlineRoom');
+          }}
+          activeOpacity={0.9}
+        >
           <LinearGradient
             colors={Colors.buttonGradient}
             style={styles.onlineButton}

@@ -15,7 +15,7 @@ import ProfileSettingScreen from './screens/profile/ProfileScreenSettings';
 import { EditProfileScreen } from './screens/profile/EditProfileScreen';
 import WalletScreen from './screens/payment/WalletScreen';
 import TransactionScreen from './screens/payment/TransactionScreen';
-import CallScreen from './screens/agora';
+import CallScreen from './screens/agora/CallScreen';
 import IncomingCallScreen from './screens/agora/incomingCall/IncomingCallScreen';
 import { OutgoingCallScreen } from './screens/agora/outgoingCall/OutgoingCallScreen';
 import FemaleHistoryScreen from './screens/FemaleHistoryScreen';
@@ -26,13 +26,14 @@ import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
 import FAQScreen from './screens/FAQScreen';
 import SplashScreen from './screens/SplashScreen';
+import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
 
 const Stack = createNativeStackNavigator();
 
 function RootStack() {
   return (
     <Stack.Navigator
-      initialRouteName="Splash"
+      initialRouteName="AudioVerification"
       screenOptions={{
         headerShown: false,
       }}
@@ -67,6 +68,7 @@ function RootStack() {
       <Stack.Screen name="IncomingCall" component={IncomingCallScreen} />
       <Stack.Screen name="OutgoingCall" component={OutgoingCallScreen} />
       <Stack.Screen name="FemaleHome" component={FemaleHomeScreen} />
+      <Stack.Screen name="OnlineRoom" component={OnlineRoomScreen} />
       <Stack.Screen
         options={{
           headerShown: true,

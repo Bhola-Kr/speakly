@@ -8,6 +8,7 @@ import {
   Platform,
   Image,
   Alert,
+  StatusBar,
 } from 'react-native';
 
 import {
@@ -22,6 +23,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LinearGradient from 'react-native-linear-gradient';
 
 import styles from './styles';
+import Colors from '../../constants/colors';
 
 type Props = {
   navigation: any;
@@ -30,8 +32,8 @@ type Props = {
 
 const CallScreen = ({ navigation, route }: Props) => {
   const {
-    token = '',
-    channelName = 'test_channel',
+    token = '007eJxTYIiIVnrrfnztY9dS4SuyWhb/lTWXHC2dGhqdbSMue9PpmJECQ5pZUmqyaZKliUFqokmSoWFimpFhmnGSpbFhmrmxqbFZ37fUrIZARgbpthImRgYIBPG5GcryM5NT40sSczNzGBgAubQgrg==',
+    channelName = 'voice_tamil',
     uid = Math.floor(Math.random() * 100000),
     userName = 'Aadhilakshmi',
     city = 'Chennai',
@@ -101,7 +103,7 @@ const CallScreen = ({ navigation, route }: Props) => {
     const rtcEngine = createAgoraRtcEngine();
 
     rtcEngine.initialize({
-      appId: 'YOUR_AGORA_APP_ID', // Replace with your Agora App ID
+      appId: 'f6bec5b940ea4b11af21f3b931f73536', // Replace with your Agora App ID
     });
 
     rtcEngine.enableAudio();
@@ -158,7 +160,7 @@ const CallScreen = ({ navigation, route }: Props) => {
 
     engine.current = rtcEngine;
 
-    await rtcEngine.joinChannel(token, channelName, uid, {
+    rtcEngine.joinChannel(token, channelName, uid, {
       clientRoleType: ClientRoleType.ClientRoleBroadcaster,
     });
   };
@@ -176,7 +178,7 @@ const CallScreen = ({ navigation, route }: Props) => {
           stopTimer();
 
           if (engine.current) {
-            await engine.current.leaveChannel();
+            engine.current.leaveChannel();
             engine.current.release();
             engine.current = null;
           }
@@ -212,12 +214,14 @@ const CallScreen = ({ navigation, route }: Props) => {
       if (engine.current) {
         engine.current.leaveChannel();
         engine.current.release();
+        engine.current = null;
       }
     };
   }, []);
 
   return (
     <LinearGradient colors={['#111111', '#181818']} style={styles.container}>
+      <StatusBar backgroundColor={Colors.primary} barStyle={'light-content'} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={leaveCall}>
@@ -260,26 +264,6 @@ const CallScreen = ({ navigation, route }: Props) => {
           </View>
 
           <Text style={styles.timer}>{timer}</Text>
-
-          <View style={styles.wallet}>
-            <View style={styles.walletItem}>
-              <Text style={styles.walletTitle}>Balance</Text>
-
-              <Text style={styles.walletValue}>₹220</Text>
-            </View>
-
-            <View style={styles.walletItem}>
-              <Text style={styles.walletTitle}>Rate</Text>
-
-              <Text style={styles.walletValue}>₹4/min</Text>
-            </View>
-
-            <View style={styles.walletItem}>
-              <Text style={styles.walletTitle}>Remaining</Text>
-
-              <Text style={styles.walletValue}>55 min</Text>
-            </View>
-          </View>
         </View>
 
         <View style={styles.controls}>
