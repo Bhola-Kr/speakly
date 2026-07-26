@@ -18,10 +18,16 @@ import authData from '../firebase/authData';
 
 interface Props {
   navigation: any;
+  route: any;
 }
 
-const AvatarScreen: React.FC<Props> = ({ navigation }) => {
-  const [selectedAvatar, setSelectedAvatar] = useState<number | null>(null);
+const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
+  const isEditMode = route?.params?.isEditMode;
+  const selectedAvatarId = route?.params?.selectedAvatar;
+
+  const [selectedAvatar, setSelectedAvatar] = useState<number | null>(
+    selectedAvatarId,
+  );
   const [loading, setLoading] = useState(false);
 
   const renderAvatar = ({ item }: { item: Avatar }) => {
@@ -85,7 +91,7 @@ const AvatarScreen: React.FC<Props> = ({ navigation }) => {
           marginBottom: 25,
           marginTop: 10,
         }}
-        title={loading ? 'Please wait...' : 'Proceed'}
+        title={loading ? 'Please wait...' : isEditMode ? 'Save' : 'Proceed'}
         disabled={!selectedAvatar || loading}
         onPress={async () => {
           if (!selectedAvatar || loading) {
@@ -99,9 +105,13 @@ const AvatarScreen: React.FC<Props> = ({ navigation }) => {
               avatarId: selectedAvatar,
             });
 
-            navigation.navigate('AudioVerification', {
-              avatarId: selectedAvatar,
-            });
+            if (isEditMode) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('AudioVerification', {
+                avatarId: selectedAvatar,
+              });
+            }
           } catch (e: any) {
             Alert.alert('Error', e?.message || 'Unable to update avatar.');
           } finally {

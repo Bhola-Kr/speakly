@@ -91,10 +91,18 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               />
             </TouchableOpacity> */}
 
-            <Image
-              source={require('../assets/avatars/avatar1.png')}
-              style={styles.avatar}
-            />
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('ProfileSetting', {
+                  gender: 'female',
+                })
+              }
+            >
+              <Image
+                source={require('../assets/avatars/avatar1.png')}
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 

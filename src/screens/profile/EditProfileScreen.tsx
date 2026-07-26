@@ -17,7 +17,8 @@ import GradientButton from '../../components/GradientButton';
 import { femaleAvatars } from '../../constants/constants';
 import { profile } from './dummyData';
 
-export const EditProfileScreen = ({ navigation }: any) => {
+export const EditProfileScreen = ({ navigation, route }: any) => {
+  const gender = route?.params?.gender || 'male';
   const [avatarId, setAvatarId] = useState(1);
 
   const [nickname, setNickname] = useState(profile.englishName);
@@ -112,28 +113,38 @@ export const EditProfileScreen = ({ navigation }: any) => {
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.avatarContainer}
+          disabled={gender === 'male'}
           onPress={() =>
-            navigation.navigate('AvatarSelection', {
+            navigation.navigate('Avatar', {
+              isEditMode: true,
               selectedAvatar: avatarId,
               onSelect: (id: number) => setAvatarId(id),
             })
           }
         >
           <Image
-            source={require('../../assets/man.png')}
+            source={
+              gender === 'male'
+                ? require('../../assets/man.png')
+                : femaleAvatars.at(0)?.image
+            }
             style={styles.avatar}
           />
 
-          <View style={styles.cameraView}>
-            <MaterialCommunityIcons
-              name="camera"
-              size={18}
-              color={Colors.black}
-            />
-          </View>
+          {gender === 'female' && (
+            <View style={styles.cameraView}>
+              <MaterialCommunityIcons
+                name="camera"
+                size={18}
+                color={Colors.black}
+              />
+            </View>
+          )}
         </TouchableOpacity>
 
-        <Text style={styles.changePhoto}>Tap to Change Avatar</Text>
+        {gender === 'female' && (
+          <Text style={styles.changePhoto}>Tap to Change Avatar</Text>
+        )}
 
         <Text style={styles.label}>Nickname</Text>
 

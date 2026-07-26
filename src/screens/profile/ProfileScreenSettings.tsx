@@ -26,14 +26,20 @@ import {
   securityMenus,
   femaleAccountMenus,
 } from './dummyData';
+import { femaleAvatars } from '../../constants/constants';
 
-const ProfileSettingScreen = ({ navigation }: any) => {
-  const SUPPORT_EMAIL = 'support@voicetamil.com';
+interface Props {
+  navigation: any;
+  route: any;
+}
+
+const ProfileSettingScreen = ({ navigation, route }: Props) => {
+  const SUPPORT_EMAIL = 'tamizhkuralhelp@gmail.com';
+  const gender = route?.params?.gender || 'male';
 
   // Replace with your Play Store package name
   const PLAY_STORE_URL =
     'https://play.google.com/store/apps/details?id=com.cozyds.voicetamil';
-  const gender = 'male';
 
   const handleLogout = () => {
     Alert.alert(
@@ -81,7 +87,7 @@ const ProfileSettingScreen = ({ navigation }: any) => {
           onPress: () => {
             const user = auth().currentUser;
 
-            const supportEmail = 'support@voicetamil.com';
+            const supportEmail = 'tamizhkuralhelp@gmail.com';
 
             const subject = encodeURIComponent('Delete Account Request');
 
@@ -266,31 +272,39 @@ ${PLAY_STORE_URL}`,
             <Text style={styles.title}>Profile</Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.wallet}
-            onPress={() => navigation.navigate('Wallet')}
-          >
-            <MaterialCommunityIcons
-              name="wallet-outline"
-              size={18}
-              color={Colors.secondary}
-            />
-
-            <Text style={styles.walletText}>₹{profile.balance.toFixed(2)}</Text>
-
-            <View style={styles.plus}>
+          {gender === 'male' && (
+            <TouchableOpacity
+              style={styles.wallet}
+              onPress={() => navigation.navigate('Wallet')}
+            >
               <MaterialCommunityIcons
-                name="plus"
-                size={15}
-                color={Colors.black}
+                name="wallet-outline"
+                size={18}
+                color={Colors.secondary}
               />
-            </View>
-          </TouchableOpacity>
+
+              <Text style={styles.walletText}>
+                ₹{profile.balance.toFixed(2)}
+              </Text>
+
+              <View style={styles.plus}>
+                <MaterialCommunityIcons
+                  name="plus"
+                  size={15}
+                  color={Colors.black}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.profileCard}>
           <Image
-            source={require('../../assets/man.png')}
+            source={
+              gender === 'male'
+                ? require('../../assets/man.png')
+                : femaleAvatars.at(0)?.image
+            }
             style={styles.avatar}
           />
 
@@ -306,18 +320,24 @@ ${PLAY_STORE_URL}`,
             <TouchableOpacity
               activeOpacity={0.8}
               style={styles.outlineButton}
-              onPress={() => navigation.navigate('EditProfile')}
+              onPress={() =>
+                navigation.navigate('EditProfile', {
+                  gender,
+                })
+              }
             >
               <Text style={styles.outlineText}>Edit Profile</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.primaryButton}
-              onPress={() => navigation.navigate('AddBalance')}
-            >
-              <Text style={styles.primaryText}>Add Balance</Text>
-            </TouchableOpacity>
+            {gender === 'male' && (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.primaryButton}
+                onPress={() => navigation.navigate('AddBalance')}
+              >
+                <Text style={styles.primaryText}>Add Balance</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 

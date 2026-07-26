@@ -35,7 +35,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <>
             <Header
               walletPress={() => navigation.navigate('Wallet')}
-              userProfilePress={() => navigation.navigate('ProfileSetting')}
+              userProfilePress={() =>
+                navigation.navigate('ProfileSetting', {
+                  gender: 'male',
+                })
+              }
             />
 
             <Banner />

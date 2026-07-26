@@ -65,7 +65,7 @@ const FAQScreen = () => {
             our support team.
           </Text>
 
-          <Text style={styles.email}>support@voicetamil.com</Text>
+          <Text style={styles.email}>tamizhkuralhelp@gmail.com</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

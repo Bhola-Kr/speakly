@@ -71,7 +71,7 @@ const STATUS = {
 };
 
 const TransactionScreen = ({ navigation }: any) => {
-  const SUPPORT_EMAIL = 'support@voicetamil.com';
+  const SUPPORT_EMAIL = 'tamizhkuralhelp@gmail.com';
   const copyTxn = (id: string) => {
     Clipboard.setString(id);
     Alert.alert('Copied', 'Transaction ID copied.');

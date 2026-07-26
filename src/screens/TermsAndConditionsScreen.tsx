@@ -95,7 +95,7 @@ const TermsAndConditionsScreen = () => {
           These Terms shall be governed by the laws of India.
         </Section>
 
-        <Section title="14. Contact Us">support@voicetamil.com</Section>
+        <Section title="14. Contact Us">tamizhkuralhelp@gmail.com</Section>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>

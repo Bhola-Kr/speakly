@@ -33,7 +33,7 @@ const Stack = createNativeStackNavigator();
 function RootStack() {
   return (
     <Stack.Navigator
-      initialRouteName="AudioVerification"
+      initialRouteName="Splash"
       screenOptions={{
         headerShown: false,
       }}

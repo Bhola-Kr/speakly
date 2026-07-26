@@ -59,7 +59,11 @@ const historyData: HistoryItem[] = [
   },
 ];
 
-const FemaleHistoryScreen = () => {
+interface Props {
+  navigation: any;
+}
+
+const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
   const groupedData = useMemo(() => {
@@ -153,7 +157,15 @@ const FemaleHistoryScreen = () => {
       <Modal transparent visible={menuVisible} animationType="fade">
         <Pressable style={styles.overlay} onPress={() => setMenuVisible(false)}>
           <View style={styles.popup}>
-            <TouchableOpacity style={styles.popupItem}>
+            <TouchableOpacity
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('EditProfile', {
+                  gender: 'female',
+                });
+              }}
+              style={styles.popupItem}
+            >
               <Ionicons name="person-outline" size={20} color={Colors.text} />
 
               <Text style={styles.popupText}>My Profile</Text>

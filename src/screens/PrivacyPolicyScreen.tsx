@@ -85,7 +85,7 @@ const PrivacyPolicyScreen = () => {
 
         <Section title="11. Contact Us">
           Email:{'\n'}
-          support@voicetamil.com
+          tamizhkuralhelp@gmail.com
         </Section>
 
         <View style={styles.footer}>

@@ -62,7 +62,7 @@ export const faqs = [
     id: 10,
     question: 'How can I contact customer support?',
     answer:
-      'You can contact us anytime by emailing support@voicetamil.com from the Contact Us section in the app.',
+      'You can contact us anytime by emailing tamizhkuralhelp@gmail.com from the Contact Us section in the app.',
   },
 ];
 
