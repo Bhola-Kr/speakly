@@ -11,7 +11,29 @@ interface Props {
   callNow: () => void;
 }
 
+const statusConfig = {
+  online: {
+    text: 'Online',
+    color: '#18C964',
+    background: '#ECFDF3',
+  },
+  busy: {
+    text: 'Busy',
+    color: '#F59E0B',
+    background: '#FFF7E6',
+  },
+  offline: {
+    text: 'Offline',
+    color: '#9CA3AF',
+    background: '#F3F4F6',
+  },
+};
+
 const UserCard = ({ item, callNow }: Props) => {
+  const currentStatus =
+    statusConfig[item.status as keyof typeof statusConfig] ||
+    statusConfig.offline;
+
   return (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -24,7 +46,14 @@ const UserCard = ({ item, callNow }: Props) => {
           />
 
           <View style={styles.onlineDotOuter}>
-            <View style={styles.onlineDot} />
+            <View
+              style={[
+                styles.onlineDot,
+                {
+                  backgroundColor: currentStatus.color,
+                },
+              ]}
+            />
           </View>
         </View>
 
@@ -41,16 +70,34 @@ const UserCard = ({ item, callNow }: Props) => {
             📍 {item.city}, {item.state}
           </Text>
 
-          <View style={styles.chipRow}>
-            <View style={styles.ratingChip}>
-              <MaterialCommunityIcons name="star" size={12} color="#F4B400" />
+          <View style={{ alignItems: 'center', alignSelf: 'flex-start' }}>
+            <View
+              style={[
+                styles.onlineChip,
+                {
+                  backgroundColor: currentStatus.background,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.greenDot,
+                  {
+                    backgroundColor: currentStatus.color,
+                  },
+                ]}
+              />
 
-              <Text style={styles.ratingText}>{item.rating}</Text>
-            </View>
-
-            <View style={styles.onlineChip}>
-              <View style={styles.greenDot} />
-              <Text style={styles.onlineText}>Online</Text>
+              <Text
+                style={[
+                  styles.onlineText,
+                  {
+                    color: currentStatus.color,
+                  },
+                ]}
+              >
+                {currentStatus.text}
+              </Text>
             </View>
           </View>
         </View>

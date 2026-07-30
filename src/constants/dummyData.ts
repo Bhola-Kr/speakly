@@ -20,7 +20,7 @@ export const experts = [
     category: 'Relationship',
     price: 32,
     rating: 4.9,
-    online: true,
+    status: 'online',
   },
   {
     id: '2',
@@ -34,7 +34,7 @@ export const experts = [
     category: 'Friendship',
     price: 16,
     rating: 4.8,
-    online: true,
+    status: 'busy',
   },
   {
     id: '3',
@@ -48,7 +48,7 @@ export const experts = [
     category: 'Star',
     price: 18,
     rating: 4.9,
-    online: true,
+    status: 'online',
   },
   {
     id: '4',
@@ -62,7 +62,7 @@ export const experts = [
     category: 'Marriage',
     price: 24,
     rating: 4.7,
-    online: true,
+    status: 'offline',
   },
   {
     id: '5',
@@ -76,7 +76,7 @@ export const experts = [
     category: 'Confidence',
     price: 20,
     rating: 4.9,
-    online: true,
+    status: 'online',
   },
   {
     id: '6',
@@ -90,7 +90,7 @@ export const experts = [
     category: 'Relationship',
     price: 28,
     rating: 4.8,
-    online: true,
+    status: 'busy',
   },
   {
     id: '7',
@@ -104,7 +104,7 @@ export const experts = [
     category: 'Friendship',
     price: 40,
     rating: 5.0,
-    online: true,
+    status: 'online',
   },
   {
     id: '8',
@@ -118,7 +118,7 @@ export const experts = [
     category: 'Confidence',
     price: 18,
     rating: 4.8,
-    online: true,
+    status: 'offline',
   },
   {
     id: '9',
@@ -132,7 +132,7 @@ export const experts = [
     category: 'Star',
     price: 16,
     rating: 4.7,
-    online: true,
+    status: 'online',
   },
   {
     id: '10',
@@ -146,7 +146,7 @@ export const experts = [
     category: 'Marriage',
     price: 22,
     rating: 4.9,
-    online: true,
+    status: 'busy',
   },
   {
     id: '11',
@@ -160,7 +160,7 @@ export const experts = [
     category: 'Relationship',
     price: 36,
     rating: 4.8,
-    online: true,
+    status: 'online',
   },
 ];
 

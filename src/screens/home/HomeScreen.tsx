@@ -73,12 +73,11 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '500',
     color: Colors.text,
     marginHorizontal: 20,
-    marginTop: 28,
-    marginBottom: 18,
+    marginVertical: 12,
   },
 
   card: {
