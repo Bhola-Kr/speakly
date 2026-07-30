@@ -11,27 +11,63 @@ import {
 
 import auth from '@react-native-firebase/auth';
 import Colors from '../constants/colors';
+import authData from '../firebase/authData';
 
 const SplashScreen = ({ navigation }: any) => {
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      const user = auth().currentUser;
-
-      if (user) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Main' }], // Home Screen
-        });
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    initializeApp();
   }, []);
+
+  const initializeApp = async () => {
+    try {
+      // Show splash for 1 second
+      await new Promise((resolve: any) => setTimeout(resolve, 1000));
+
+      const currentUser = auth().currentUser;
+
+      // User not logged in
+      if (!currentUser) {
+        navigateTo('Login');
+        return;
+      }
+
+      const userInfo = await authData.getUser(currentUser.uid);
+
+      // User document not found
+      if (!userInfo) {
+        navigateTo('Login');
+        return;
+      }
+
+      const gender = userInfo?.profile?.gender;
+
+      switch (gender) {
+        case 'male':
+          navigateTo('Main');
+          break;
+
+        case 'female':
+          navigateTo('FemaleBottomTabs');
+          break;
+
+        default:
+          // Logged in but onboarding incomplete
+          navigateTo('Gender');
+      }
+    } catch (error: any) {
+      console.error('SplashScreen:', error);
+
+      // Safe fallback
+      navigateTo('Login');
+    }
+  };
+
+  const navigateTo = (screen: string) => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: screen }],
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container}>

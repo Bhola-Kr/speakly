@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { use, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -13,8 +13,11 @@ import {
 
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useIsFocused } from '@react-navigation/native';
 
 import Colors from '../constants/colors';
+import { useUser } from '../hooks/UserContext';
+import { getUserAvatar } from '../constants/constants';
 const { width } = Dimensions.get('window');
 
 const BANNER_WIDTH = width - 40;
@@ -62,8 +65,22 @@ interface Props {
 
 const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [page, setPage] = useState(0);
-
+  const isFocused = useIsFocused();
+  const { user, updateProfile } = useUser();
   const bannerRef = useRef<FlatList>(null);
+
+  React.useEffect(() => {
+    updateProfile({ status: 'Offline' });
+  }, [isFocused]);
+
+  const goOnLine = async () => {
+    try {
+      await updateProfile({ status: 'Online' });
+      navigation.navigate('OnlineRoom');
+    } catch (e) {
+      console.log('goOnLine -> e', e);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,7 +94,9 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           <View>
             <Text style={styles.greeting}>Good To See You! 👋</Text>
 
-            <Text style={styles.userName}>Priya</Text>
+            <Text numberOfLines={1} style={styles.userName}>
+              {user?.profile?.name || 'N/A'}
+            </Text>
 
             <Text style={styles.subtitle}>Ready to meet new people today?</Text>
           </View>
@@ -98,10 +117,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
                 })
               }
             >
-              <Image
-                source={require('../assets/avatars/avatar1.png')}
-                style={styles.avatar}
-              />
+              <Image source={getUserAvatar(user)} style={styles.avatar} />
             </TouchableOpacity>
           </View>
         </View>
@@ -154,12 +170,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* GO ONLINE */}
 
-        <TouchableOpacity
-          onPress={() => {
-            navigation.navigate('OnlineRoom');
-          }}
-          activeOpacity={0.9}
-        >
+        <TouchableOpacity onPress={goOnLine} activeOpacity={0.9}>
           <LinearGradient
             colors={Colors.buttonGradient}
             style={styles.onlineButton}

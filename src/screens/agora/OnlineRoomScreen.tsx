@@ -11,12 +11,14 @@ import {
   StyleSheet,
 } from 'react-native';
 
+import { useIsFocused } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
 import IncomingCallModal from './IncomingCallModal';
 import { femaleAvatars } from '../../constants/constants';
+import { useUser } from '../../hooks/UserContext';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
@@ -25,6 +27,8 @@ type Props = {
 };
 
 const OnlineRoomScreen = ({ navigation }: Props) => {
+  const { updateProfile } = useUser();
+  const isFocused = useIsFocused();
   const pulse = useRef(new Animated.Value(0)).current;
 
   const [timer, setTimer] = useState('00:00:00');
@@ -32,6 +36,10 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   const [dots, setDots] = useState('.');
 
   const seconds = useRef(0);
+
+  React.useEffect(() => {
+    updateProfile({ status: 'Online' });
+  }, [isFocused]);
 
   useEffect(() => {
     Animated.loop(
@@ -110,6 +118,15 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     setShowIncoming(false);
   };
 
+  const goOffline = async () => {
+    try {
+      await updateProfile({ status: 'Offline' });
+      navigation.goBack();
+    } catch (e) {
+      console.log('goOnLine -> e', e);
+    }
+  };
+
   return (
     <>
       <SafeAreaView style={styles.container}>
@@ -172,7 +189,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
         <View style={styles.bottom}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={goOffline}
             activeOpacity={0.9}
             style={styles.offlineButton}
           >

@@ -27,6 +27,7 @@ import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
 import FAQScreen from './screens/FAQScreen';
 import SplashScreen from './screens/SplashScreen';
 import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
+import { UserProvider } from './hooks/UserContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -109,9 +110,14 @@ function RootStack() {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
-      <RootStack />
-    </NavigationContainer>
+    <UserProvider>
+      <NavigationContainer>
+        <StatusBar
+          backgroundColor={Colors.background}
+          barStyle="dark-content"
+        />
+        <RootStack />
+      </NavigationContainer>
+    </UserProvider>
   );
 }

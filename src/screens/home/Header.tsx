@@ -6,6 +6,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../../constants/colors';
+import { useUser } from '../../hooks/UserContext';
+import { femaleAvatars, getUserAvatar } from '../../constants/constants';
 
 interface Props {
   userProfilePress: () => void;
@@ -13,6 +15,7 @@ interface Props {
 }
 
 const Header = ({ userProfilePress, walletPress }: Props) => {
+  const { user } = useUser();
   return (
     <View
       style={{
@@ -90,9 +93,7 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
 
         <TouchableOpacity onPress={userProfilePress}>
           <Image
-            source={{
-              uri: 'https://i.pravatar.cc/300?img=12',
-            }}
+            source={getUserAvatar(user)}
             style={{
               width: 44,
               height: 44,

@@ -1,35 +1,72 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
+  Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   SafeAreaView,
   ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  Image,
   StyleSheet,
-  Alert,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
+import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
 import GradientButton from '../../components/GradientButton';
-import { femaleAvatars } from '../../constants/constants';
-import { profile } from './dummyData';
+import { getUserAvatar } from '../../constants/constants';
+import { useUser } from '../../hooks/UserContext';
 
-export const EditProfileScreen = ({ navigation, route }: any) => {
-  const gender = route?.params?.gender || 'male';
-  const [avatarId, setAvatarId] = useState(1);
+const ITEM_HEIGHT = 40;
 
-  const [nickname, setNickname] = useState(profile.englishName);
+export const EditProfileScreen = ({ navigation }: any) => {
+  const { user, updateProfile } = useUser();
 
-  const [day, setDay] = useState('18');
+  const profile = user?.profile;
 
-  const [month, setMonth] = useState('07');
+  const gender = profile?.gender || 'male';
 
-  const [year, setYear] = useState('1998');
+  const years = useMemo(
+    () => Array.from({ length: 77 }, (_, i) => 2026 - i),
+    [],
+  );
+
+  const scrollRef = useRef<ScrollView>(null);
 
   const [loading, setLoading] = useState(false);
+
+  const [nickname, setNickname] = useState(profile?.name || '');
+
+  const [birthYear, setBirthYear] = useState(
+    Number(profile?.birthYear) || 2000,
+  );
+
+  useEffect(() => {
+    const index = years.indexOf(birthYear);
+
+    if (index >= 0) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          y: index * ITEM_HEIGHT,
+          animated: false,
+        });
+      }, 150);
+    }
+  }, []);
+
+  const onScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+
+    const index = Math.round(offsetY / ITEM_HEIGHT);
+
+    if (years[index]) {
+      setBirthYear(years[index]);
+    }
+  };
 
   const validate = () => {
     if (!nickname.trim()) {
@@ -45,27 +82,11 @@ export const EditProfileScreen = ({ navigation, route }: any) => {
       return false;
     }
 
-    if (!day || !month || !year) {
-      Alert.alert('Validation', 'Please enter your birthday.');
-      return false;
-    }
+    const currentYear = new Date().getFullYear();
 
-    const dd = Number(day);
-    const mm = Number(month);
-    const yyyy = Number(year);
+    if (birthYear < 1950 || birthYear > currentYear) {
+      Alert.alert('Validation', 'Please select a valid birth year.');
 
-    if (dd < 1 || dd > 31) {
-      Alert.alert('Validation', 'Invalid day.');
-      return false;
-    }
-
-    if (mm < 1 || mm > 12) {
-      Alert.alert('Validation', 'Invalid month.');
-      return false;
-    }
-
-    if (yyyy < 1950 || yyyy > new Date().getFullYear()) {
-      Alert.alert('Validation', 'Invalid year.');
       return false;
     }
 
@@ -80,21 +101,20 @@ export const EditProfileScreen = ({ navigation, route }: any) => {
     try {
       setLoading(true);
 
-      /**
-       * API Call Here
-       */
+      await updateProfile({
+        name: nickname.trim(),
+        birthYear,
+      });
 
-      setTimeout(() => {
-        setLoading(false);
-
-        Alert.alert('Success', 'Profile updated successfully.', [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]);
-      }, 1000);
-    } catch (e) {
+      Alert.alert('Success', 'Profile updated successfully.', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Something went wrong.');
+    } finally {
       setLoading(false);
     }
   };
@@ -102,9 +122,9 @@ export const EditProfileScreen = ({ navigation, route }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
       >
         <TouchableOpacity
           activeOpacity={0.8}
@@ -113,19 +133,11 @@ export const EditProfileScreen = ({ navigation, route }: any) => {
           onPress={() =>
             navigation.navigate('Avatar', {
               isEditMode: true,
-              selectedAvatar: avatarId,
-              onSelect: (id: number) => setAvatarId(id),
+              selectedAvatar: profile?.avatarId,
             })
           }
         >
-          <Image
-            source={
-              gender === 'male'
-                ? require('../../assets/man.png')
-                : femaleAvatars.at(0)?.image
-            }
-            style={styles.avatar}
-          />
+          <Image source={getUserAvatar(user)} style={styles.avatar} />
 
           {gender === 'female' && (
             <View style={styles.cameraView}>
@@ -153,47 +165,49 @@ export const EditProfileScreen = ({ navigation, route }: any) => {
           maxLength={20}
         />
 
-        <Text style={styles.label}>Birthday</Text>
+        <Text style={styles.label}>Birth Year</Text>
 
-        <View style={styles.birthRow}>
-          <TextInput
-            value={day}
-            onChangeText={setDay}
-            style={styles.birthInput}
-            keyboardType="number-pad"
-            maxLength={2}
-            placeholder="DD"
-            placeholderTextColor={Colors.placeholder}
-          />
-
-          <TextInput
-            value={month}
-            onChangeText={setMonth}
-            style={styles.birthInput}
-            keyboardType="number-pad"
-            maxLength={2}
-            placeholder="MM"
-            placeholderTextColor={Colors.placeholder}
-          />
-
-          <TextInput
-            value={year}
-            onChangeText={setYear}
-            style={[styles.birthInput, { flex: 1.5 }]}
-            keyboardType="number-pad"
-            maxLength={4}
-            placeholder="YYYY"
-            placeholderTextColor={Colors.placeholder}
-          />
-        </View>
-
-        <View style={{ height: 40 }} />
+        <LinearGradient colors={Colors.gradient} style={styles.gradientBorder}>
+          <View style={styles.pickerContainer}>
+            <ScrollView
+              ref={scrollRef}
+              showsVerticalScrollIndicator={false}
+              snapToInterval={ITEM_HEIGHT}
+              decelerationRate="fast"
+              onMomentumScrollEnd={onScrollEnd}
+              contentContainerStyle={{
+                paddingVertical: ITEM_HEIGHT,
+              }}
+            >
+              {years.map(year => (
+                <TouchableOpacity
+                  key={year}
+                  activeOpacity={1}
+                  style={styles.item}
+                  onPress={() => setBirthYear(year)}
+                >
+                  <Text
+                    style={[
+                      styles.yearText,
+                      birthYear === year && styles.selectedYear,
+                    ]}
+                  >
+                    {year}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </LinearGradient>
+        <View style={{ height: 30 }} />
 
         <GradientButton
           title="Save Changes"
           loading={loading}
           onPress={onSave}
         />
+
+        <View style={{ height: 30 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -211,139 +225,97 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  header: {
-    height: 60,
-
-    flexDirection: 'row',
-
-    alignItems: 'center',
-
-    justifyContent: 'space-between',
-
-    marginBottom: 20,
-  },
-
-  title: {
-    fontSize: 26,
-
-    fontWeight: '700',
-
-    color: Colors.text,
-  },
-
   avatarContainer: {
     alignSelf: 'center',
-
     marginTop: 10,
-
     marginBottom: 10,
   },
 
   avatar: {
     width: 130,
-
     height: 130,
-
     borderRadius: 65,
-
     borderWidth: 3,
-
     borderColor: Colors.secondary,
   },
 
   cameraView: {
     position: 'absolute',
-
     right: 4,
-
     bottom: 4,
-
     width: 38,
-
     height: 38,
-
     borderRadius: 19,
-
     backgroundColor: Colors.secondary,
-
     justifyContent: 'center',
-
     alignItems: 'center',
-
     borderWidth: 2,
-
     borderColor: Colors.white,
   },
 
   changePhoto: {
     textAlign: 'center',
-
     color: Colors.secondary,
-
     fontSize: 15,
-
     fontWeight: '600',
-
     marginBottom: 30,
   },
 
   label: {
     fontSize: 16,
-
     fontWeight: '700',
-
     color: Colors.text,
-
-    marginBottom: 10,
-
-    marginTop: 5,
+    marginBottom: 12,
+    marginTop: 6,
   },
 
   input: {
     height: 56,
-
     backgroundColor: Colors.card,
-
     borderRadius: 16,
-
     paddingHorizontal: 18,
-
     color: Colors.text,
-
     fontSize: 16,
-
     borderWidth: 1,
-
     borderColor: Colors.border,
-
-    marginBottom: 22,
+    marginBottom: 24,
   },
 
-  birthRow: {
-    flexDirection: 'row',
+  gradientBorder: {
+    borderRadius: 20,
+    padding: 1.5,
 
-    justifyContent: 'space-between',
+    shadowColor: '#5B6CFF',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 4,
   },
 
-  birthInput: {
-    flex: 1,
+  pickerContainer: {
+    height: ITEM_HEIGHT * 3,
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
 
-    height: 56,
+  item: {
+    height: ITEM_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-    backgroundColor: Colors.card,
+  yearText: {
+    fontSize: 18,
+    color: '#BEBEBE',
+  },
 
-    borderRadius: 16,
-
-    borderWidth: 1,
-
-    borderColor: Colors.border,
-
-    textAlign: 'center',
-
+  selectedYear: {
+    fontSize: 20,
+    fontWeight: '700',
     color: Colors.text,
-
-    fontSize: 16,
-
-    marginRight: 10,
   },
 });

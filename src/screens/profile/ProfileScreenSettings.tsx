@@ -20,13 +20,13 @@ import styles from './styles';
 import Colors from '../../constants/colors';
 
 import {
-  profile,
   manAccountMenus,
   supportMenus,
   securityMenus,
   femaleAccountMenus,
 } from './dummyData';
-import { femaleAvatars } from '../../constants/constants';
+import { formatDate, getUserAvatar } from '../../constants/constants';
+import { useUser } from '../../hooks/UserContext';
 
 interface Props {
   navigation: any;
@@ -35,7 +35,10 @@ interface Props {
 
 const ProfileSettingScreen = ({ navigation, route }: Props) => {
   const SUPPORT_EMAIL = 'tamizhkuralhelp@gmail.com';
-  const gender = route?.params?.gender || 'male';
+
+  const { user } = useUser();
+  const profile = user?.profile;
+  const gender = profile?.gender || 'male';
 
   // Replace with your Play Store package name
   const PLAY_STORE_URL =
@@ -308,21 +311,12 @@ ${PLAY_STORE_URL}`,
         </View>
 
         <View style={styles.profileCard}>
-          <Image
-            source={
-              gender === 'male'
-                ? require('../../assets/man.png')
-                : femaleAvatars.at(0)?.image
-            }
-            style={styles.avatar}
-          />
+          <Image source={getUserAvatar(user)} style={styles.avatar} />
 
-          <Text style={styles.tamilName}>{profile.tamilName}</Text>
-
-          <Text style={styles.englishName}>{profile.englishName}</Text>
+          <Text style={styles.tamilName}>{profile?.name ?? 'N/A'}</Text>
 
           <Text style={styles.memberSince}>
-            Member since {profile.memberSince}
+            Member since: {formatDate(user?.createdAt)}
           </Text>
 
           <View style={styles.buttonRow}>
@@ -368,7 +362,7 @@ ${PLAY_STORE_URL}`,
 
           <Text style={styles.footerTitle}>Secure & Private</Text>
 
-          <Text style={styles.footerVersion}>Version {profile.version}</Text>
+          <Text style={styles.footerVersion}>Version {'1.0.0'}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

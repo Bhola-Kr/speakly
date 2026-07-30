@@ -88,3 +88,29 @@ export const femaleAvatars: Avatar[] = [
   { id: 19, image: require('../assets/avatars/avatar19.png') },
   { id: 20, image: require('../assets/avatars/avatar20.png') },
 ];
+
+export const getUserAvatar = (user: any) => {
+  try {
+    if (user?.profile?.gender === 'female') {
+      const avatar = femaleAvatars.find(
+        item => item.id === Number(user?.profile?.avatarId),
+      );
+
+      return avatar?.image ?? femaleAvatars[0].image;
+    }
+
+    return require('../assets/man.png');
+  } catch {
+    return require('../assets/man.png');
+  }
+};
+
+export const formatDate = (timestamp: number | string) => {
+  return new Date(Number(timestamp)).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+// 29 July 2026

@@ -15,6 +15,7 @@ import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import { Avatar, femaleAvatars } from '../constants/constants';
 import authData from '../firebase/authData';
+import { useUser } from '../hooks/UserContext';
 
 interface Props {
   navigation: any;
@@ -23,7 +24,8 @@ interface Props {
 
 const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
   const isEditMode = route?.params?.isEditMode;
-  const selectedAvatarId = route?.params?.selectedAvatar;
+  const { user, updateProfile } = useUser();
+  const selectedAvatarId = user?.profile?.avatarId || 1;
 
   const [selectedAvatar, setSelectedAvatar] = useState<number | null>(
     selectedAvatarId,
@@ -101,10 +103,9 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
           setLoading(true);
 
           try {
-            await authData.updateProfile({
+            await updateProfile({
               avatarId: selectedAvatar,
             });
-
             if (isEditMode) {
               navigation.goBack();
             } else {

@@ -19,6 +19,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
+import { useUser } from '../hooks/UserContext';
 
 interface Props {
   navigation: any;
@@ -27,6 +28,7 @@ interface Props {
 
 const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const phoneNumber = route.params.phone;
+  const { refreshUser } = useUser();
   const [confirmation, setConfirmation] = useState(route.params.confirmation);
 
   const [otp, setOtp] = useState('');
@@ -56,12 +58,44 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       setLoading(true);
 
-      const user = await authData.verifyOTP(confirmation, otp);
-      console.log('verifyOtp -> user', user);
+      const firebaseUser = await authData.verifyOTP(confirmation, otp);
 
-      navigation.replace('Gender', {
-        user,
-      });
+      const userInfo = await authData.getUser(firebaseUser.uid);
+      console.log('verifyOtp -> userInfo', userInfo);
+
+      // Brand new user
+      if (!userInfo) {
+        navigation.replace('Gender', {
+          user: firebaseUser,
+        });
+        return;
+      }
+
+      await refreshUser();
+
+      // Existing user but onboarding not completed
+      if (!userInfo?.profile?.gender) {
+        navigation.replace('Gender', {
+          user: firebaseUser,
+        });
+        return;
+      }
+
+      if (userInfo?.profile?.gender === 'male') {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else if (userInfo?.profile?.gender === 'female') {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'FemaleBottomTabs' }],
+        });
+      } else {
+        navigation.replace('Gender', {
+          user: firebaseUser,
+        });
+      }
     } catch (e: any) {
       let message = 'Something went wrong. Please try again.';
 

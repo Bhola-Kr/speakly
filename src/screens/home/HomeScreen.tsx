@@ -9,13 +9,21 @@ import UserCard from './UserCard';
 
 import Colors from '../../constants/colors';
 import { categories, experts } from '../../constants/dummyData';
+import { useUser } from '../../hooks/UserContext';
 
 interface Props {
   navigation: any;
 }
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
+  const { user, updateProfile } = useUser();
   const [selected, setSelected] = useState('All');
+
+  React.useEffect(() => {
+    if (user.profile.gender === 'male') {
+      updateProfile({ status: 'Online' });
+    }
+  }, []);
 
   const filtered =
     selected === 'All'
