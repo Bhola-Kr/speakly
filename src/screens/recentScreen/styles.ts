@@ -105,6 +105,19 @@ export default StyleSheet.create({
 
     fontSize: 13,
   },
+  receiveContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  receiveCoin: {
+    marginTop: 5,
+    width: 18,
+    height: 18,
+    resizeMode: 'none',
+    marginRight: 4,
+  },
 
   value: {
     marginTop: 4,

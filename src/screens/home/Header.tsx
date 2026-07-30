@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../../constants/colors';
@@ -49,10 +50,13 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
               alignItems: 'center',
             }}
           >
-            <MaterialCommunityIcons
-              name="wallet-outline"
-              size={20}
-              color={Colors.secondary}
+            <Image
+              source={require('../../assets/coin.png')}
+              style={{
+                width: 24,
+                height: 24,
+                resizeMode: 'contain',
+              }}
             />
 
             <Text
@@ -62,7 +66,7 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
                 marginHorizontal: 8,
               }}
             >
-              ₹0.00
+              0
             </Text>
 
             <TouchableOpacity

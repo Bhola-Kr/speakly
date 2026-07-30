@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-
+import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { femaleAvatars } from '../../constants/constants';
+
 import Colors from '../../constants/colors';
+import { femaleAvatars } from '../../constants/constants';
 
 interface Props {
   item: any;
@@ -14,34 +15,43 @@ const UserCard = ({ item, callNow }: Props) => {
   return (
     <View style={styles.card}>
       <View style={styles.row}>
-        <Image
-          source={femaleAvatars[item.avatarId].image || femaleAvatars[0].image}
-          style={styles.avatar}
-        />
+        <View style={styles.avatarWrapper}>
+          <Image
+            source={
+              femaleAvatars[item.avatarId]?.image || femaleAvatars[0].image
+            }
+            style={styles.avatar}
+          />
+
+          <View style={styles.onlineDotOuter}>
+            <View style={styles.onlineDot} />
+          </View>
+        </View>
 
         <View style={styles.info}>
-          <Text style={styles.name}>{item.tamilName}</Text>
-
-          <Text style={styles.rating}>
-            {item.englishName} • {item.age} yrs
+          <Text numberOfLines={1} style={styles.name}>
+            {item.tamilName}
           </Text>
 
-          <Text style={styles.sub}>
-            {item.city}, {item.state}
+          <Text numberOfLines={1} style={styles.subTitle}>
+            {item.englishName} • {item.age} yrs • {item.maritalStatus}
           </Text>
 
-          <View style={styles.ratingRow}>
-            <MaterialCommunityIcons
-              name="star"
-              size={18}
-              color={Colors.secondary}
-            />
-            <Text style={styles.rating}>{item.rating}</Text>
-          </View>
+          <Text numberOfLines={1} style={styles.location}>
+            📍 {item.city}, {item.state}
+          </Text>
 
-          <View style={styles.onlineRow}>
-            <View style={styles.dot} />
-            <Text style={styles.online}>Online</Text>
+          <View style={styles.chipRow}>
+            <View style={styles.ratingChip}>
+              <MaterialCommunityIcons name="star" size={12} color="#F4B400" />
+
+              <Text style={styles.ratingText}>{item.rating}</Text>
+            </View>
+
+            <View style={styles.onlineChip}>
+              <View style={styles.greenDot} />
+              <Text style={styles.onlineText}>Online</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -49,78 +59,62 @@ const UserCard = ({ item, callNow }: Props) => {
       <View style={styles.divider} />
 
       <View style={styles.footer}>
-        <View>
-          <Text style={styles.price}>₹{item.price}</Text>
+        <LinearGradient
+          colors={['#FFF8E4', '#FFE39A']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.coinCard}
+        >
+          <Image
+            source={require('../../assets/coin.png')}
+            style={styles.coin}
+          />
 
-          <Text style={styles.minute}>per minute</Text>
-        </View>
+          <View style={{ marginLeft: 6 }}>
+            <Text style={styles.price}>{item.price}</Text>
+
+            <Text style={styles.perMinute}>Coins / min</Text>
+          </View>
+        </LinearGradient>
 
         <TouchableOpacity
-          onPress={callNow}
           activeOpacity={0.9}
-          style={{
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: Colors.primary,
-            paddingHorizontal: 22,
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexDirection: 'row',
-          }}
+          onPress={callNow}
+          style={styles.callButton}
         >
           <MaterialCommunityIcons
             name="phone"
-            size={18}
+            size={16}
             color={Colors.secondary}
           />
 
-          <Text
-            style={{
-              color: Colors.secondary,
-              fontWeight: '700',
-              marginLeft: 8,
-            }}
-          >
-            Call Now
-          </Text>
+          <Text style={styles.callText}>Call</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
+export default UserCard;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-
-  heading: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.text,
-    marginHorizontal: 20,
-    marginTop: 28,
-    marginBottom: 18,
-  },
-
   card: {
     backgroundColor: Colors.white,
-    marginHorizontal: 18,
-    marginBottom: 18,
-    borderRadius: 22,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 18,
 
-    padding: 16,
+    padding: 12,
 
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 3,
     },
 
-    elevation: 5,
+    elevation: 3,
   },
 
   row: {
@@ -128,88 +122,189 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  spaceBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  avatarWrapper: {
+    position: 'relative',
   },
 
   avatar: {
-    width: 82,
-    height: 82,
-    borderRadius: 20,
+    width: 68,
+    height: 68,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: Colors.secondary,
+  },
+
+  onlineDotOuter: {
+    position: 'absolute',
+    right: 2,
+    bottom: 2,
+
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+
+    backgroundColor: Colors.white,
+
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  onlineDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#18C964',
   },
 
   info: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 12,
   },
 
   name: {
-    fontSize: 19,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.text,
   },
 
-  sub: {
-    marginTop: 4,
+  subTitle: {
+    marginTop: 2,
+    fontSize: 12,
     color: Colors.subText,
-    fontSize: 14,
   },
 
-  onlineRow: {
-    marginTop: 10,
+  location: {
+    marginTop: 3,
+    fontSize: 12,
+    color: Colors.subText,
+  },
+
+  chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 8,
   },
 
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#16C784',
+  ratingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    backgroundColor: '#FFF8E0',
+
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+
+    borderRadius: 12,
   },
 
-  online: {
+  ratingText: {
+    marginLeft: 4,
+    fontWeight: '700',
+    fontSize: 12,
+    color: '#A97400',
+  },
+
+  onlineChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    backgroundColor: '#ECFDF3',
+
     marginLeft: 6,
-    color: '#16C784',
-    fontWeight: '600',
+
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+
+    borderRadius: 12,
+  },
+
+  greenDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+
+    backgroundColor: '#18C964',
+  },
+
+  onlineText: {
+    marginLeft: 4,
+    fontWeight: '700',
+    fontSize: 11,
+    color: '#18C964',
   },
 
   divider: {
     height: 1,
     backgroundColor: Colors.border,
-    marginVertical: 16,
+    marginVertical: 12,
   },
-
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
 
+  coinCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+
+    borderRadius: 14,
+
+    borderWidth: 1,
+    borderColor: '#F3D36A',
+
+    minWidth: 105,
+  },
+
+  coin: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
+  },
+
   price: {
-    fontSize: 24,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#B8860B',
+    lineHeight: 22,
+  },
+
+  perMinute: {
+    marginTop: -1,
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#8B6A00',
+  },
+
+  callButton: {
+    height: 40,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+
+    backgroundColor: Colors.primary,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
+    elevation: 3,
+  },
+
+  callText: {
+    marginLeft: 6,
+    fontSize: 13,
     fontWeight: '700',
     color: Colors.secondary,
   },
-
-  minute: {
-    fontSize: 14,
-    color: Colors.subText,
-  },
-
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-
-  rating: {
-    marginLeft: 6,
-    color: Colors.text,
-    fontWeight: '600',
-  },
 });
-
-export default UserCard;

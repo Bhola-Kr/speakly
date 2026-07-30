@@ -57,7 +57,13 @@ const RecentCallCard = ({ item }: Props) => {
         <View>
           <Text style={styles.label}>Amount</Text>
 
-          <Text style={styles.value}>₹{item.amount}</Text>
+          <View style={styles.receiveContainer}>
+            <Image
+              source={require('../../assets/coin.png')}
+              style={styles.receiveCoin}
+            />
+            <Text style={styles.value}>{item.amount}</Text>
+          </View>
         </View>
       </View>
 

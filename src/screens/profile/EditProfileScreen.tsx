@@ -31,10 +31,6 @@ export const EditProfileScreen = ({ navigation, route }: any) => {
 
   const [loading, setLoading] = useState(false);
 
-  const avatar = useMemo(() => {
-    return femaleAvatars.find(item => item.id === avatarId) || femaleAvatars[0];
-  }, [avatarId]);
-
   const validate = () => {
     if (!nickname.trim()) {
       Alert.alert('Validation', 'Please enter nickname.');

@@ -9,67 +9,59 @@ const Banner = () => {
     <LinearGradient
       colors={['#202020', '#121212']}
       style={{
-        marginHorizontal: 20,
-        marginTop: 24,
-        borderRadius: 26,
-        padding: 22,
+        marginHorizontal: 16,
+        marginTop: 16,
+        borderRadius: 20,
+        padding: 16,
       }}
     >
       <View
         style={{
           flexDirection: 'row',
+          alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, paddingRight: 10 }}>
           <Text
             style={{
               color: Colors.white,
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: '800',
             }}
           >
-            Talk to
+            Talk to{' '}
+            <Text style={{ color: Colors.secondary }}>Verified Users</Text>
           </Text>
 
           <Text
             style={{
-              color: Colors.secondary,
-              fontSize: 24,
-              fontWeight: '800',
-              marginTop: 4,
+              color: '#B8B8B8',
+              fontSize: 13,
+              marginTop: 6,
+              lineHeight: 18,
             }}
           >
-            Verified Users
-          </Text>
-
-          <Text
-            style={{
-              color: '#BBBBBB',
-              marginTop: 14,
-              lineHeight: 22,
-            }}
-          >
-            Start meaningful voice conversations with verified female users.
+            Connect instantly with verified female users through private voice
+            calls.
           </Text>
 
           <TouchableOpacity
             activeOpacity={0.9}
             style={{
-              marginTop: 22,
+              marginTop: 12,
               backgroundColor: Colors.secondary,
-              height: 48,
-              borderRadius: 24,
+              height: 38,
+              borderRadius: 19,
               alignSelf: 'flex-start',
-              paddingHorizontal: 22,
-              justifyContent: 'center',
+              paddingHorizontal: 16,
               flexDirection: 'row',
               alignItems: 'center',
             }}
           >
             <MaterialCommunityIcons
               name="phone"
-              size={18}
+              size={16}
               color={Colors.black}
             />
 
@@ -77,7 +69,8 @@ const Banner = () => {
               style={{
                 color: Colors.black,
                 fontWeight: '700',
-                marginLeft: 8,
+                fontSize: 13,
+                marginLeft: 6,
               }}
             >
               Random Call
@@ -87,7 +80,7 @@ const Banner = () => {
 
         <MaterialCommunityIcons
           name="account-voice"
-          size={95}
+          size={60}
           color="rgba(212,175,55,0.18)"
         />
       </View>

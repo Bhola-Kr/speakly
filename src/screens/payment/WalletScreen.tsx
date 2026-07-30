@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -17,38 +18,44 @@ import GradientButton from '../../components/GradientButton';
 const PACKS = [
   {
     id: 1,
-    amount: 25,
-    bonus: 0,
-    tag: '',
-  },
-  {
-    id: 2,
-    amount: 50,
-    bonus: 5,
-    tag: '',
-  },
-  {
-    id: 3,
     amount: 100,
     bonus: 10,
     tag: '',
   },
   {
+    id: 2,
+    amount: 200,
+    bonus: 25,
+    tag: '',
+  },
+  {
+    id: 3,
+    amount: 300,
+    bonus: 45,
+    tag: '',
+  },
+  {
     id: 4,
-    amount: 150,
-    bonus: 18,
+    amount: 500,
+    bonus: 80,
     tag: 'POPULAR',
   },
   {
     id: 5,
-    amount: 250,
-    bonus: 35,
+    amount: 1000,
+    bonus: 180,
     tag: '',
   },
   {
     id: 6,
-    amount: 500,
-    bonus: 80,
+    amount: 1500,
+    bonus: 320,
+    tag: '',
+  },
+  {
+    id: 7,
+    amount: 2000,
+    bonus: 500,
     tag: 'BEST',
   },
 ];
@@ -111,19 +118,18 @@ const WalletScreen = ({ navigation }: any) => {
           end={{ x: 1, y: 1 }}
           style={styles.balanceCard}
         >
-          <MaterialCommunityIcons
-            name="wallet"
-            size={38}
-            color={Colors.white}
+          <Image
+            source={require('../../assets/coin.png')}
+            style={styles.coinImage}
           />
 
-          <Text style={styles.balanceLabel}>Wallet Balance</Text>
-
-          <Text style={styles.balanceAmount}>₹0.00</Text>
-
-          <Text style={styles.balanceDescription}>
-            Recharge your wallet and enjoy uninterrupted voice conversations.
-          </Text>
+          <View style={styles.balanceContent}>
+            <Text style={styles.balanceLabel}>Your Coins</Text>
+            <Text style={styles.balanceAmount}>0</Text>
+            <Text style={styles.balanceDescription} numberOfLines={1}>
+              Recharge to continue voice calls
+            </Text>
+          </View>
         </LinearGradient>
 
         <View style={styles.section}>
@@ -168,9 +174,15 @@ const WalletScreen = ({ navigation }: any) => {
 
                   <Text style={styles.receiveLabel}>You'll Receive</Text>
 
-                  <Text style={styles.receive}>
-                    ₹{pack.amount + pack.bonus}
-                  </Text>
+                  <View style={styles.receiveContainer}>
+                    <Image
+                      source={require('../../assets/coin.png')}
+                      style={styles.receiveCoin}
+                    />
+                    <Text style={styles.receive}>
+                      {pack.amount + pack.bonus}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -183,7 +195,13 @@ const WalletScreen = ({ navigation }: any) => {
           <View>
             <Text style={styles.summaryTitle}>You'll Receive</Text>
 
-            <Text style={styles.summaryAmount}>₹{totalReceive}</Text>
+            <View style={styles.receiveContainer}>
+              <Image
+                source={require('../../assets/coin.png')}
+                style={styles.receiveCoin}
+              />
+              <Text style={styles.receive}>{totalReceive}</Text>
+            </View>
 
             <Text style={styles.summaryBonus}>
               Includes Bonus ₹{selectedPack.bonus}
@@ -240,34 +258,43 @@ const styles = StyleSheet.create({
   },
 
   balanceCard: {
-    marginHorizontal: 20,
-    borderRadius: 24,
-    padding: 24,
-    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 18,
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+
+  coinImage: {
+    width: 50,
+    height: 50,
+    resizeMode: 'contain',
+    marginRight: 14,
+  },
+
+  balanceContent: {
+    flex: 1,
   },
 
   balanceLabel: {
-    marginTop: 18,
+    fontSize: 13,
     color: Colors.white,
-    fontSize: 16,
     opacity: 0.9,
   },
 
   balanceAmount: {
-    marginTop: 6,
-    fontSize: 40,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '700',
     color: Colors.white,
+    marginVertical: 2,
   },
 
   balanceDescription: {
-    marginTop: 10,
-    fontSize: 14,
-    lineHeight: 22,
-    color: Colors.white,
-    opacity: 0.9,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
   },
-
   section: {
     marginTop: 28,
     paddingHorizontal: 20,
@@ -369,8 +396,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  receiveContainer: {
+    flexDirection: 'row',
+  },
+
+  receiveCoin: {
+    width: 24,
+    height: 24,
+    marginEnd: 4,
+    alignSelf: 'center',
+    resizeMode: 'contain',
+  },
+
   receive: {
-    marginTop: 6,
     fontSize: 22,
     fontWeight: '700',
     color: Colors.text,
@@ -420,11 +458,11 @@ const styles = StyleSheet.create({
   summaryBonus: {
     marginTop: 6,
     color: Colors.secondary,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 
   payAmount: {
-    fontSize: 34,
+    fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
   },

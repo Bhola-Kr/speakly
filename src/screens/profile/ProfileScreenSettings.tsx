@@ -277,14 +277,23 @@ ${PLAY_STORE_URL}`,
               style={styles.wallet}
               onPress={() => navigation.navigate('Wallet')}
             >
-              <MaterialCommunityIcons
-                name="wallet-outline"
-                size={18}
-                color={Colors.secondary}
+              <Image
+                source={require('../../assets/coin.png')}
+                style={{
+                  width: 24,
+                  height: 24,
+                  resizeMode: 'contain',
+                }}
               />
 
-              <Text style={styles.walletText}>
-                ₹{profile.balance.toFixed(2)}
+              <Text
+                style={{
+                  color: Colors.white,
+                  fontWeight: '700',
+                  marginHorizontal: 8,
+                }}
+              >
+                0
               </Text>
 
               <View style={styles.plus}>
