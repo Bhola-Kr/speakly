@@ -70,12 +70,12 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const bannerRef = useRef<FlatList>(null);
 
   React.useEffect(() => {
-    updateProfile({ status: 'Offline' });
+    updateProfile({ status: 'offline' });
   }, [isFocused]);
 
   const goOnLine = async () => {
     try {
-      await updateProfile({ status: 'Online' });
+      await updateProfile({ status: 'online' });
       navigation.navigate('OnlineRoom');
     } catch (e) {
       console.log('goOnLine -> e', e);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
+import database from '@react-native-firebase/database';
 import { SafeAreaView, FlatList, StatusBar, Text, View } from 'react-native';
 
 import Header from './Header';
@@ -8,7 +9,7 @@ import CategoryList from './CategoryList';
 import UserCard from './UserCard';
 
 import Colors from '../../constants/colors';
-import { categories, experts } from '../../constants/dummyData';
+import { categories } from '../../constants/dummyData';
 import { useUser } from '../../hooks/UserContext';
 
 interface Props {
@@ -18,17 +19,40 @@ interface Props {
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user, updateProfile } = useUser();
   const [selected, setSelected] = useState('All');
+  const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
 
   React.useEffect(() => {
-    if (user.profile.gender === 'male') {
-      updateProfile({ status: 'Online' });
+    if (user?.profile?.gender?.toLowerCase() === 'male') {
+      updateProfile({ status: 'online' });
     }
+
+    const ref = database()
+      .ref('users')
+      .orderByChild('profile/gender')
+      .equalTo('female');
+
+    ref.on('value', snapshot => {
+      console.log('Exists:', snapshot.exists());
+
+      const users: any[] = [];
+
+      snapshot.forEach(child => {
+        console.log(child.val());
+        users.push(child.val());
+      });
+
+      console.log('Female Users:', users);
+
+      setFemaleUsers(users);
+    });
+
+    return () => ref.off();
   }, []);
 
   const filtered =
     selected === 'All'
-      ? experts
-      : experts.filter(item => item.category === selected);
+      ? femaleUsers
+      : femaleUsers.filter(item => item.profile?.category === selected);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -37,7 +61,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <FlatList
         contentContainerStyle={{ paddingBottom: 120 }}
         data={filtered}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item?.uid}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
@@ -65,7 +89,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <UserCard
             item={item}
             callNow={() => {
-              navigation.navigate('OutgoingCall', { user: item });
+              navigation.navigate('OutgoingCall', { user: item?.profile });
             }}
           />
         )}

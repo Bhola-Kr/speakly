@@ -9,6 +9,9 @@ import {
   Animated,
   Easing,
   StyleSheet,
+  Alert,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 
 import { useIsFocused } from '@react-navigation/native';
@@ -19,6 +22,7 @@ import Colors from '../../constants/colors';
 import IncomingCallModal from './IncomingCallModal';
 import { femaleAvatars } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
+import RoomService from '../../firebase/RoomService';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
@@ -27,9 +31,10 @@ type Props = {
 };
 
 const OnlineRoomScreen = ({ navigation }: Props) => {
-  const { updateProfile } = useUser();
+  const { user, updateProfile } = useUser();
   const isFocused = useIsFocused();
   const pulse = useRef(new Animated.Value(0)).current;
+  const appState = useRef(AppState.currentState);
 
   const [timer, setTimer] = useState('00:00:00');
   const [showIncoming, setShowIncoming] = useState(false);
@@ -38,8 +43,40 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   const seconds = useRef(0);
 
   React.useEffect(() => {
-    updateProfile({ status: 'Online' });
+    updateProfile({ status: 'online' });
   }, [isFocused]);
+
+  React.useEffect(() => {
+    const unsubscribe = RoomService.listenIncomingCall(user.uid, room => {
+      if (!room) {
+        return;
+      }
+
+      switch (room.status) {
+        case 'ringing':
+          setShowIncoming(true);
+          break;
+
+        default:
+          break;
+      }
+    });
+
+    const subscription = AppState.addEventListener(
+      'change',
+      async (nextState: AppStateStatus) => {
+        if (nextState === 'active') {
+          await updateProfile({ status: 'online' });
+        }
+        appState.current = nextState;
+      },
+    );
+
+    return () => {
+      subscription.remove();
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     Animated.loop(
@@ -82,15 +119,9 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       });
     }, 500);
 
-    // Demo incoming call after 8 seconds
-    const incoming = setTimeout(() => {
-      setShowIncoming(true);
-    }, 8000);
-
     return () => {
       clearInterval(timerInterval);
       clearInterval(dotInterval);
-      clearTimeout(incoming);
     };
   }, []);
 
@@ -107,7 +138,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   const acceptCall = () => {
     setShowIncoming(false);
 
-    navigation.navigate('Call', {
+    navigation.replace('Call', {
       userName: 'Rahul',
       city: 'Chennai',
       avatar: AVATAR,
@@ -118,13 +149,40 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     setShowIncoming(false);
   };
 
-  const goOffline = async () => {
-    try {
-      await updateProfile({ status: 'Offline' });
-      navigation.goBack();
-    } catch (e) {
-      console.log('goOnLine -> e', e);
-    }
+  const goOffline = () => {
+    Alert.alert(
+      'Go Offline',
+      'Are you sure you want to go offline? You will not receive any calls from male users while you are offline.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Go Offline',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await updateProfile({
+                status: 'offline',
+              });
+
+              navigation.goBack();
+            } catch (e) {
+              console.log('goOffline ->', e);
+
+              Alert.alert(
+                'Error',
+                'Unable to update your status. Please try again.',
+              );
+            }
+          },
+        },
+      ],
+      {
+        cancelable: true,
+      },
+    );
   };
 
   return (

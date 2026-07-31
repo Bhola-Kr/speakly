@@ -4,7 +4,11 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
-import { femaleAvatars } from '../../constants/constants';
+import {
+  calculateAge,
+  femaleAvatars,
+  transliterateToTamil,
+} from '../../constants/constants';
 
 interface Props {
   item: any;
@@ -31,7 +35,7 @@ const statusConfig = {
 
 const UserCard = ({ item, callNow }: Props) => {
   const currentStatus =
-    statusConfig[item.status as keyof typeof statusConfig] ||
+    statusConfig[item?.profile?.status as keyof typeof statusConfig] ||
     statusConfig.offline;
 
   return (
@@ -40,7 +44,8 @@ const UserCard = ({ item, callNow }: Props) => {
         <View style={styles.avatarWrapper}>
           <Image
             source={
-              femaleAvatars[item.avatarId]?.image || femaleAvatars[0].image
+              femaleAvatars[item?.profile?.avatarId]?.image ||
+              femaleAvatars[0].image
             }
             style={styles.avatar}
           />
@@ -59,16 +64,17 @@ const UserCard = ({ item, callNow }: Props) => {
 
         <View style={styles.info}>
           <Text numberOfLines={1} style={styles.name}>
-            {item.tamilName}
+            {item?.profile?.name}
           </Text>
 
           <Text numberOfLines={1} style={styles.subTitle}>
-            {item.englishName} • {item.age} yrs • {item.maritalStatus}
+            {item?.profile?.name} • {calculateAge(item?.profile?.birthYear)} yrs
+            • {item?.profile?.maritalStatus}
           </Text>
 
-          <Text numberOfLines={1} style={styles.location}>
+          {/* <Text numberOfLines={1} style={styles.location}>
             📍 {item.city}, {item.state}
-          </Text>
+          </Text> */}
 
           <View style={{ alignItems: 'center', alignSelf: 'flex-start' }}>
             <View
@@ -118,7 +124,7 @@ const UserCard = ({ item, callNow }: Props) => {
           />
 
           <View style={{ marginLeft: 6 }}>
-            <Text style={styles.price}>{item.price}</Text>
+            <Text style={styles.price}>{item?.profile?.price}</Text>
 
             <Text style={styles.perMinute}>Coins / min</Text>
           </View>

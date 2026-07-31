@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Easing,
   Image,
@@ -9,11 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import database from '@react-native-firebase/database';
 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
 import strings from '../../../constants/strings';
+import RoomService from '../../../firebase/RoomService';
+import { calculateAge, femaleAvatars } from '../../../constants/constants';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
@@ -23,13 +27,58 @@ interface Props {
 }
 
 export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
-  const data = route.params;
-  console.log('data', data);
+  const data = route?.params?.user;
+  const femaleUid = data.uid;
 
   const ripple = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0)).current;
 
   const [dots, setDots] = useState('');
+
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      const snapshot = await database().ref(`rooms/${femaleUid}`).once('value');
+      const room = snapshot.val();
+      if (room?.status === 'ringing') {
+        await RoomService.rejectCall(femaleUid);
+      }
+    }, 30000);
+
+    const unsubscribe = RoomService.listenCallStatus(
+      femaleUid,
+
+      room => {
+        switch (room?.status) {
+          case 'accepted':
+            // joinAgora(room.currentCallId);
+            navigation.replace('Call', {
+              userName: 'Rahul',
+              city: 'Chennai',
+              avatar: AVATAR,
+            });
+
+            break;
+
+          case 'rejected':
+            clearTimeout(timeout);
+
+            Alert.alert('Call Rejected');
+
+            break;
+
+          case 'waiting':
+            clearTimeout(timeout);
+
+            break;
+
+          case 'ended':
+          // leaveAgora();
+        }
+      },
+    );
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     Animated.loop(
@@ -94,8 +143,8 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
         <Text style={styles.status}>Connecting{dots}</Text>
 
         <Text style={styles.statusSub}>{`Waiting for ${
-          data.user?.englishName ?? 'Test'
-        }to answer`}</Text>
+          data?.name ?? 'N/A'
+        } to answer`}</Text>
       </View>
 
       <View style={styles.body}>
@@ -119,19 +168,19 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <View style={styles.avatarBorder}>
             <Image
-              source={{
-                uri: AVATAR,
-              }}
+              source={
+                femaleAvatars.at(data.avatarId)?.image ?? femaleAvatars[0].image
+              }
               style={styles.avatar}
             />
           </View>
         </Animated.View>
 
-        <Text style={styles.name}>{`${data.user?.tamilName ?? 'Test'}`}</Text>
+        <Text style={styles.name}>{`${data?.name ?? 'N/A'}`}</Text>
 
-        <Text
-          style={styles.city}
-        >{`${data?.user?.city} • ${data?.user?.age} Years`}</Text>
+        <Text style={styles.city}>{`${data?.maritalStatus} • ${calculateAge(
+          data?.birthYear,
+        )} Years`}</Text>
 
         <View style={styles.waveContainer}>
           <Animated.View

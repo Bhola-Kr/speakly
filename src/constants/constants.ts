@@ -113,4 +113,32 @@ export const formatDate = (timestamp: number | string) => {
   });
 };
 
-// 29 July 2026
+export const transliterateToTamil = async (text: string) => {
+  const response = await fetch(
+    `https://inputtools.google.com/request?itc=ta-t-i0-und&text=${encodeURIComponent(
+      text,
+    )}`,
+  );
+
+  const result = await response.json();
+
+  if (result[0] === 'SUCCESS') {
+    return result[1][0][1][0];
+  }
+
+  return text;
+};
+
+export const calculateAge = (birthYear: number | string): string => {
+  if (!birthYear) return '';
+
+  const year = Number(birthYear);
+
+  if (isNaN(year)) return '';
+
+  const currentYear = new Date().getFullYear();
+
+  const age = currentYear - year;
+
+  return age >= 0 ? age.toString() : '';
+};

@@ -73,11 +73,19 @@ class AuthData {
         lastSeen: Date.now(),
 
         profile: {
+          uid: user?.uid,
+          phone: user?.phoneNumber,
+          avatarId: 1,
+          maritalStatus: 'Single',
+          category: 'Relationship',
+          price: 16,
+          rating: 4.9,
+          status: 'offline',
           name: '',
           image: '',
           gender: '',
           birthYear: '',
-          avatarNumber: '',
+          age: '',
         },
 
         verification: {

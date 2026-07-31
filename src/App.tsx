@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { StatusBar } from 'react-native';
+import { AppState, AppStateStatus, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './screens/LoginScreen';
@@ -27,7 +27,8 @@ import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
 import FAQScreen from './screens/FAQScreen';
 import SplashScreen from './screens/SplashScreen';
 import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
-import { UserProvider } from './hooks/UserContext';
+import { UserProvider, useUser } from './hooks/UserContext';
+import authData from './firebase/authData';
 
 const Stack = createNativeStackNavigator();
 
@@ -109,6 +110,25 @@ function RootStack() {
 }
 
 export default function App() {
+  const appState = React.useRef(AppState.currentState);
+
+  React.useEffect(() => {
+    const subscription = AppState.addEventListener(
+      'change',
+      async (nextState: AppStateStatus) => {
+        if (!authData.getCurrentUser()) {
+          return;
+        }
+        if (nextState === 'background' || nextState === 'inactive') {
+          await authData.updateProfile({ status: 'Offline' });
+        }
+        appState.current = nextState;
+      },
+    );
+
+    return () => subscription.remove();
+  }, []);
+
   return (
     <UserProvider>
       <NavigationContainer>
