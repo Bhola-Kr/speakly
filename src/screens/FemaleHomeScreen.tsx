@@ -18,6 +18,7 @@ import { useIsFocused } from '@react-navigation/native';
 import Colors from '../constants/colors';
 import { useUser } from '../hooks/UserContext';
 import { getUserAvatar } from '../constants/constants';
+import RoomService from '../firebase/RoomService';
 const { width } = Dimensions.get('window');
 
 const BANNER_WIDTH = width - 40;
@@ -48,17 +49,6 @@ const noticeData = [
   },
 ];
 
-const leaderboardData = [
-  {
-    id: '1',
-    image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=900',
-  },
-  {
-    id: '2',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900',
-  },
-];
-
 interface Props {
   navigation: any;
 }
@@ -75,6 +65,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const goOnLine = async () => {
     try {
+      await RoomService.goOnline();
       await updateProfile({ status: 'online' });
       navigation.navigate('OnlineRoom');
     } catch (e) {

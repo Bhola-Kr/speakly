@@ -24,6 +24,9 @@ import LinearGradient from 'react-native-linear-gradient';
 
 import styles from './styles';
 import Colors from '../../constants/colors';
+import RoomService from '../../firebase/RoomService';
+import { femaleAvatars } from '../../constants/constants';
+import authData from '../../firebase/authData';
 
 type Props = {
   navigation: any;
@@ -32,13 +35,17 @@ type Props = {
 
 const CallScreen = ({ navigation, route }: Props) => {
   const {
-    token = '007eJxTYIiIVnrrfnztY9dS4SuyWhb/lTWXHC2dGhqdbSMue9PpmJECQ5pZUmqyaZKliUFqokmSoWFimpFhmnGSpbFhmrmxqbFZ37fUrIZARgbpthImRgYIBPG5GcryM5NT40sSczNzGBgAubQgrg==',
+    token = '007eJxTYHh67coJXSMWHRfv59cEphzfc+v79nUb1t1nam6btoZTNzZWgSHNLCk12TTJ0sQgNdEkydAwMc3IMM04ydLYMM3c2NTYzGZBTlZDICMDR/QHBkYoBPG5GcryM5NT40sSczNzGBgAyEcjdg==',
     channelName = 'voice_tamil',
-    uid = Math.floor(Math.random() * 100000),
-    userName = 'Aadhilakshmi',
-    city = 'Chennai',
-    avatar = 'https://i.pravatar.cc/300?img=47',
+    userName = 'N/A',
+    avatarId = 1,
+    gender = 'male',
+    femaleUid,
   } = route?.params ?? {};
+
+  const uid =
+    Number(authData.getCurrentUser()?.phoneNumber) ||
+    Math.floor(Math.random() * 100000);
 
   const engine = useRef<IRtcEngine | null>(null);
 
@@ -127,6 +134,8 @@ const CallScreen = ({ navigation, route }: Props) => {
         setStatus('Connected');
 
         startTimer();
+
+        RoomService.callConnected(femaleUid);
       },
 
       onUserOffline: () => {
@@ -135,6 +144,8 @@ const CallScreen = ({ navigation, route }: Props) => {
         setStatus('User Left');
 
         stopTimer();
+        RoomService.endCall(femaleUid);
+        navigation.goBack();
       },
 
       onConnectionStateChanged: (_connection, state: ConnectionStateType) => {
@@ -183,6 +194,7 @@ const CallScreen = ({ navigation, route }: Props) => {
             engine.current = null;
           }
 
+          await RoomService.endCall(femaleUid);
           navigation.goBack();
         },
       },
@@ -243,13 +255,17 @@ const CallScreen = ({ navigation, route }: Props) => {
 
         <View style={styles.avatarContainer}>
           <View style={styles.avatarOuter}>
-            <Image source={{ uri: avatar }} style={styles.avatar} />
+            <Image
+              source={
+                gender === 'male'
+                  ? femaleAvatars.at(avatarId)?.image
+                  : require('../../assets/man.png')
+              }
+              style={styles.avatar}
+            />
           </View>
 
           <Text style={styles.name}>{userName}</Text>
-
-          <Text style={styles.city}>{city}</Text>
-
           <View style={styles.statusContainer}>
             <View
               style={[

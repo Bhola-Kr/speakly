@@ -58,39 +58,19 @@ class RoomService {
 
     const room: Room = {
       roomId: firebaseUser.uid,
-
       currentCallId: '',
-
       status: 'waiting',
-
       female: {
         uid: firebaseUser.uid,
-
         name: user.profile.name,
-
         avatarId: user.profile.avatarId,
       },
-
       male: null,
-
       createdAt: Date.now(),
-
       updatedAt: Date.now(),
     };
 
-    await database()
-      .ref(`rooms/${firebaseUser.uid}`)
-
-      .set(room);
-
-    await database()
-      .ref(`users/${firebaseUser.uid}`)
-
-      .update({
-        status: 'online',
-
-        lastSeen: Date.now(),
-      });
+    await database().ref(`rooms/${firebaseUser.uid}`).set(room);
   }
 
   async goOffline() {
@@ -101,11 +81,6 @@ class RoomService {
       male: null,
       currentCallId: '',
       updatedAt: Date.now(),
-    });
-
-    await database().ref(`users/${firebaseUser.uid}`).update({
-      status: 'offline',
-      lastSeen: Date.now(),
     });
   }
 
@@ -119,37 +94,25 @@ class RoomService {
 
   async callFemale(femaleUid: string) {
     const firebaseUser = this.getCurrentUser();
-
-    const blocked = await this.isBlocked(
-      femaleUid,
-
-      firebaseUser.uid,
-    );
-
+    const blocked = await this.isBlocked(femaleUid, firebaseUser.uid);
     if (blocked) {
       throw new Error('You are blocked by this user.');
     }
-
     const male = await this.getUser(firebaseUser.uid);
-
     const roomRef = database().ref(`rooms/${femaleUid}`);
     const transaction = await roomRef.transaction(room => {
       if (room == null) {
         return;
       }
-
       if (room.status !== 'waiting') {
         return;
       }
-
       room.status = 'ringing';
-
       const callId = database().ref('callHistory').push().key;
       if (!callId) {
         throw new Error('Unable to create call.');
       }
       room.currentCallId = callId;
-
       room.male = {
         uid: firebaseUser.uid,
         name: male.profile.name,
@@ -160,7 +123,7 @@ class RoomService {
       return room;
     });
     if (!transaction.committed) {
-      throw new Error('User Busy');
+      throw new Error('This user is offline!');
     }
 
     return transaction.snapshot.val();

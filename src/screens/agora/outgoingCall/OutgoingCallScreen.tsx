@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
 import strings from '../../../constants/strings';
-import RoomService from '../../../firebase/RoomService';
+import RoomService, { Room } from '../../../firebase/RoomService';
 import { calculateAge, femaleAvatars } from '../../../constants/constants';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
@@ -50,29 +50,29 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       room => {
         switch (room?.status) {
           case 'accepted':
-            // joinAgora(room.currentCallId);
             navigation.replace('Call', {
-              userName: 'Rahul',
-              city: 'Chennai',
-              avatar: AVATAR,
+              gender: 'male',
+              userName: data?.name,
+              avatarId: data?.name?.avatarId,
+              femaleUid: data?.name?.uid,
             });
-
             break;
 
           case 'rejected':
             clearTimeout(timeout);
-
-            Alert.alert('Call Rejected');
-
+            Alert.alert(
+              'Call Ended',
+              'Your call request was declined by the recipient.',
+            );
+            navigation.goBack();
             break;
 
           case 'waiting':
             clearTimeout(timeout);
-
+            navigation.goBack();
             break;
 
           case 'ended':
-          // leaveAgora();
         }
       },
     );

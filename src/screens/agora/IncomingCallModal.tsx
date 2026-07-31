@@ -20,23 +20,16 @@ interface Props {
   visible: boolean;
   avatar: string;
   userName: string;
-  age: number;
-  city: string;
   verified?: boolean;
-
   onAccept: () => void;
   onDecline: () => void;
-
   onBlock?: () => void;
   onReport?: (reason: string) => void;
 }
 
 const IncomingCallModal = ({
   visible,
-  avatar,
   userName,
-  age,
-  city,
   verified = true,
   onAccept,
   onDecline,
@@ -48,7 +41,7 @@ const IncomingCallModal = ({
 
   useEffect(() => {
     if (visible) {
-      InCallManager.startRingtone('', 0, 'default', 30);
+      // InCallManager.startRingtone('', 0, 'default', 30);
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -165,9 +158,9 @@ const IncomingCallModal = ({
             )}
           </View>
 
-          <Text style={styles.location}>
-            {age} • {city}
-          </Text>
+          {/* <Text style={styles.location}>
+            {age} 
+          </Text> */}
 
           <View style={styles.noticeBox}>
             <MaterialCommunityIcons

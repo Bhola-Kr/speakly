@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 import database from '@react-native-firebase/database';
 import { SafeAreaView, FlatList, StatusBar, Text, View } from 'react-native';
 
@@ -11,6 +11,7 @@ import UserCard from './UserCard';
 import Colors from '../../constants/colors';
 import { categories } from '../../constants/dummyData';
 import { useUser } from '../../hooks/UserContext';
+import RoomService from '../../firebase/RoomService';
 
 interface Props {
   navigation: any;
@@ -20,6 +21,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user, updateProfile } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
+  const [calling, setCalling] = useState(false);
 
   React.useEffect(() => {
     if (user?.profile?.gender?.toLowerCase() === 'male') {
@@ -48,6 +50,29 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
     return () => ref.off();
   }, []);
+
+  const handleCall = async (item: any) => {
+    if (calling) {
+      return;
+    }
+
+    try {
+      setCalling(true);
+
+      const room = await RoomService.callFemale(item.uid);
+
+      navigation.navigate('OutgoingCall', { user: item?.profile, room });
+    } catch (error: any) {
+      console.log('Call Error:', error);
+
+      Alert.alert(
+        'Call Failed',
+        error?.message || 'Unable to connect the call. Please try again.',
+      );
+    } finally {
+      setCalling(false);
+    }
+  };
 
   const filtered =
     selected === 'All'
@@ -86,12 +111,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </>
         }
         renderItem={({ item }) => (
-          <UserCard
-            item={item}
-            callNow={() => {
-              navigation.navigate('OutgoingCall', { user: item?.profile });
-            }}
-          />
+          <UserCard item={item} callNow={() => handleCall(item)} />
         )}
       />
     </SafeAreaView>

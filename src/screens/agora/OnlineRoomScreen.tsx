@@ -22,7 +22,7 @@ import Colors from '../../constants/colors';
 import IncomingCallModal from './IncomingCallModal';
 import { femaleAvatars } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
-import RoomService from '../../firebase/RoomService';
+import RoomService, { Room } from '../../firebase/RoomService';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
@@ -32,6 +32,7 @@ type Props = {
 
 const OnlineRoomScreen = ({ navigation }: Props) => {
   const { user, updateProfile } = useUser();
+  const [incomingRoom, setIncomingRoom] = useState<Room | null>(null);
   const isFocused = useIsFocused();
   const pulse = useRef(new Animated.Value(0)).current;
   const appState = useRef(AppState.currentState);
@@ -54,6 +55,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
       switch (room.status) {
         case 'ringing':
+          setIncomingRoom(room);
           setShowIncoming(true);
           break;
 
@@ -135,18 +137,46 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     outputRange: [0.2, 0.8],
   });
 
-  const acceptCall = () => {
-    setShowIncoming(false);
+  const acceptCall = async () => {
+    if (!incomingRoom) {
+      Alert.alert('Error', 'No incoming call found.');
+      return;
+    }
 
+    setShowIncoming(false);
+    await RoomService.acceptCall(user?.profile?.uid);
+    await updateProfile({
+      status: 'busy',
+    });
     navigation.replace('Call', {
-      userName: 'Rahul',
-      city: 'Chennai',
-      avatar: AVATAR,
+      gender: 'female',
+      userName: incomingRoom?.male?.name,
+      avatarId: incomingRoom?.male?.avatarId,
+      femaleUid: incomingRoom?.female?.uid,
+      uid: incomingRoom?.roomId,
     });
   };
 
-  const declineCall = () => {
+  const declineCall = async () => {
     setShowIncoming(false);
+
+    try {
+      await updateProfile({
+        status: 'offline',
+      });
+
+      await RoomService.rejectCall(user?.uid);
+
+      setTimeout(() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        }
+      }, 100); // Adjust to 500-1000ms if needed
+    } catch (e) {
+      console.log('goOffline ->', e);
+
+      Alert.alert('Error', 'Unable to update your status. Please try again.');
+    }
   };
 
   const goOffline = () => {
@@ -166,6 +196,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
               await updateProfile({
                 status: 'offline',
               });
+              await RoomService.goOffline();
 
               navigation.goBack();
             } catch (e) {
@@ -266,9 +297,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
         visible={showIncoming}
         onAccept={acceptCall}
         onDecline={declineCall}
-        userName="Rahul"
-        city="Chennai"
-        age={20}
+        userName={incomingRoom?.male?.name || 'N/A'}
         verified={false}
         avatar={AVATAR}
       />
