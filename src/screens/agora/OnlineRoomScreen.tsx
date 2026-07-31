@@ -171,7 +171,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
         if (navigation.canGoBack()) {
           navigation.goBack();
         }
-      }, 100); // Adjust to 500-1000ms if needed
+      }, 50); // Adjust to 500-1000ms if needed
     } catch (e) {
       console.log('goOffline ->', e);
 
@@ -297,6 +297,29 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
         visible={showIncoming}
         onAccept={acceptCall}
         onDecline={declineCall}
+        onBlock={async () => {
+          RoomService.blockUser(
+            incomingRoom?.female?.uid || 'falseBlock',
+            incomingRoom?.male?.uid || 'falseBlock',
+          );
+          await declineCall();
+          Alert.alert(
+            'Blocked Successfully',
+            'The user has been added to your blocked list.',
+          );
+        }}
+        onReport={async reason => {
+          RoomService.reportUser(
+            incomingRoom?.female?.uid || 'falseBlock',
+            incomingRoom?.male?.uid || 'falseBlock',
+            reason,
+          );
+          await declineCall();
+          Alert.alert(
+            'Report Submitted',
+            'Your report has been received successfully and will be reviewed by our moderation team.',
+          );
+        }}
         userName={incomingRoom?.male?.name || 'N/A'}
         verified={false}
         avatar={AVATAR}

@@ -1,4 +1,4 @@
-import React, { use, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -19,22 +19,43 @@ import Colors from '../constants/colors';
 import { useUser } from '../hooks/UserContext';
 import { getUserAvatar } from '../constants/constants';
 import RoomService from '../firebase/RoomService';
-const { width } = Dimensions.get('window');
 
+const { width } = Dimensions.get('window');
 const BANNER_WIDTH = width - 40;
+const CARD_WIDTH = width - 70;
 
 const tutorialData = [
   {
     id: '1',
-    image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=900',
+    title: 'Go Online',
+    subtitle:
+      'Become available instantly and start receiving paid voice calls from verified users.',
+    icon: 'radio',
+    colors: ['#111827', '#374151'],
   },
   {
     id: '2',
-    image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900',
+    title: 'Earn More Coins',
+    subtitle:
+      'Stay online during peak hours to maximize your earnings from every conversation.',
+    icon: 'wallet',
+    colors: ['#B88A1C', '#D4AF37'],
   },
   {
     id: '3',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900',
+    title: 'Stay Safe',
+    subtitle:
+      'You can block or report any user at any time for a secure experience.',
+    icon: 'shield-checkmark',
+    colors: ['#0F766E', '#14B8A6'],
+  },
+  {
+    id: '4',
+    title: 'Grow Faster',
+    subtitle:
+      'Answer calls politely and complete conversations to improve your profile.',
+    icon: 'trending-up',
+    colors: ['#6D28D9', '#8B5CF6'],
   },
 ];
 
@@ -55,21 +76,30 @@ interface Props {
 
 const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [page, setPage] = useState(0);
+
   const isFocused = useIsFocused();
+
   const { user, updateProfile } = useUser();
+
   const bannerRef = useRef<FlatList>(null);
 
-  React.useEffect(() => {
-    updateProfile({ status: 'offline' });
+  useEffect(() => {
+    updateProfile({
+      status: 'offline',
+    });
   }, [isFocused]);
 
   const goOnLine = async () => {
     try {
       await RoomService.goOnline();
-      await updateProfile({ status: 'online' });
+
+      await updateProfile({
+        status: 'online',
+      });
+
       navigation.navigate('OnlineRoom');
     } catch (e) {
-      console.log('goOnLine -> e', e);
+      console.log(e);
     }
   };
 
@@ -79,7 +109,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
 
         <View style={styles.header}>
           <View>
@@ -89,48 +119,41 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               {user?.profile?.name || 'N/A'}
             </Text>
 
-            <Text style={styles.subtitle}>Ready to meet new people today?</Text>
+            <Text style={styles.subtitle}>
+              Ready to receive voice calls today?
+            </Text>
           </View>
 
-          <View style={styles.rightHeader}>
-            {/* <TouchableOpacity style={styles.notification}>
-              <Ionicons
-                name="notifications-outline"
-                size={22}
-                color={Colors.text}
-              />
-            </TouchableOpacity> */}
-
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ProfileSetting', {
-                  gender: 'female',
-                })
-              }
-            >
-              <Image source={getUserAvatar(user)} style={styles.avatar} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('ProfileSetting', {
+                gender: 'female',
+              })
+            }
+          >
+            <Image source={getUserAvatar(user)} style={styles.avatar} />
+          </TouchableOpacity>
         </View>
 
-        {/* TUTORIAL */}
+        {/* ================= QUICK TIPS ================= */}
 
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Tutorials</Text>
-
-            {/* <TouchableOpacity>
-              <Text style={styles.viewAll}>View All</Text>
-            </TouchableOpacity> */}
+            <Text style={styles.sectionTitle}>Quick Tips</Text>
           </View>
 
           <FlatList
             ref={bannerRef}
             horizontal
             pagingEnabled
-            showsHorizontalScrollIndicator={false}
             data={tutorialData}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+            }}
             keyExtractor={item => item.id}
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={BANNER_WIDTH}
+            decelerationRate="fast"
             onMomentumScrollEnd={e => {
               const index = Math.round(
                 e.nativeEvent.contentOffset.x / BANNER_WIDTH,
@@ -139,13 +162,23 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               setPage(index);
             }}
             renderItem={({ item }) => (
-              <View style={styles.bannerContainer}>
-                <Image source={item.image} style={styles.banner} />
+              <LinearGradient colors={item.colors} style={styles.tutorialCard}>
+                <View style={styles.tutorialTop}>
+                  <View style={styles.iconCircle}>
+                    <Ionicons name={item.icon} size={30} color="#FFF" />
+                  </View>
 
-                <View style={styles.playButton}>
-                  <Ionicons name="play" size={30} color="#FFF" />
+                  <View style={styles.tipBadge}>
+                    <Text style={styles.tipBadgeText}>TIP</Text>
+                  </View>
                 </View>
-              </View>
+
+                <View>
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+
+                  <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+                </View>
+              </LinearGradient>
             )}
           />
 
@@ -159,9 +192,9 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* GO ONLINE */}
+        {/* ================= GO ONLINE ================= */}
 
-        <TouchableOpacity onPress={goOnLine} activeOpacity={0.9}>
+        <TouchableOpacity activeOpacity={0.9} onPress={goOnLine}>
           <LinearGradient
             colors={Colors.buttonGradient}
             style={styles.onlineButton}
@@ -172,59 +205,11 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* ===================== LEADERBOARD =====================
-
-        <View style={styles.card}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Leaderboards</Text>
-
-            <TouchableOpacity>
-              <Text style={styles.viewAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={leaderboardData}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{
-              paddingHorizontal: 20,
-            }}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                activeOpacity={0.9}
-                style={styles.smallBannerCard}
-              >
-                <Image
-                  source={{
-                    uri: item.image,
-                  }}
-                  style={styles.smallBanner}
-                />
-
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.65)']}
-                  style={styles.bannerOverlay}
-                >
-                  <Text style={styles.bannerTitle}>Weekly Stars</Text>
-
-                  <Text style={styles.bannerSubtitle}>Top verified users</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-          />
-        </View> */}
-
-        {/* ===================== NOTICEBOARD ===================== */}
+        {/* ================= NOTICEBOARD ================= */}
 
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Noticeboard</Text>
-
-            {/* <TouchableOpacity>
-              <Text style={styles.viewAll}>View All</Text>
-            </TouchableOpacity> */}
           </View>
 
           {noticeData.map(item => (
@@ -248,12 +233,73 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
                   first recharge.
                 </Text>
 
-                {/* <TouchableOpacity style={styles.noticeButton}>
-                  <Text style={styles.noticeButtonText}>Learn More</Text>
-                </TouchableOpacity> */}
+                <View style={styles.noticeFooter}>
+                  <View style={styles.rewardBadge}>
+                    <Ionicons name="gift" size={15} color={Colors.secondary} />
+
+                    <Text style={styles.rewardBadgeText}>Bonus Rewards</Text>
+                  </View>
+
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={Colors.secondary}
+                  />
+                </View>
               </View>
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* ================= DAILY REMINDER ================= */}
+
+        <LinearGradient
+          colors={Colors.goldGradient}
+          style={styles.reminderCard}
+        >
+          <View
+            style={{
+              flex: 1,
+            }}
+          >
+            <Text style={styles.reminderTitle}>Daily Reminder</Text>
+
+            <Text style={styles.reminderDesc}>
+              Stay online consistently to receive more calls and increase your
+              daily earnings.
+            </Text>
+          </View>
+
+          <View style={styles.reminderIcon}>
+            <Ionicons name="sparkles" size={34} color={Colors.white} />
+          </View>
+        </LinearGradient>
+
+        {/* ================= ACCOUNT STATUS ================= */}
+
+        <View style={styles.statusCard}>
+          <View style={styles.statusHeader}>
+            <View style={styles.statusIndicator} />
+
+            <Text style={styles.statusTitle}>Account Status</Text>
+          </View>
+
+          <Text style={styles.statusValue}>
+            {user?.profile?.status === 'online' ? 'Online' : 'Offline'}
+          </Text>
+
+          <Text style={styles.statusDescription}>
+            Your profile is currently{' '}
+            <Text
+              style={{
+                fontWeight: '700',
+              }}
+            >
+              {user?.profile?.status === 'online' ? 'visible' : 'hidden'}
+            </Text>{' '}
+            to users. Tap the "GO ONLINE" button whenever you're ready to
+            receive calls.
+          </Text>
         </View>
 
         <View
@@ -270,6 +316,203 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+
+  tutorialCard: {
+    width: CARD_WIDTH,
+    marginRight: 10,
+    borderRadius: 24,
+    padding: 22,
+  },
+
+  tutorialTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  tipBadge: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+
+  tipBadgeText: {
+    color: Colors.white,
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 1,
+  },
+
+  cardTitle: {
+    color: Colors.white,
+    fontSize: 26,
+    fontWeight: '700',
+  },
+
+  cardSubtitle: {
+    marginTop: 10,
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+
+  indicatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.disabled,
+    marginHorizontal: 4,
+  },
+
+  activeDot: {
+    width: 24,
+    backgroundColor: Colors.secondary,
+  },
+
+  onlineButton: {
+    height: 62,
+    marginHorizontal: 18,
+    marginBottom: 22,
+    borderRadius: 31,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+
+  onlineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#00E676',
+    marginRight: 12,
+  },
+
+  onlineText: {
+    color: Colors.white,
+    fontWeight: '700',
+    fontSize: 18,
+    letterSpacing: 1,
+  },
+
+  noticeFooter: {
+    marginTop: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  rewardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+  },
+
+  rewardBadgeText: {
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+
+  reminderCard: {
+    marginHorizontal: 18,
+    marginBottom: 22,
+    borderRadius: 24,
+    padding: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  reminderTitle: {
+    color: Colors.white,
+    fontSize: 22,
+    fontWeight: '700',
+  },
+
+  reminderDesc: {
+    color: 'rgba(255,255,255,0.92)',
+    marginTop: 10,
+    lineHeight: 22,
+    fontSize: 15,
+  },
+
+  reminderIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 20,
+  },
+
+  statusCard: {
+    backgroundColor: Colors.card,
+    marginHorizontal: 18,
+    borderRadius: 24,
+    padding: 22,
+
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    elevation: 5,
+  },
+
+  statusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  statusIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#00E676',
+    marginRight: 10,
+  },
+
+  statusTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+
+  statusValue: {
+    marginTop: 16,
+    fontSize: 32,
+    fontWeight: '700',
+    color: Colors.secondary,
+  },
+
+  statusDescription: {
+    marginTop: 10,
+    fontSize: 14,
+    color: Colors.subText,
+    lineHeight: 22,
   },
 
   content: {
@@ -399,55 +642,6 @@ const styles = StyleSheet.create({
 
     justifyContent: 'center',
     alignItems: 'center',
-  },
-
-  indicatorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 18,
-  },
-
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 5,
-    backgroundColor: Colors.disabled,
-  },
-
-  activeDot: {
-    width: 24,
-    backgroundColor: Colors.secondary,
-  },
-
-  onlineButton: {
-    height: 62,
-    marginHorizontal: 18,
-    marginBottom: 22,
-
-    borderRadius: 31,
-
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    flexDirection: 'row',
-  },
-
-  onlineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-
-    backgroundColor: '#00E676',
-
-    marginRight: 12,
-  },
-
-  onlineText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 18,
-    letterSpacing: 1,
   },
 
   smallBannerCard: {
