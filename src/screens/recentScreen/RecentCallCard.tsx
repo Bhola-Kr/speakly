@@ -4,19 +4,39 @@ import { View, Text, Image, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
-
 import Colors from '../../constants/colors';
 import { femaleAvatars } from '../../constants/constants';
 
+import { CallHistory } from '../../firebase/RoomService';
+
 interface Props {
-  item: any;
+  item: CallHistory;
 }
+
+const formatDate = (time: number) => {
+  return new Date(time).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatDuration = (duration: number) => {
+  const totalSeconds = Math.floor(duration / 1000);
+
+  const min = Math.floor(totalSeconds / 60);
+  const sec = totalSeconds % 60;
+
+  return `${min}m ${sec}s`;
+};
 
 const RecentCallCard = ({ item }: Props) => {
   const avatar =
-    femaleAvatars.find(a => a.id === item.avatarId) || femaleAvatars[0];
+    femaleAvatars.find(a => a.id === Number(item.femaleInfo.avatarId)) ??
+    femaleAvatars[0];
 
-  const statusColor = item.status === 'Completed' ? '#00C853' : '#F44336';
+  const statusColor =
+    item.status === 'Completed' ? Colors.success : Colors.danger;
 
   return (
     <View style={styles.card}>
@@ -24,13 +44,9 @@ const RecentCallCard = ({ item }: Props) => {
         <Image source={avatar.image} style={styles.avatar} />
 
         <View style={styles.info}>
-          <Text style={styles.tamilName}>{item.tamilName}</Text>
+          <Text style={styles.tamilName}>{item.femaleInfo.name}</Text>
 
-          <Text style={styles.englishName}>{item.englishName}</Text>
-
-          <Text style={styles.location}>
-            {item.city}, {item.state}
-          </Text>
+          <Text style={styles.englishName}>Voice Call</Text>
         </View>
       </View>
 
@@ -44,14 +60,12 @@ const RecentCallCard = ({ item }: Props) => {
       >
         <View>
           <Text style={styles.label}>Date</Text>
-
-          <Text style={styles.value}>{item.date}</Text>
+          <Text style={styles.value}>{formatDate(item.startedAt)}</Text>
         </View>
 
         <View>
           <Text style={styles.label}>Duration</Text>
-
-          <Text style={styles.value}>{item.duration}</Text>
+          <Text style={styles.value}>{formatDuration(item.duration)}</Text>
         </View>
 
         <View>
@@ -62,6 +76,7 @@ const RecentCallCard = ({ item }: Props) => {
               source={require('../../assets/coin.png')}
               style={styles.receiveCoin}
             />
+
             <Text style={styles.value}>{item.amount}</Text>
           </View>
         </View>

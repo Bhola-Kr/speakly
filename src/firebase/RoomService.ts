@@ -1,5 +1,6 @@
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
+import { calculateCallAmount } from '../constants/constants';
 
 export type RoomStatus =
   | 'offline'
@@ -10,6 +11,18 @@ export type RoomStatus =
   | 'rejected'
   | 'ended';
 
+export type CallStatus = 'Missed' | 'Completed';
+
+export interface CallHistory {
+  callId: string;
+  startedAt: number;
+  endedAt: number;
+  duration: number; // milliseconds
+  amount: number; // amount charged
+  status: CallStatus;
+  maleInfo: UserInfo;
+  femaleInfo: UserInfo;
+}
 export interface UserInfo {
   uid: string;
   name: string;
@@ -146,11 +159,7 @@ class RoomService {
     return () => ref.off('value', listener);
   }
 
-  listenCallStatus(
-    femaleUid: string,
-
-    callback: (room: Room) => void,
-  ) {
+  listenCallStatus(femaleUid: string, callback: (room: Room) => void) {
     const ref = database().ref(`rooms/${femaleUid}`);
     const listener = ref.on('value', snapshot => {
       if (!snapshot.exists()) {
@@ -219,17 +228,79 @@ class RoomService {
       return;
     }
 
-    await database()
-      .ref(`callHistory/${room.currentCallId}`)
-      .set({
-        callId: room.currentCallId,
-        femaleUid: room.female.uid,
-        maleUid: room.male?.uid ?? '',
-        startedAt: room.createdAt,
-        endedAt: Date.now(),
-        duration: room.callStartedAt ? Date.now() - room.callStartedAt : 0,
-        status: 'completed',
+    const endedAt = Date.now();
+    const duration = room.callStartedAt ? endedAt - room.callStartedAt : 0;
+
+    const amount = room.callStartedAt
+      ? calculateCallAmount(room.callStartedAt, endedAt)
+      : 0;
+
+    const history = {
+      callId: room.currentCallId,
+      startedAt: room.createdAt,
+      endedAt,
+      duration,
+      amount,
+      status: duration === 0 ? 'Missed' : 'Completed',
+      maleInfo: room.male,
+      femaleInfo: room.female,
+    };
+
+    const updates: Record<string, any> = {};
+
+    // Save to male history
+    updates[`callHistory/${room?.male?.uid}/${room.currentCallId}`] = history;
+
+    // Save to female history
+    updates[`callHistory/${room?.female?.uid}/${room.currentCallId}`] = history;
+
+    await database().ref().update(updates);
+  }
+
+  async getCallHistory() {
+    const uid = auth().currentUser?.uid;
+
+    if (!uid) {
+      throw new Error('User not logged in');
+    }
+
+    const snapshot = await database().ref(`callHistory/${uid}`).once('value');
+
+    const history: any[] = [];
+
+    snapshot.forEach(child => {
+      history.push(child.val());
+      return false;
+    });
+
+    history.sort((a, b) => b.startedAt - a.startedAt);
+
+    return history;
+  }
+
+  listenCallHistory(callback: (history: CallHistory[]) => void) {
+    const uid = auth().currentUser?.uid;
+
+    if (!uid) {
+      return () => {};
+    }
+
+    const ref = database().ref(`callHistory/${uid}`);
+
+    const listener = ref.on('value', snapshot => {
+      const history: CallHistory[] = [];
+
+      snapshot.forEach(child => {
+        history.push(child.val() as CallHistory);
+        return false;
       });
+
+      history.sort((a, b) => b.startedAt - a.startedAt);
+
+      callback(history);
+    });
+
+    return () => ref.off('value', listener);
   }
 
   async blockUser(femaleUid: string, maleUid: string) {

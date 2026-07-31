@@ -19,6 +19,50 @@ export default StyleSheet.create({
     color: Colors.text,
     marginBottom: 18,
   },
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+  },
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+
+  backPlaceholder: {
+    width: 40,
+    marginRight: 16,
+  },
+
+  title: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+
+  subtitle: {
+    marginTop: 6,
+    fontSize: 15,
+    color: Colors.subText,
+    lineHeight: 22,
+  },
+
+  count: {
+    marginTop: 14,
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.secondary,
+  },
 
   card: {
     backgroundColor: Colors.white,

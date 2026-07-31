@@ -73,7 +73,7 @@ function RootStack() {
       <Stack.Screen name="OnlineRoom" component={OnlineRoomScreen} />
       <Stack.Screen
         options={{
-          headerShown: true,
+          headerShown: false,
           title: 'Recent',
           headerStyle: { backgroundColor: Colors.background },
         }}

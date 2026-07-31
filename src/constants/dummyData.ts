@@ -173,16 +173,11 @@ export const recentCalls = [
     age: 30,
     city: 'Chennai',
     state: 'Tamil Nadu',
-
     date: 'Today',
     time: '10:35 AM',
-
     duration: '04:25',
-
     amount: 22,
-
     type: 'Outgoing',
-
     status: 'Completed',
   },
 

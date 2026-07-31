@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -13,51 +13,9 @@ import {
 } from 'react-native';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import Colors from '../constants/colors';
-
-interface HistoryItem {
-  id: string;
-  name: string;
-  avatar: string;
-  duration: string;
-  time: string;
-  date: string;
-}
-
-const historyData: HistoryItem[] = [
-  {
-    id: '1',
-    name: 'Ganapathy',
-    avatar: 'https://randomuser.me/api/portraits/men/31.jpg',
-    duration: '2m 13s',
-    time: '2:57 AM',
-    date: 'Today',
-  },
-  {
-    id: '2',
-    name: 'Priya',
-    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-    duration: '8m 21s',
-    time: '1:20 AM',
-    date: 'Today',
-  },
-  {
-    id: '3',
-    name: 'Riya',
-    avatar: 'https://randomuser.me/api/portraits/women/12.jpg',
-    duration: '4m 50s',
-    time: '8:15 PM',
-    date: 'Yesterday',
-  },
-  {
-    id: '4',
-    name: 'Rahul',
-    avatar: 'https://randomuser.me/api/portraits/men/56.jpg',
-    duration: '18m 09s',
-    time: '6:40 PM',
-    date: 'Yesterday',
-  },
-];
+import RoomService, { CallHistory } from '../firebase/RoomService';
 
 interface Props {
   navigation: any;
@@ -65,19 +23,32 @@ interface Props {
 
 const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
+  const [history, setHistory] = useState<CallHistory[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = RoomService.listenCallHistory(setHistory);
+
+    return unsubscribe;
+  }, []);
 
   const groupedData = useMemo(() => {
     const list: any[] = [];
     let lastDate = '';
 
-    historyData.forEach(item => {
-      if (lastDate !== item.date) {
+    history.forEach(item => {
+      const date = new Date(item.startedAt).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+
+      if (date !== lastDate) {
         list.push({
           type: 'header',
-          title: item.date,
+          title: date,
         });
 
-        lastDate = item.date;
+        lastDate = date;
       }
 
       list.push({
@@ -87,7 +58,16 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
     });
 
     return list;
-  }, []);
+  }, [history]);
+
+  const formatDuration = (duration: number) => {
+    const totalSeconds = Math.floor(duration / 1000);
+
+    const min = Math.floor(totalSeconds / 60);
+    const sec = totalSeconds % 60;
+
+    return `${min}m ${sec}s`;
+  };
 
   const renderItem = ({ item }: any) => {
     if (item.type === 'header') {
@@ -104,23 +84,79 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
       );
     }
 
+    const time = new Date(item.startedAt).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const statusColor =
+      item.status === 'Completed' ? Colors.success : Colors.danger;
+
     return (
       <TouchableOpacity activeOpacity={0.9} style={styles.card}>
-        <Image source={{ uri: item.avatar }} style={styles.avatar} />
+        <Image source={require('../assets/man.png')} style={styles.avatar} />
 
         <View style={styles.info}>
-          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.name}>{item.maleInfo.name}</Text>
 
           <View style={styles.bottomRow}>
-            <Text style={styles.duration}>{item.duration}</Text>
+            <Text style={styles.duration}>{formatDuration(item.duration)}</Text>
 
-            <Text style={styles.time}>{item.time}</Text>
+            <Text style={styles.time}>{time}</Text>
           </View>
         </View>
 
-        {/* <TouchableOpacity style={styles.callButton}>
-          <Ionicons name="call" size={18} color={Colors.secondary} />
-        </TouchableOpacity> */}
+        <View
+          style={{
+            alignItems: 'flex-end',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: `${statusColor}20`,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 12,
+            }}
+          >
+            <Text
+              style={{
+                color: statusColor,
+                fontWeight: '700',
+                fontSize: 12,
+              }}
+            >
+              {item.status}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              marginTop: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
+          >
+            <Image
+              source={require('../assets/coin.png')}
+              style={{
+                width: 18,
+                height: 18,
+                marginRight: 4,
+              }}
+            />
+
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '700',
+                color: Colors.secondary,
+              }}
+            >
+              {item.amount}
+            </Text>
+          </View>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -131,9 +167,11 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>History</Text>
+          <Text style={styles.title}>Call History</Text>
 
-          <Text style={styles.subtitle}>Your recent conversations</Text>
+          <Text style={styles.subtitle}>
+            View your recent voice call history.
+          </Text>
         </View>
 
         <TouchableOpacity
@@ -146,7 +184,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
       <FlatList
         data={groupedData}
-        keyExtractor={(_, index) => index.toString()}
+        keyExtractor={(item, index) => item.callId ?? index.toString()}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -160,6 +198,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity
               onPress={() => {
                 setMenuVisible(false);
+
                 navigation.navigate('EditProfile', {
                   gender: 'female',
                 });
@@ -173,10 +212,20 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
-            <TouchableOpacity style={styles.popupItem}>
+            <TouchableOpacity
+              style={styles.popupItem}
+              onPress={() => setMenuVisible(false)}
+            >
               <Ionicons name="trash-outline" size={20} color={Colors.danger} />
 
-              <Text style={[styles.popupText, { color: Colors.danger }]}>
+              <Text
+                style={[
+                  styles.popupText,
+                  {
+                    color: Colors.danger,
+                  },
+                ]}
+              >
                 Clear History
               </Text>
             </TouchableOpacity>
@@ -229,6 +278,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
+
     elevation: 5,
   },
 
@@ -263,12 +313,9 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 20,
     marginBottom: 16,
-
     backgroundColor: Colors.card,
     borderRadius: 22,
-
     padding: 18,
-
     flexDirection: 'row',
     alignItems: 'center',
 
@@ -279,6 +326,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: 5,
     },
+
     elevation: 6,
   },
 
@@ -286,11 +334,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 18,
+    backgroundColor: Colors.surface,
   },
 
   info: {
     flex: 1,
     marginLeft: 16,
+    marginRight: 12,
   },
 
   name: {
@@ -317,18 +367,6 @@ const styles = StyleSheet.create({
     color: Colors.subText,
   },
 
-  callButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.15)',
@@ -351,6 +389,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: 8,
     },
+
     elevation: 10,
   },
 

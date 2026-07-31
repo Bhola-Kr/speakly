@@ -142,3 +142,24 @@ export const calculateAge = (birthYear: number | string): string => {
 
   return age >= 0 ? age.toString() : '';
 };
+
+const CALL_RATE_PER_MINUTE = 16;
+
+/**
+ * Calculates call amount.
+ * - Less than or equal to 1 minute = ₹16
+ * - 1 min 1 sec = ₹32
+ * - 2 min 0 sec = ₹32
+ * - 2 min 1 sec = ₹48
+ */
+export const calculateCallAmount = (
+  callStartedAt: number,
+  callEndedAt: number = Date.now(),
+): number => {
+  const durationMs = Math.max(0, callEndedAt - callStartedAt);
+
+  const durationMinutes = Math.ceil(durationMs / (60 * 1000));
+
+  // Minimum charge is 1 minute
+  return Math.max(1, durationMinutes) * CALL_RATE_PER_MINUTE;
+};

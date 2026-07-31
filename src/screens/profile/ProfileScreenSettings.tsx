@@ -207,6 +207,9 @@ ${PLAY_STORE_URL}`,
                   if (item.screen === 'Recents') {
                     navigation.navigate(
                       gender === 'male' ? 'ManHistory' : 'FemaleHistory',
+                      {
+                        showBack: true,
+                      },
                     );
                   } else {
                     navigation.navigate(item.screen);
