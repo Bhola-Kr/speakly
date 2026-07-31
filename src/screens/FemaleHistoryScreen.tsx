@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Image,
   Modal,
@@ -183,13 +184,43 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <FlatList
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+        ListEmptyComponent={() => (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 30,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: '600',
+                color: Colors.subText,
+                textAlign: 'center',
+              }}
+            >
+              No Call History Found
+            </Text>
+
+            <Text
+              style={{
+                marginTop: 8,
+                fontSize: 14,
+                color: Colors.placeholder,
+                textAlign: 'center',
+              }}
+            >
+              Your completed and missed calls will appear here.
+            </Text>
+          </View>
+        )}
         data={groupedData}
         keyExtractor={(item, index) => item.callId ?? index.toString()}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: 120,
-        }}
       />
 
       <Modal transparent visible={menuVisible} animationType="fade">
@@ -214,7 +245,39 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
             <TouchableOpacity
               style={styles.popupItem}
-              onPress={() => setMenuVisible(false)}
+              onPress={() => {
+                setMenuVisible(false);
+
+                Alert.alert(
+                  'Clear Call History',
+                  'Are you sure you want to delete your entire call history? This action cannot be undone.',
+                  [
+                    {
+                      text: 'Cancel',
+                      style: 'cancel',
+                    },
+                    {
+                      text: 'Clear',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await RoomService.clearCallHistory();
+
+                          Alert.alert(
+                            'History Cleared',
+                            'Your call history has been deleted successfully.',
+                          );
+                        } catch (e) {
+                          Alert.alert(
+                            'Error',
+                            'Unable to clear your call history. Please try again.',
+                          );
+                        }
+                      },
+                    },
+                  ],
+                );
+              }}
             >
               <Ionicons name="trash-outline" size={20} color={Colors.danger} />
 

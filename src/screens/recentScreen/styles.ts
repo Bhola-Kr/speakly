@@ -13,6 +13,20 @@ export default StyleSheet.create({
     paddingBottom: 120,
   },
 
+  clearButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+
+  clearText: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.danger,
+  },
+
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',

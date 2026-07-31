@@ -5,8 +5,8 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
-
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
@@ -30,30 +30,83 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
   const Header = () => (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        {showBack && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            flex: 1,
+          }}
+        >
+          {showBack && (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              <MaterialCommunityIcons
+                name="arrow-left"
+                size={24}
+                color={Colors.text}
+              />
+            </TouchableOpacity>
+          )}
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Call History</Text>
+
+            <Text style={styles.subtitle}>
+              View all your completed and missed voice calls.
+            </Text>
+
+            <Text style={styles.count}>
+              {history.length} {history.length === 1 ? 'Call' : 'Calls'}
+            </Text>
+          </View>
+        </View>
+
+        {history.length > 0 && (
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
+            style={styles.clearButton}
+            onPress={() => {
+              Alert.alert(
+                'Clear History',
+                'Are you sure you want to delete your entire call history?',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Clear',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await RoomService.clearCallHistory();
+
+                        Alert.alert(
+                          'History Cleared',
+                          'Your call history has been deleted successfully.',
+                        );
+                      } catch {
+                        Alert.alert(
+                          'Error',
+                          'Unable to clear your call history.',
+                        );
+                      }
+                    },
+                  },
+                ],
+              );
+            }}
           >
             <MaterialCommunityIcons
-              name="arrow-left"
-              size={24}
-              color={Colors.text}
+              name="delete-outline"
+              size={22}
+              color={Colors.danger}
             />
+
+            <Text style={styles.clearText}>Clear</Text>
           </TouchableOpacity>
         )}
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Call History</Text>
-
-          <Text style={styles.subtitle}>
-            View all your completed and missed voice calls.
-          </Text>
-
-          <Text style={styles.count}>
-            {history.length} {history.length === 1 ? 'Call' : 'Calls'}
-          </Text>
-        </View>
       </View>
     </View>
   );
@@ -70,7 +123,9 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
           keyExtractor={item => item.callId}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => <RecentCallCard item={item} />}
+          renderItem={({ item }) => (
+            <RecentCallCard item={item} navigation={navigation} />
+          )}
         />
       )}
     </SafeAreaView>

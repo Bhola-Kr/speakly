@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -7,10 +7,11 @@ import styles from './styles';
 import Colors from '../../constants/colors';
 import { femaleAvatars } from '../../constants/constants';
 
-import { CallHistory } from '../../firebase/RoomService';
+import RoomService, { CallHistory } from '../../firebase/RoomService';
 
 interface Props {
   item: CallHistory;
+  navigation: any;
 }
 
 const formatDate = (time: number) => {
@@ -30,13 +31,45 @@ const formatDuration = (duration: number) => {
   return `${min}m ${sec}s`;
 };
 
-const RecentCallCard = ({ item }: Props) => {
+const RecentCallCard = ({ item, navigation }: Props) => {
+  const [calling, setCalling] = useState(false);
   const avatar =
     femaleAvatars.find(a => a.id === Number(item.femaleInfo.avatarId)) ??
     femaleAvatars[0];
 
   const statusColor =
     item.status === 'Completed' ? Colors.success : Colors.danger;
+
+  const handleCall = async () => {
+    console.log('handleCall -> item', item);
+    if (calling) {
+      return;
+    }
+
+    try {
+      setCalling(true);
+
+      const room = await RoomService.callFemale(item?.femaleInfo?.uid);
+
+      navigation.navigate('OutgoingCall', {
+        user: {
+          uid: item?.femaleInfo?.uid,
+          name: item?.femaleInfo?.name,
+          avatarId: item?.femaleInfo?.avatarId,
+        },
+        room,
+      });
+    } catch (error: any) {
+      console.log('Call Error:', error);
+
+      Alert.alert(
+        'Call Failed',
+        error?.message || 'Unable to connect the call. Please try again.',
+      );
+    } finally {
+      setCalling(false);
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -108,7 +141,7 @@ const RecentCallCard = ({ item }: Props) => {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.callButton}>
+        <TouchableOpacity onPress={handleCall} style={styles.callButton}>
           <MaterialCommunityIcons
             name="phone"
             size={18}

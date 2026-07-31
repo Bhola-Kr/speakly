@@ -278,6 +278,16 @@ class RoomService {
     return history;
   }
 
+  async clearCallHistory() {
+    const uid = auth().currentUser?.uid;
+
+    if (!uid) {
+      throw new Error('User not logged in');
+    }
+
+    await database().ref(`callHistory/${uid}`).remove();
+  }
+
   listenCallHistory(callback: (history: CallHistory[]) => void) {
     const uid = auth().currentUser?.uid;
 
