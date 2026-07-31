@@ -53,14 +53,18 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
         return;
       }
 
+      console.log('OnlineRoomScreen -> setShowIncoming', room.status);
       switch (room.status) {
         case 'ringing':
           setIncomingRoom(room);
           setShowIncoming(true);
           break;
 
-        default:
+        case 'men_rejected':
+          setShowIncoming(false);
           break;
+
+        case 'ended':
       }
     });
 

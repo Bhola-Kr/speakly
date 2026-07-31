@@ -79,6 +79,32 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       ? femaleUsers
       : femaleUsers.filter(item => item.profile?.category === selected);
 
+  const onRandomCall = async () => {
+    if (calling) {
+      return;
+    }
+
+    try {
+      setCalling(true);
+      const randomRoom = await RoomService.getRandomFemaleRoom();
+
+      await RoomService.callFemale(randomRoom?.female?.uid);
+
+      navigation.navigate('OutgoingCall', {
+        user: {
+          uid: randomRoom?.female?.uid,
+          name: randomRoom?.female?.name,
+          avatarId: randomRoom?.female?.avatarId,
+        },
+        room: randomRoom,
+      });
+      setCalling(false);
+    } catch (e: any) {
+      setCalling(false);
+      Alert.alert('Info', e.message);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
@@ -99,7 +125,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               }
             />
 
-            <Banner />
+            <Banner randomCall={onRandomCall} calling={calling} />
 
             <Text style={styles.heading}>Featured Experts</Text>
 

@@ -9,7 +9,8 @@ export type RoomStatus =
   | 'accepted'
   | 'active'
   | 'rejected'
-  | 'ended';
+  | 'ended'
+  | 'men_rejected';
 
 export type CallStatus = 'Missed' | 'Completed';
 
@@ -187,6 +188,15 @@ class RoomService {
     });
   }
 
+  async menRejectCall(femaleUid: string) {
+    await database().ref(`rooms/${femaleUid}`).update({
+      status: 'men_rejected',
+      male: null,
+      currentCallId: '',
+      updatedAt: Date.now(),
+    });
+  }
+
   async callConnected(femaleUid: string) {
     await database().ref(`rooms/${femaleUid}`).update({
       status: 'active',
@@ -347,6 +357,46 @@ class RoomService {
       male: null,
       updatedAt: Date.now(),
     });
+  }
+  async getRandomFemaleRoom(): Promise<Room> {
+    const snapshot = await database()
+      .ref('rooms')
+      .orderByChild('status')
+      .equalTo('waiting')
+      .once('value');
+
+    const rooms: Room[] = [];
+
+    snapshot.forEach(child => {
+      rooms.push(child.val() as Room);
+      return false;
+    });
+
+    if (rooms.length === 0) {
+      throw new Error('No female users are currently online.');
+    }
+
+    // Shuffle so every user has an equal chance
+    const shuffled = rooms.sort(() => Math.random() - 0.5);
+
+    // Return the first room whose user profile is still online
+    for (const room of shuffled) {
+      const userSnapshot = await database()
+        .ref(`users/${room.female.uid}`)
+        .once('value');
+
+      if (!userSnapshot.exists()) {
+        continue;
+      }
+
+      const user = userSnapshot.val();
+
+      if (user?.profile?.status === 'online') {
+        return room;
+      }
+    }
+
+    throw new Error('No female users are currently online.');
   }
 }
 

@@ -1,10 +1,15 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../../constants/colors';
 
-const Banner = () => {
+interface Props {
+  randomCall: () => void;
+  calling: boolean;
+}
+
+const Banner = ({ randomCall, calling }: Props) => {
   return (
     <LinearGradient
       colors={['#202020', '#121212']}
@@ -47,34 +52,57 @@ const Banner = () => {
           </Text>
 
           <TouchableOpacity
+            onPress={randomCall}
             activeOpacity={0.9}
+            disabled={calling}
             style={{
               marginTop: 12,
-              backgroundColor: Colors.secondary,
-              height: 38,
-              borderRadius: 19,
+              backgroundColor: calling ? '#8A8A8A' : Colors.secondary,
+              height: 42,
+              borderRadius: 21,
               alignSelf: 'flex-start',
-              paddingHorizontal: 16,
+              paddingHorizontal: 18,
               flexDirection: 'row',
               alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 140,
             }}
           >
-            <MaterialCommunityIcons
-              name="phone"
-              size={16}
-              color={Colors.black}
-            />
+            {calling ? (
+              <>
+                <ActivityIndicator size="small" color={Colors.black} />
 
-            <Text
-              style={{
-                color: Colors.black,
-                fontWeight: '700',
-                fontSize: 13,
-                marginLeft: 6,
-              }}
-            >
-              Random Call
-            </Text>
+                <Text
+                  style={{
+                    color: Colors.black,
+                    fontWeight: '700',
+                    fontSize: 13,
+                    marginLeft: 8,
+                  }}
+                >
+                  Connecting...
+                </Text>
+              </>
+            ) : (
+              <>
+                <MaterialCommunityIcons
+                  name="phone"
+                  size={16}
+                  color={Colors.black}
+                />
+
+                <Text
+                  style={{
+                    color: Colors.black,
+                    fontWeight: '700',
+                    fontSize: 13,
+                    marginLeft: 6,
+                  }}
+                >
+                  Random Call
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 

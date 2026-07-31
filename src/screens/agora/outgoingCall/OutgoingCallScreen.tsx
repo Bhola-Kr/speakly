@@ -67,6 +67,11 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             navigation.goBack();
             break;
 
+          case 'men_rejected':
+            clearTimeout(timeout);
+            navigation.goBack();
+            break;
+
           case 'waiting':
             clearTimeout(timeout);
             navigation.goBack();
@@ -212,8 +217,8 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       <TouchableOpacity
         activeOpacity={0.85}
         style={styles.endButton}
-        onPress={() => {
-          navigation.goBack();
+        onPress={async () => {
+          await RoomService.menRejectCall(femaleUid);
         }}
       >
         <Text style={styles.endText}>Cancel Call</Text>
