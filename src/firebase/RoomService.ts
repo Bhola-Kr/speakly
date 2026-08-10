@@ -1,6 +1,7 @@
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
 import { calculateCallAmount } from '../constants/constants';
+import { fetchAgoraToken } from '../api/calls';
 
 export type RoomStatus =
   | 'offline'
@@ -33,14 +34,21 @@ export interface UserInfo {
 export interface Room {
   roomId: string;
   currentCallId: string;
+  agora: {
+    male: {
+      uid: number;
+      token: string;
+    };
+    female: {
+      uid: number;
+      token: string;
+    };
+  };
   status: RoomStatus;
-
   female: UserInfo;
   male: UserInfo | null;
-
   createdAt: number;
   updatedAt: number;
-
   callStartedAt?: number;
 }
 
@@ -67,8 +75,8 @@ class RoomService {
 
   async goOnline() {
     const firebaseUser = this.getCurrentUser();
-
-    const user = await this.getUser(firebaseUser.uid);
+    const user = await this.getUser(firebaseUser?.uid);
+    const agoraRes = await fetchAgoraToken();
 
     const room: Room = {
       roomId: firebaseUser.uid,
@@ -82,20 +90,32 @@ class RoomService {
       male: null,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      agora: {
+        male: agoraRes.male,
+        female: agoraRes.female,
+      },
     };
 
-    await database().ref(`rooms/${firebaseUser.uid}`).set(room);
+    const updates: Record<string, any> = {
+      [`rooms/${firebaseUser.uid}`]: room,
+      [`users/${user.uid}/profile/status`]: 'online',
+    };
+
+    await database().ref().update(updates);
   }
 
   async goOffline() {
     const firebaseUser = this.getCurrentUser();
 
-    await database().ref(`rooms/${firebaseUser.uid}`).update({
-      status: 'offline',
-      male: null,
-      currentCallId: '',
-      updatedAt: Date.now(),
-    });
+    const updates: Record<string, any> = {
+      [`rooms/${firebaseUser.uid}/status`]: 'offline',
+      [`rooms/${firebaseUser.uid}/male`]: null,
+      [`rooms/${firebaseUser.uid}/currentCallId`]: '',
+      [`rooms/${firebaseUser.uid}/updatedAt`]: Date.now(),
+      [`users/${firebaseUser.uid}/profile/status`]: 'offline',
+    };
+
+    await database().ref().update(updates);
   }
 
   async isBlocked(femaleUid: string, maleUid: string) {
@@ -173,19 +193,28 @@ class RoomService {
   }
 
   async acceptCall(femaleUid: string) {
-    await database().ref(`rooms/${femaleUid}`).update({
-      status: 'accepted',
-      updatedAt: Date.now(),
-    });
+    const firebaseUser = this.getCurrentUser();
+    const updates: Record<string, any> = {
+      [`rooms/${femaleUid}/status`]: 'accepted',
+      [`rooms/${femaleUid}/updatedAt`]: Date.now(),
+      [`users/${firebaseUser.uid}/profile/status`]: 'busy',
+    };
+
+    await database().ref().update(updates);
   }
 
   async rejectCall(femaleUid: string) {
-    await database().ref(`rooms/${femaleUid}`).update({
-      status: 'rejected',
-      male: null,
-      currentCallId: '',
-      updatedAt: Date.now(),
-    });
+    const firebaseUser = this.getCurrentUser();
+
+    const updates: Record<string, any> = {
+      [`rooms/${femaleUid}/status`]: 'rejected',
+      [`rooms/${femaleUid}/updatedAt`]: Date.now(),
+      [`rooms/${femaleUid}/male`]: null,
+      [`rooms/${femaleUid}/currentCallId`]: null,
+      [`users/${firebaseUser.uid}/profile/status`]: 'busy',
+    };
+
+    await database().ref().update(updates);
   }
 
   async menRejectCall(femaleUid: string) {

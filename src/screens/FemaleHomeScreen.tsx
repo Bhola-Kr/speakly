@@ -92,11 +92,6 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const goOnLine = async () => {
     try {
       await RoomService.goOnline();
-
-      await updateProfile({
-        status: 'online',
-      });
-
       navigation.navigate('OnlineRoom');
     } catch (e) {
       console.log(e);

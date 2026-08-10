@@ -1772,6 +1772,11 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@msg91comm/sendotp-react-native@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@msg91comm/sendotp-react-native/-/sendotp-react-native-2.1.0.tgz#699726c5077b8ecfbbde6a60f58c0d29973c7bf4"
+  integrity sha512-Y2jvewF7iAseChAC2ONvczmGuTnEuKN5KDTqIogTZGHNPMBIF7Ledxbt8m27CDYb56h9AkybZr/+VmysDrmMdw==
+
 "@nicolo-ribaudo/eslint-scope-5-internals@5.1.1-v1":
   version "5.1.1-v1"
   resolved "https://registry.yarnpkg.com/@nicolo-ribaudo/eslint-scope-5-internals/-/eslint-scope-5-internals-5.1.1-v1.tgz#dbf733a965ca47b1973177dc0bb6c889edcfb129"

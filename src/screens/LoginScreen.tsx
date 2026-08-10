@@ -14,8 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 
-import { Alert, ActivityIndicator } from 'react-native';
-import AuthData from '../firebase/authData';
+import { Alert } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -31,6 +30,7 @@ import CountryPicker, {
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import GradientButton from '../components/GradientButton';
 import Colors from '../constants/colors';
+import { OTPWidget } from '@msg91comm/sendotp-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -78,17 +78,23 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       setLoading(true);
 
-      const phone = `+${callingCode}${mobile}`;
+      const phone = `${callingCode}${mobile}`;
 
-      const confirmation = await AuthData.sendOTP(phone);
+      const response = await OTPWidget.sendOTP({
+        identifier: phone,
+      });
+      console.log('onGetOTP -> response', response);
 
+      if (response?.type === 'error') {
+        throw new Error(
+          response?.message || 'Failed to send OTP. Please try again.',
+        );
+      }
       navigation.navigate('Otp', {
-        confirmation,
         phone,
+        reqId: response?.message,
       });
     } catch (error: any) {
-      console.log(error);
-
       Alert.alert('Unable to send OTP', error?.message || 'Please try again.');
     } finally {
       setLoading(false);

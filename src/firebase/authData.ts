@@ -1,6 +1,9 @@
-import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { OTPWidget } from '@msg91comm/sendotp-react-native';
+import auth from '@react-native-firebase/auth';
+import { fetchFirebaseToken } from '../api/calls';
+import { Alert } from 'react-native';
 
 export type UpdateProfileData = {
   id?: string;
@@ -15,27 +18,81 @@ export type UpdateProfileData = {
 class AuthData {
   confirmation: any = null;
 
-  //-----------------------------
-  // Send OTP
+  // Send OTP using MSG91
   //-----------------------------
   sendOTP = async (phone: string) => {
-    return await auth().signInWithPhoneNumber(phone);
+    try {
+      const response = await OTPWidget.sendOTP({
+        identifier: phone,
+      });
+
+      return response;
+    } catch (error) {
+      console.error('MSG91 OTP Error:', error);
+      throw error;
+    }
   };
 
-  //-----------------------------
-  // Verify OTP
-  //-----------------------------
+  verifyOTPAndLogin = async (phone: string, code: string, reqId: string) => {
+    try {
+      console.log('verifyOTPAndLogin -> phone:', phone, reqId, code);
+      if (!phone?.trim()) {
+        Alert.alert('Error', 'Phone number is required.');
+        return null;
+      }
 
-  verifyOTP = async (confirmation: any, code: string) => {
-    const credential = await confirmation.confirm(code);
+      if (!code?.trim()) {
+        Alert.alert('Error', 'Please enter the OTP.');
+        return null;
+      }
 
-    const user = credential.user;
+      const res = await OTPWidget.verifyOTP({
+        otp: code.trim(),
+        reqId: reqId,
+      });
+      console.log('AuthData -> verifyOTPAndLogin -> res', res);
 
-    await AsyncStorage.setItem('uid', user.uid);
+      if (res?.type === 'error') {
+        throw new Error(res?.message || 'OTP verification failed.');
+      }
 
-    return user;
+      const token = await fetchFirebaseToken(phone);
+
+      if (!token) {
+        throw new Error('Unable to generate Firebase token.');
+      }
+
+      const user = await this.loginWithCustomToken(token);
+
+      if (!user?.uid) {
+        throw new Error('Authentication failed.');
+      }
+
+      await AsyncStorage.setItem('uid', user.uid);
+
+      return user;
+    } catch (error: any) {
+      console.error('verifyOTPAndLogin:', error);
+
+      let message = 'Something went wrong. Please try again.';
+
+      if (typeof error?.message === 'string' && error.message.trim()) {
+        message = error.message;
+      }
+
+      Alert.alert('Verification Failed', message);
+
+      throw new Error(message);
+    }
   };
 
+  loginWithCustomToken = async (token: string) => {
+    const credential = await auth().signInWithCustomToken(token);
+
+    await AsyncStorage.setItem('uid', credential.user.uid);
+
+    return credential.user;
+  };
   //-----------------------------
   // Create User
   //-----------------------------

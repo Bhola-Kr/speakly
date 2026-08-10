@@ -26,7 +26,6 @@ import styles from './styles';
 import Colors from '../../constants/colors';
 import RoomService from '../../firebase/RoomService';
 import { femaleAvatars } from '../../constants/constants';
-import authData from '../../firebase/authData';
 
 type Props = {
   navigation: any;
@@ -35,17 +34,16 @@ type Props = {
 
 const CallScreen = ({ navigation, route }: Props) => {
   const {
-    token = '007eJxTYHh67coJXSMWHRfv59cEphzfc+v79nUb1t1nam6btoZTNzZWgSHNLCk12TTJ0sQgNdEkydAwMc3IMM04ydLYMM3c2NTYzGZBTlZDICMDR/QHBkYoBPG5GcryM5NT40sSczNzGBgAyEcjdg==',
     channelName = 'voice_tamil',
     userName = 'N/A',
     avatarId = 1,
     gender = 'male',
     femaleUid,
+    agora,
   } = route?.params ?? {};
 
-  const uid =
-    Number(authData.getCurrentUser()?.phoneNumber) ||
-    Math.floor(Math.random() * 100000);
+  const token = gender === 'male' ? agora?.male?.token : agora?.female?.token;
+  const uid = gender === 'male' ? agora?.male?.uid : agora?.female?.uid;
 
   const engine = useRef<IRtcEngine | null>(null);
 

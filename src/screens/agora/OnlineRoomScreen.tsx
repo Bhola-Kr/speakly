@@ -23,6 +23,7 @@ import IncomingCallModal from './IncomingCallModal';
 import { femaleAvatars } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 import RoomService, { Room } from '../../firebase/RoomService';
+import authData from '../../firebase/authData';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
@@ -31,11 +32,12 @@ type Props = {
 };
 
 const OnlineRoomScreen = ({ navigation }: Props) => {
-  const { user, updateProfile } = useUser();
+  const { updateProfile } = useUser();
   const [incomingRoom, setIncomingRoom] = useState<Room | null>(null);
   const isFocused = useIsFocused();
   const pulse = useRef(new Animated.Value(0)).current;
   const appState = useRef(AppState.currentState);
+  const myUid = authData.getCurrentUser()?.uid || 'unknown';
 
   const [timer, setTimer] = useState('00:00:00');
   const [showIncoming, setShowIncoming] = useState(false);
@@ -48,7 +50,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   }, [isFocused]);
 
   React.useEffect(() => {
-    const unsubscribe = RoomService.listenIncomingCall(user.uid, room => {
+    const unsubscribe = RoomService.listenIncomingCall(myUid, room => {
       if (!room) {
         return;
       }
@@ -148,16 +150,14 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     }
 
     setShowIncoming(false);
-    await RoomService.acceptCall(user?.profile?.uid);
-    await updateProfile({
-      status: 'busy',
-    });
+    await RoomService.acceptCall(myUid);
     navigation.replace('Call', {
       gender: 'female',
       userName: incomingRoom?.male?.name,
       avatarId: incomingRoom?.male?.avatarId,
-      femaleUid: incomingRoom?.female?.uid,
+      femaleUid: myUid,
       uid: incomingRoom?.roomId,
+      agora: incomingRoom?.agora,
     });
   };
 
@@ -165,11 +165,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     setShowIncoming(false);
 
     try {
-      await updateProfile({
-        status: 'offline',
-      });
-
-      await RoomService.rejectCall(user?.uid);
+      await RoomService.rejectCall(myUid);
 
       setTimeout(() => {
         if (navigation.canGoBack()) {

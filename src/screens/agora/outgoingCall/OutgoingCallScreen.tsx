@@ -28,6 +28,7 @@ interface Props {
 
 export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const data = route?.params?.user;
+  console.log('data', data);
   const femaleUid = data.uid;
 
   const ripple = useRef(new Animated.Value(0)).current;
@@ -53,8 +54,9 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             navigation.replace('Call', {
               gender: 'male',
               userName: data?.name,
-              avatarId: data?.name?.avatarId,
-              femaleUid: data?.name?.uid,
+              avatarId: data?.avatarId,
+              femaleUid: data?.uid,
+              agora: room?.agora,
             });
             break;
 

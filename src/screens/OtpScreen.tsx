@@ -20,6 +20,7 @@ import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
 import { useUser } from '../hooks/UserContext';
+import { OTPWidget } from '@msg91comm/sendotp-react-native';
 
 interface Props {
   navigation: any;
@@ -28,14 +29,15 @@ interface Props {
 
 const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const phoneNumber = route.params.phone;
+  const reqId = route.params.reqId;
+  console.log('reqId', reqId);
   const { refreshUser } = useUser();
-  const [confirmation, setConfirmation] = useState(route.params.confirmation);
 
   const [otp, setOtp] = useState('');
   const [timer, setTimer] = useState(30);
   const [loading, setLoading] = useState(false);
 
-  const isValid = otp.length === 6;
+  const isValid = otp.length === 4;
 
   useEffect(() => {
     if (timer <= 0) {
@@ -57,10 +59,18 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
     try {
       setLoading(true);
+      console.log('verifyOtp -> true', phoneNumber, otp, reqId);
 
-      const firebaseUser = await authData.verifyOTP(confirmation, otp);
+      const firebaseUser = await authData.verifyOTPAndLogin(
+        phoneNumber,
+        otp,
+        reqId,
+      );
 
-      const userInfo = await authData.getUser(firebaseUser.uid);
+      if (!firebaseUser?.uid) {
+        throw new Error('Failed to authenticate user.');
+      }
+      const userInfo = await authData.getUser(firebaseUser?.uid);
       console.log('verifyOtp -> userInfo', userInfo);
 
       // Brand new user
@@ -134,18 +144,23 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     if (loading) {
       return;
     }
+    setLoading(true);
 
     try {
-      setLoading(true);
+      const response = await OTPWidget.retryOTP({
+        reqId,
+        retryChannel: '11',
+      });
 
-      const newConfirmation = await authData.sendOTP(phoneNumber);
+      if (response?.type === 'error') {
+        throw new Error(
+          response?.message || 'Failed to resend OTP. Please try again.',
+        );
+      }
 
-      setConfirmation(newConfirmation);
-
+      console.log('resendOtp -> response', response);
       setOtp('');
-
       setTimer(30);
-
       Alert.alert('Success', 'OTP has been sent successfully.');
     } catch (e: any) {
       Alert.alert('Unable to resend OTP', e?.message || 'Please try again.');
@@ -210,7 +225,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
                 value={otp}
                 onChangeText={text => setOtp(text.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
-                maxLength={6}
+                maxLength={4}
                 placeholder="Enter OTP"
                 placeholderTextColor={Colors.placeholder}
                 style={styles.input}
