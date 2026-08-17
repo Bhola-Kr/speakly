@@ -32,8 +32,8 @@ import authData from './firebase/authData';
 
 import { OTPWidget } from '@msg91comm/sendotp-react-native';
 
-const WIDGET_ID = '366861655a61323136323339';
-const AUTH_TOKEN = '556220TeXCG9I0Yc6a6d8b8cP1';
+const widgetId = '3668716f3732343639373333';
+const tokenAuth = '556220TuySLXtBLFE6a833021P1';
 
 const Stack = createNativeStackNavigator();
 
@@ -118,7 +118,7 @@ export default function App() {
   const appState = React.useRef(AppState.currentState);
 
   React.useEffect(() => {
-    OTPWidget.initializeWidget(WIDGET_ID, AUTH_TOKEN);
+    OTPWidget.initializeWidget(widgetId, tokenAuth);
     const subscription = AppState.addEventListener(
       'change',
       async (nextState: AppStateStatus) => {

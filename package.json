@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "apk": "cd android && ./gradlew assembleRelease && cd ..",
-    "aab": "cd android && ./gradlew bundleRelease --no-daemon && cd ..",
+    "apk": "cd android && ./gradlew assembleRelease && cd .. && open android/app/build/outputs/apk/release",
+    "aab": "cd android && ./gradlew bundleRelease --no-daemon && cd .. && open android/app/build/outputs/bundle/release",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",

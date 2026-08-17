@@ -29,32 +29,32 @@ const tutorialData = [
     id: '1',
     title: 'Go Online',
     subtitle:
-      'Become available instantly and start receiving paid voice calls from verified users.',
+      'Become available and receive anonymous voice calls from people who want to talk.',
     icon: 'radio',
     colors: ['#111827', '#374151'],
   },
   {
     id: '2',
-    title: 'Earn More Coins',
+    title: 'Talk Freely',
     subtitle:
-      'Stay online during peak hours to maximize your earnings from every conversation.',
-    icon: 'wallet',
+      'Enjoy one-on-one conversations without sharing your personal identity.',
+    icon: 'chatbubbles',
     colors: ['#B88A1C', '#D4AF37'],
   },
   {
     id: '3',
     title: 'Stay Safe',
     subtitle:
-      'You can block or report any user at any time for a secure experience.',
+      'Block or report anyone at any time. Your privacy always comes first.',
     icon: 'shield-checkmark',
     colors: ['#0F766E', '#14B8A6'],
   },
   {
     id: '4',
-    title: 'Grow Faster',
+    title: 'Have Fun',
     subtitle:
-      'Answer calls politely and complete conversations to improve your profile.',
-    icon: 'trending-up',
+      'Relax, make new friends, pass the time, and enjoy meaningful voice conversations.',
+    icon: 'happy',
     colors: ['#6D28D9', '#8B5CF6'],
   },
 ];
@@ -200,52 +200,6 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* ================= NOTICEBOARD ================= */}
-
-        <View style={styles.card}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Noticeboard</Text>
-          </View>
-
-          {noticeData.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.9}
-              style={styles.noticeCard}
-            >
-              <Image
-                source={{
-                  uri: item.image,
-                }}
-                style={styles.noticeImage}
-              />
-
-              <View style={styles.noticeContent}>
-                <Text style={styles.noticeTitle}>Invite Friends & Earn</Text>
-
-                <Text style={styles.noticeDesc}>
-                  Invite your friends and earn bonus coins instantly after their
-                  first recharge.
-                </Text>
-
-                <View style={styles.noticeFooter}>
-                  <View style={styles.rewardBadge}>
-                    <Ionicons name="gift" size={15} color={Colors.secondary} />
-
-                    <Text style={styles.rewardBadgeText}>Bonus Rewards</Text>
-                  </View>
-
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={Colors.secondary}
-                  />
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* ================= DAILY REMINDER ================= */}
 
         <LinearGradient
@@ -260,8 +214,8 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.reminderTitle}>Daily Reminder</Text>
 
             <Text style={styles.reminderDesc}>
-              Stay online consistently to receive more calls and increase your
-              daily earnings.
+              Go online whenever you're free to meet new people, have
+              interesting conversations, and enjoy your time.
             </Text>
           </View>
 
@@ -302,6 +256,25 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             height: 40,
           }}
         />
+
+        <LinearGradient
+          colors={Colors.buttonGradient}
+          style={styles.reminderCard}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reminderTitle}>Enjoy</Text>
+
+            <Text style={styles.reminderDesc}>
+              Connect with people through private voice conversations. Your
+              identity stays hidden, making every chat comfortable, safe and
+              pressure-free.
+            </Text>
+          </View>
+
+          <View style={styles.reminderIcon}>
+            <Ionicons name="heart" size={34} color={Colors.white} />
+          </View>
+        </LinearGradient>
       </ScrollView>
     </SafeAreaView>
   );

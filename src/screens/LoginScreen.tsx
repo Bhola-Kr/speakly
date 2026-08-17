@@ -31,17 +31,18 @@ import { moderateScale, verticalScale } from 'react-native-size-matters';
 import GradientButton from '../components/GradientButton';
 import Colors from '../constants/colors';
 import { OTPWidget } from '@msg91comm/sendotp-react-native';
+import colors from '../constants/colors';
 
 const { width } = Dimensions.get('window');
 
 const slides = [
   {
-    image: require('../assets/onboarding1.png'),
-    title: 'Talk. Connect. Anytime. Anywhere.',
+    image: require('../assets/onboarding2.png'),
+    title: 'Meet New Friends With Anonymous Voice Calls.',
   },
   {
-    image: require('../assets/onboarding2.png'),
-    title: 'Pay Only for What You Use',
+    title: 'Your Identity Stays Private. Just Relax & Talk.',
+    image: require('../assets/onboarding1.png'),
   },
 ];
 
@@ -225,7 +226,7 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
 
   logo: {
