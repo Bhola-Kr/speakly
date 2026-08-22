@@ -20,7 +20,7 @@ import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
 import { useUser } from '../hooks/UserContext';
-import { OTPWidget } from '@msg91comm/sendotp-react-native';
+import { resendMSGOtp, verifyMSGOtp } from '../api/calls';
 
 interface Props {
   navigation: any;
@@ -59,18 +59,27 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
     try {
       setLoading(true);
-      console.log('verifyOtp -> true', phoneNumber, otp, reqId);
 
-      const firebaseUser = await authData.verifyOTPAndLogin(
-        phoneNumber,
-        otp,
-        reqId,
-      );
+      console.log('verifyOtp ->', phoneNumber, otp, reqId);
 
-      if (!firebaseUser?.uid) {
-        throw new Error('Failed to authenticate user.');
+      // Verify OTP through your backend
+      const response = await verifyMSGOtp(phoneNumber, otp, reqId);
+      authData.firebaseLogin(phoneNumber);
+
+      console.log('verifyOtp -> response', response);
+
+      if (!response?.success || !response?.uid) {
+        throw new Error(response?.message || 'Failed to authenticate user.');
       }
-      const userInfo = await authData.getUser(firebaseUser?.uid);
+
+      const firebaseUser = {
+        uid: response.uid,
+        token: response.token,
+      };
+
+      // Get user information using the UID
+      const userInfo = await authData.getUser(firebaseUser.uid);
+
       console.log('verifyOtp -> userInfo', userInfo);
 
       // Brand new user
@@ -107,32 +116,9 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
         });
       }
     } catch (e: any) {
-      let message = 'Something went wrong. Please try again.';
+      console.error('verifyOtp -> error', e);
 
-      switch (e?.code) {
-        case 'auth/invalid-verification-code':
-          message = 'The OTP you entered is incorrect. Please try again.';
-          break;
-
-        case 'auth/code-expired':
-          message = 'This OTP has expired. Please request a new OTP.';
-          break;
-
-        case 'auth/session-expired':
-          message =
-            'Your verification session has expired. Please resend the OTP.';
-          break;
-
-        case 'auth/too-many-requests':
-          message =
-            'Too many attempts. Please wait a few minutes and try again.';
-          break;
-
-        default:
-          if (e?.message) {
-            message = e.message;
-          }
-      }
+      const message = e?.message || 'Something went wrong. Please try again.';
 
       Alert.alert('Verification Failed', message);
     } finally {
@@ -144,25 +130,30 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     if (loading) {
       return;
     }
-    setLoading(true);
 
     try {
-      const response = await OTPWidget.retryOTP({
-        reqId,
-        retryChannel: '11',
-      });
+      setLoading(true);
 
-      if (response?.type === 'error') {
+      console.log('resendOtp ->', phoneNumber, reqId);
+
+      // Resend OTP through your backend
+      const response = await resendMSGOtp(phoneNumber, reqId);
+
+      console.log('resendOtp -> response', response);
+
+      if (!response?.success) {
         throw new Error(
           response?.message || 'Failed to resend OTP. Please try again.',
         );
       }
 
-      console.log('resendOtp -> response', response);
       setOtp('');
       setTimer(30);
+
       Alert.alert('Success', 'OTP has been sent successfully.');
     } catch (e: any) {
+      console.error('resendOtp -> error', e);
+
       Alert.alert('Unable to resend OTP', e?.message || 'Please try again.');
     } finally {
       setLoading(false);

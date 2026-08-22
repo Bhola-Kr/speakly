@@ -1,6 +1,5 @@
 import database from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { OTPWidget } from '@msg91comm/sendotp-react-native';
 import auth from '@react-native-firebase/auth';
 import { fetchFirebaseToken } from '../api/calls';
 import { Alert } from 'react-native';
@@ -18,44 +17,8 @@ export type UpdateProfileData = {
 class AuthData {
   confirmation: any = null;
 
-  // Send OTP using MSG91
-  //-----------------------------
-  sendOTP = async (phone: string) => {
+  firebaseLogin = async (phone: string) => {
     try {
-      const response = await OTPWidget.sendOTP({
-        identifier: phone,
-      });
-
-      return response;
-    } catch (error) {
-      console.error('MSG91 OTP Error:', error);
-      throw error;
-    }
-  };
-
-  verifyOTPAndLogin = async (phone: string, code: string, reqId: string) => {
-    try {
-      console.log('verifyOTPAndLogin -> phone:', phone, reqId, code);
-      if (!phone?.trim()) {
-        Alert.alert('Error', 'Phone number is required.');
-        return null;
-      }
-
-      if (!code?.trim()) {
-        Alert.alert('Error', 'Please enter the OTP.');
-        return null;
-      }
-
-      const res = await OTPWidget.verifyOTP({
-        otp: code.trim(),
-        reqId: reqId,
-      });
-      console.log('AuthData -> verifyOTPAndLogin -> res', res);
-
-      if (res?.type === 'error') {
-        throw new Error(res?.message || 'OTP verification failed.');
-      }
-
       const token = await fetchFirebaseToken(phone);
 
       if (!token) {

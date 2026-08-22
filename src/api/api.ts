@@ -1,12 +1,5 @@
 const BASE_URL = 'https://us-central1-voice-tamil.cloudfunctions.net/api';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  error?: string;
-  data?: T;
-}
-
 class Api {
   private async request<T>(
     endpoint: string,
@@ -46,16 +39,84 @@ class Api {
     return this.request<T>(endpoint, 'DELETE');
   }
 
+  // ============================================
+  // MSG91 - SEND OTP
+  // ============================================
+
+  sendOtp(phone: string) {
+    return this.post<SendOtpResponse>('/sendOtp', {
+      phone,
+    });
+  }
+
+  // ============================================
+  // MSG91 - RESEND OTP VIA SMS
+  // ============================================
+
+  resendOtp(phone: string, reqId: string) {
+    return this.post<ResendOtpResponse>('/resendOtp', {
+      phone,
+      reqId,
+    });
+  }
+
+  // ============================================
+  // MSG91 - VERIFY OTP
+  // ============================================
+
+  verifyOtp(phone: string, otp: string, reqId: string) {
+    return this.post<VerifyOtpResponse>('/verifyOtp', {
+      phone,
+      otp,
+      reqId,
+    });
+  }
+
+  // ============================================
+  // AGORA
+  // ============================================
+
   generateAgoraToken() {
     return this.post<AgoraTokenResponse>('/generateAgoraToken');
   }
 
+  // ============================================
+  // FIREBASE TOKEN
+  // ============================================
+
   generateFirebaseToken(phone: string) {
-    return this.post<AgoraTokenResponse>('/generateFirebaseToken', {
+    return this.post<FirebaseTokenResponse>('/generateFirebaseToken', {
       phone,
     });
   }
 }
+
+// ============================================
+// MSG91 TYPES
+// ============================================
+
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  reqId: string;
+}
+
+export interface ResendOtpResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
+  uid: string;
+  token: string;
+}
+
+// ============================================
+// AGORA TYPES
+// ============================================
 
 export interface AgoraTokenResponse {
   success: boolean;
@@ -64,6 +125,16 @@ export interface AgoraTokenResponse {
   channelName: string;
   uid: number;
   expiresAt: number;
+}
+
+// ============================================
+// FIREBASE TOKEN TYPES
+// ============================================
+
+export interface FirebaseTokenResponse {
+  success: boolean;
+  uid: string;
+  token: string;
 }
 
 export default new Api();

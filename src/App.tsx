@@ -30,11 +30,6 @@ import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
 import { UserProvider, useUser } from './hooks/UserContext';
 import authData from './firebase/authData';
 
-import { OTPWidget } from '@msg91comm/sendotp-react-native';
-
-const widgetId = '3668716f3732343639373333';
-const tokenAuth = '556220TuySLXtBLFE6a833021P1';
-
 const Stack = createNativeStackNavigator();
 
 function RootStack() {
@@ -118,7 +113,6 @@ export default function App() {
   const appState = React.useRef(AppState.currentState);
 
   React.useEffect(() => {
-    OTPWidget.initializeWidget(widgetId, tokenAuth);
     const subscription = AppState.addEventListener(
       'change',
       async (nextState: AppStateStatus) => {

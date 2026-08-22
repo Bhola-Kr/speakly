@@ -30,8 +30,7 @@ import CountryPicker, {
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import GradientButton from '../components/GradientButton';
 import Colors from '../constants/colors';
-import { OTPWidget } from '@msg91comm/sendotp-react-native';
-import colors from '../constants/colors';
+import { sendOtp } from '../api/calls';
 
 const { width } = Dimensions.get('window');
 
@@ -81,21 +80,23 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
       const phone = `${callingCode}${mobile}`;
 
-      const response = await OTPWidget.sendOTP({
-        identifier: phone,
-      });
+      const response = await sendOtp(phone);
+
       console.log('onGetOTP -> response', response);
 
-      if (response?.type === 'error') {
+      if (!response?.success) {
         throw new Error(
           response?.message || 'Failed to send OTP. Please try again.',
         );
       }
+
       navigation.navigate('Otp', {
         phone,
-        reqId: response?.message,
+        reqId: response.reqId,
       });
     } catch (error: any) {
+      console.error('onGetOTP -> error', error);
+
       Alert.alert('Unable to send OTP', error?.message || 'Please try again.');
     } finally {
       setLoading(false);
@@ -226,7 +227,7 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
   },
 
   logo: {
