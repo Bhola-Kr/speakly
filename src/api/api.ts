@@ -89,6 +89,26 @@ class Api {
       phone,
     });
   }
+
+  createOrder(
+    amount: number,
+    customerId: string,
+    customerPhone: string,
+    customerName: string,
+  ) {
+    return this.post<CreateOrderResponse>('/createOrder', {
+      amount,
+      customerId,
+      customerPhone,
+      customerName,
+    });
+  }
+
+  verifyOrder(orderId: string) {
+    return this.post<VerifyOrderResponse>('/verifyOrder', {
+      orderId,
+    });
+  }
 }
 
 // ============================================
@@ -135,6 +155,87 @@ export interface FirebaseTokenResponse {
   success: boolean;
   uid: string;
   token: string;
+}
+
+export interface CreateOrderResponse {
+  success: boolean;
+  message: string;
+
+  data: {
+    cart_details: any | null;
+
+    cf_order_id: string;
+
+    created_at: string;
+
+    customer_details: {
+      customer_id: string;
+      customer_name: string;
+      customer_email: string;
+      customer_phone: string;
+      customer_uid: string | null;
+    };
+
+    entity: string;
+
+    order_amount: number;
+
+    order_currency: string;
+
+    order_expiry_time: string;
+
+    order_id: string;
+
+    order_meta: {
+      notify_url: string;
+      offer_filters: any | null;
+      payment_methods: string;
+      payment_methods_filters: any | null;
+      return_url: string;
+      upi_app_priority: any | null;
+    };
+
+    order_note: string;
+
+    order_splits: any[];
+
+    order_status: string;
+
+    order_tags: {
+      company: string;
+      name: string;
+    };
+
+    payment_session_id: string;
+
+    products: {
+      one_click_checkout: {
+        enabled: boolean;
+        conditions: any[];
+      };
+
+      verify_pay: {
+        enabled: boolean;
+        conditions: any[];
+      };
+    };
+
+    terminal_data: any | null;
+  };
+}
+
+export interface VerifyOrderResponse {
+  success: boolean;
+  paid: boolean;
+  message: string;
+  data?: {
+    orderId: string;
+    cfOrderId: string;
+    amount: number;
+    currency: string;
+    status: string;
+    customerDetails?: any;
+  };
 }
 
 export default new Api();

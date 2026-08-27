@@ -29,6 +29,7 @@ import SplashScreen from './screens/SplashScreen';
 import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
 import { UserProvider, useUser } from './hooks/UserContext';
 import authData from './firebase/authData';
+import PaymentScreen from './screens/payment/PaymentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -66,6 +67,7 @@ function RootStack() {
       />
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Transaction" component={TransactionScreen} />
+      <Stack.Screen name="Payment" component={PaymentScreen} />
       <Stack.Screen name="Call" component={CallScreen} />
       <Stack.Screen name="IncomingCall" component={IncomingCallScreen} />
       <Stack.Screen name="OutgoingCall" component={OutgoingCallScreen} />

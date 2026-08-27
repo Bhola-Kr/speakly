@@ -68,11 +68,7 @@ const WalletScreen = ({ navigation }: any) => {
   }, [selectedPack]);
 
   const onRecharge = () => {
-    console.log('Recharge Pack', selectedPack);
-    // TODO:
-    // Razorpay
-    // Google Play Billing
-    // API
+    navigation.navigate('Payment', { pack: selectedPack });
   };
 
   return (

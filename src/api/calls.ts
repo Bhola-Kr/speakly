@@ -1,4 +1,4 @@
-import Api from '../api/api';
+import Api, { CreateOrderResponse } from '../api/api';
 
 // ============================================
 // TYPES
@@ -97,6 +97,31 @@ export const verifyMSGOtp = async (
     console.log('verifyOtp Error:', error);
     throw error;
   }
+};
+
+export const createOrder = async (
+  amount: number,
+  customerId: string,
+  customerPhone: string,
+  customerName: string,
+): Promise<CreateOrderResponse> => {
+  try {
+    const response = await Api.createOrder(
+      amount,
+      customerId,
+      customerPhone,
+      customerName,
+    );
+    console.log('response', response);
+    return response;
+  } catch (error) {
+    console.log('createOrder Error:', error);
+    throw error;
+  }
+};
+
+export const verifyOrder = async (orderId: string) => {
+  return Api.verifyOrder(orderId);
 };
 
 // ============================================
