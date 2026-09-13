@@ -5,7 +5,6 @@ import {
   Easing,
   Image,
   Modal,
-  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -109,7 +108,7 @@ const IncomingCallModal = ({
 
   return (
     <Modal visible={visible} transparent animationType="none">
-      <Pressable style={styles.overlay} onPress={onDecline}>
+      <View style={styles.overlay}>
         <Animated.View
           style={[
             styles.container,
@@ -238,7 +237,7 @@ const IncomingCallModal = ({
             <Text style={styles.buttonLabel}>Accept</Text>
           </View>
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 };

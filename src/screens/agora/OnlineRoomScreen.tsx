@@ -50,7 +50,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   }, [isFocused, updateProfile]);
 
   React.useEffect(() => {
-    const unsubscribe = RoomService.listenIncomingCall(myUid, room => {
+    const unsubscribe = RoomService.listenCallStatus(myUid, room => {
       if (!room) {
         return;
       }
@@ -63,10 +63,13 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
           break;
 
         case 'men_rejected':
+        case 'rejected':
+        case 'ended':
+        case 'offline':
+        case 'waiting':
+          setIncomingRoom(null);
           setShowIncoming(false);
           break;
-
-        case 'ended':
       }
     });
 
@@ -166,12 +169,6 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
     try {
       await RoomService.rejectCall(myUid);
-
-      setTimeout(() => {
-        if (navigation.canGoBack()) {
-          navigation.goBack();
-        }
-      }, 50); // Adjust to 500-1000ms if needed
     } catch (e) {
       console.log('goOffline ->', e);
 

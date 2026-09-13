@@ -48,6 +48,8 @@ const CallScreen = ({ navigation, route }: Props) => {
   const engine = useRef<IRtcEngine | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const billingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const billingStartingRef = useRef(false);
 
   const seconds = useRef(0);
 
@@ -96,6 +98,62 @@ const CallScreen = ({ navigation, route }: Props) => {
     setTimer('00:00');
   }, []);
 
+  const stopBilling = useCallback(() => {
+    if (billingTimerRef.current) {
+      clearInterval(billingTimerRef.current);
+      billingTimerRef.current = null;
+    }
+  }, []);
+
+  const endForInsufficientBalance = useCallback(async () => {
+    stopBilling();
+    stopTimer();
+
+    if (engine.current) {
+      engine.current.leaveChannel();
+      engine.current.release();
+      engine.current = null;
+    }
+
+    await RoomService.endCall(femaleUid);
+    Alert.alert(
+      'Balance Exhausted',
+      'Your wallet balance is insufficient to continue this call.',
+      [{ text: 'Add Balance', onPress: () => navigation.replace('Wallet') }],
+    );
+  }, [femaleUid, navigation, stopBilling, stopTimer]);
+
+  const startBilling = useCallback(async () => {
+    if (
+      gender !== 'male' ||
+      billingTimerRef.current ||
+      billingStartingRef.current
+    ) {
+      return;
+    }
+
+    billingStartingRef.current = true;
+
+    try {
+      const firstMinuteCharged = await RoomService.chargeCallMinute(femaleUid);
+
+      if (!firstMinuteCharged) {
+        await endForInsufficientBalance();
+        return;
+      }
+
+      billingTimerRef.current = setInterval(async () => {
+        const nextMinuteCharged = await RoomService.chargeCallMinute(femaleUid);
+
+        if (!nextMinuteCharged) {
+          await endForInsufficientBalance();
+        }
+      }, 60 * 1000);
+    } finally {
+      billingStartingRef.current = false;
+    }
+  }, [endForInsufficientBalance, femaleUid, gender]);
+
   const initializeAgora = useCallback(async () => {
     const permission = await requestPermission();
 
@@ -124,7 +182,7 @@ const CallScreen = ({ navigation, route }: Props) => {
         setStatus('Waiting for user...');
       },
 
-      onUserJoined: (_connection, remoteUid) => {
+      onUserJoined: async (_connection, remoteUid) => {
         console.log('Remote Joined', remoteUid);
 
         setConnected(true);
@@ -133,7 +191,8 @@ const CallScreen = ({ navigation, route }: Props) => {
 
         startTimer();
 
-        RoomService.callConnected(femaleUid);
+        await RoomService.callConnected(femaleUid);
+        await startBilling();
       },
 
       onUserOffline: () => {
@@ -142,6 +201,7 @@ const CallScreen = ({ navigation, route }: Props) => {
         setStatus('User Left');
 
         stopTimer();
+        stopBilling();
         RoomService.endCall(femaleUid);
         navigation.goBack();
       },
@@ -184,6 +244,8 @@ const CallScreen = ({ navigation, route }: Props) => {
     navigation,
     requestPermission,
     startTimer,
+    startBilling,
+    stopBilling,
     stopTimer,
     token,
     uid,
@@ -200,6 +262,7 @@ const CallScreen = ({ navigation, route }: Props) => {
         style: 'destructive',
         onPress: async () => {
           stopTimer();
+          stopBilling();
 
           if (engine.current) {
             engine.current.leaveChannel();
@@ -235,6 +298,7 @@ const CallScreen = ({ navigation, route }: Props) => {
 
     return () => {
       stopTimer();
+      stopBilling();
 
       if (engine.current) {
         engine.current.leaveChannel();
@@ -242,7 +306,7 @@ const CallScreen = ({ navigation, route }: Props) => {
         engine.current = null;
       }
     };
-  }, [initializeAgora, stopTimer]);
+  }, [initializeAgora, stopBilling, stopTimer]);
 
   return (
     <LinearGradient colors={['#111111', '#181818']} style={styles.container}>

@@ -76,6 +76,10 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const bannerRef = useRef<FlatList>(null);
 
   useEffect(() => {
+    if (!isFocused) {
+      return;
+    }
+
     updateProfile({
       status: 'offline',
     });

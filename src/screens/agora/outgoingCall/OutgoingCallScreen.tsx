@@ -31,15 +31,34 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const ripple = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0)).current;
+  const callResolved = useRef(false);
 
   const [dots, setDots] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+
+  const cancelCall = async () => {
+    if (cancelling) {
+      return;
+    }
+
+    try {
+      setCancelling(true);
+      await RoomService.menRejectCall(femaleUid);
+    } catch (error) {
+      console.error('Unable to cancel call:', error);
+      setCancelling(false);
+      Alert.alert('Unable to Cancel Call', 'Please try again.');
+    }
+  };
 
   useEffect(() => {
+    callResolved.current = false;
+
     const timeout = setTimeout(async () => {
       const snapshot = await database().ref(`rooms/${femaleUid}`).once('value');
       const room = snapshot.val();
       if (room?.status === 'ringing') {
-        await RoomService.rejectCall(femaleUid);
+        await RoomService.menRejectCall(femaleUid);
       }
     }, 30000);
 
@@ -47,8 +66,32 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       femaleUid,
 
       room => {
+        const closeCall = (title?: string, message?: string) => {
+          if (callResolved.current) {
+            return;
+          }
+
+          callResolved.current = true;
+          clearTimeout(timeout);
+
+          if (title && message) {
+            Alert.alert(title, message, [
+              { text: 'OK', onPress: () => navigation.goBack() },
+            ]);
+            return;
+          }
+
+          navigation.goBack();
+        };
+
         switch (room?.status) {
           case 'accepted':
+            if (callResolved.current) {
+              return;
+            }
+
+            callResolved.current = true;
+            clearTimeout(timeout);
             navigation.replace('Call', {
               gender: 'male',
               userName: data?.name,
@@ -59,22 +102,18 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             break;
 
           case 'rejected':
-            clearTimeout(timeout);
-            Alert.alert(
+            closeCall(
               'Call Ended',
               'Your call request was declined by the recipient.',
             );
-            navigation.goBack();
             break;
 
           case 'men_rejected':
-            clearTimeout(timeout);
-            navigation.goBack();
+            closeCall();
             break;
 
           case 'waiting':
-            clearTimeout(timeout);
-            navigation.goBack();
+            closeCall();
             break;
 
           case 'ended':
@@ -82,7 +121,10 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       },
     );
 
-    return unsubscribe;
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, [data?.avatarId, data?.name, data?.uid, femaleUid, navigation]);
 
   useEffect(() => {
@@ -217,11 +259,12 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       <TouchableOpacity
         activeOpacity={0.85}
         style={styles.endButton}
-        onPress={async () => {
-          await RoomService.menRejectCall(femaleUid);
-        }}
+        onPress={cancelCall}
+        disabled={cancelling}
       >
-        <Text style={styles.endText}>Cancel Call</Text>
+        <Text style={styles.endText}>
+          {cancelling ? 'Cancelling...' : 'Cancel Call'}
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

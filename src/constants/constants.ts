@@ -143,7 +143,7 @@ export const calculateAge = (birthYear: number | string): string => {
   return age >= 0 ? age.toString() : '';
 };
 
-const CALL_RATE_PER_MINUTE = 16;
+export const CALL_RATE_PER_MINUTE = 16;
 
 /**
  * Calculates call amount.

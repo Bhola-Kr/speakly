@@ -1,6 +1,9 @@
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
-import { calculateCallAmount } from '../constants/constants';
+import {
+  calculateCallAmount,
+  CALL_RATE_PER_MINUTE,
+} from '../constants/constants';
 import { fetchAgoraToken } from '../api/calls';
 
 export type RoomStatus =
@@ -50,6 +53,7 @@ export interface Room {
   createdAt: number;
   updatedAt: number;
   callStartedAt?: number;
+  chargedAmount?: number;
 }
 
 class RoomService {
@@ -71,6 +75,30 @@ class RoomService {
     }
 
     return snapshot.val();
+  }
+
+  private scheduleRoomReset(femaleUid: string, terminalStatus: RoomStatus) {
+    setTimeout(() => {
+      database()
+        .ref(`rooms/${femaleUid}`)
+        .transaction(room => {
+          if (!room || room.status !== terminalStatus) {
+            return;
+          }
+
+          return {
+            ...room,
+            status: 'waiting',
+            currentCallId: '',
+            male: null,
+            callStartedAt: null,
+            chargedAmount: null,
+            callSettled: null,
+            updatedAt: Date.now(),
+          };
+        })
+        .catch(error => console.error('Unable to reset room:', error));
+    }, 1000);
   }
 
   async goOnline() {
@@ -138,6 +166,16 @@ class RoomService {
       if (room == null) {
         return;
       }
+
+      if (['rejected', 'men_rejected', 'ended'].includes(room.status)) {
+        room.status = 'waiting';
+        room.currentCallId = '';
+        room.male = null;
+        room.callStartedAt = null;
+        room.chargedAmount = null;
+        room.callSettled = null;
+      }
+
       if (room.status !== 'waiting') {
         return;
       }
@@ -157,7 +195,19 @@ class RoomService {
       return room;
     });
     if (!transaction.committed) {
-      throw new Error('This user is offline!');
+      const room = transaction.snapshot.val() as Room | null;
+
+      if (!room) {
+        throw new Error('This user is currently offline.');
+      }
+
+      if (['ringing', 'accepted', 'active'].includes(room.status)) {
+        throw new Error('This user is currently busy on another call.');
+      }
+
+      throw new Error(
+        'This user is not available right now. Please try again.',
+      );
     }
 
     return transaction.snapshot.val();
@@ -171,10 +221,7 @@ class RoomService {
         return;
       }
 
-      const room = snapshot.val() as Room;
-      if (room.status === 'ringing') {
-        callback(room);
-      }
+      callback(snapshot.val() as Room);
     });
 
     return () => ref.off('value', listener);
@@ -209,21 +256,33 @@ class RoomService {
     const updates: Record<string, any> = {
       [`rooms/${femaleUid}/status`]: 'rejected',
       [`rooms/${femaleUid}/updatedAt`]: Date.now(),
-      [`rooms/${femaleUid}/male`]: null,
-      [`rooms/${femaleUid}/currentCallId`]: null,
-      [`users/${firebaseUser.uid}/profile/status`]: 'busy',
+      [`users/${firebaseUser.uid}/profile/status`]: 'online',
     };
 
     await database().ref().update(updates);
+    this.scheduleRoomReset(femaleUid, 'rejected');
   }
 
   async menRejectCall(femaleUid: string) {
-    await database().ref(`rooms/${femaleUid}`).update({
-      status: 'men_rejected',
-      male: null,
-      currentCallId: '',
-      updatedAt: Date.now(),
+    const roomRef = database().ref(`rooms/${femaleUid}`);
+
+    const transaction = await roomRef.transaction(room => {
+      if (!room || room.status !== 'ringing') {
+        return;
+      }
+
+      return {
+        ...room,
+        status: 'men_rejected',
+        male: null,
+        currentCallId: '',
+        updatedAt: Date.now(),
+      };
     });
+
+    if (transaction.committed) {
+      this.scheduleRoomReset(femaleUid, 'men_rejected');
+    }
   }
 
   async callConnected(femaleUid: string) {
@@ -234,22 +293,101 @@ class RoomService {
     });
   }
 
+  async chargeCallMinute(femaleUid: string): Promise<boolean> {
+    const firebaseUser = this.getCurrentUser();
+    const roomRef = database().ref(`rooms/${femaleUid}`);
+    const roomSnapshot = await roomRef.once('value');
+    const room = roomSnapshot.val() as Room | null;
+
+    if (
+      !room ||
+      room.status !== 'active' ||
+      room.male?.uid !== firebaseUser.uid
+    ) {
+      return false;
+    }
+
+    let charged = false;
+    await database()
+      .ref(`users/${firebaseUser.uid}/wallet/balance`)
+      .transaction(balance => {
+        const currentBalance = Number(balance || 0);
+
+        if (currentBalance < CALL_RATE_PER_MINUTE) {
+          return;
+        }
+
+        charged = true;
+        return currentBalance - CALL_RATE_PER_MINUTE;
+      });
+
+    if (!charged) {
+      return false;
+    }
+
+    const billingUpdate = await roomRef.transaction(currentRoom => {
+      if (
+        !currentRoom ||
+        currentRoom.status !== 'active' ||
+        currentRoom.male?.uid !== firebaseUser.uid
+      ) {
+        return;
+      }
+
+      return {
+        ...currentRoom,
+        chargedAmount:
+          Number(currentRoom.chargedAmount || 0) + CALL_RATE_PER_MINUTE,
+        updatedAt: Date.now(),
+      };
+    });
+
+    if (!billingUpdate.committed) {
+      await database()
+        .ref(`users/${firebaseUser.uid}/wallet/balance`)
+        .transaction(balance => Number(balance || 0) + CALL_RATE_PER_MINUTE);
+      return false;
+    }
+
+    return true;
+  }
+
   async endCall(femaleUid: string) {
     const roomRef = database().ref(`rooms/${femaleUid}`);
-    const snapshot = await roomRef.once('value');
-    if (!snapshot.exists()) {
+    const endedAt = Date.now();
+    const transaction = await roomRef.transaction(room => {
+      if (
+        !room ||
+        room.status === 'ended' ||
+        room.status === 'waiting' ||
+        room.callSettled
+      ) {
+        return;
+      }
+
+      return {
+        ...room,
+        status: 'ended',
+        callSettled: true,
+        updatedAt: endedAt,
+      };
+    });
+
+    if (!transaction.committed) {
       return;
     }
-    const room = snapshot.val() as Room;
+
+    const room = transaction.snapshot.val() as Room;
 
     if (room.currentCallId) {
-      await this.saveCallHistory(room);
+      await this.saveCallHistory(room, endedAt);
     }
 
-    await roomRef.update({
-      status: 'ended',
-      updatedAt: Date.now(),
-    });
+    if (room.female?.uid) {
+      await database()
+        .ref(`users/${room.female.uid}/profile/status`)
+        .transaction(status => (status === 'busy' ? 'online' : status));
+    }
 
     // Wait a moment so both users receive "ended"
     setTimeout(async () => {
@@ -257,22 +395,26 @@ class RoomService {
         status: 'waiting',
         currentCallId: '',
         male: null,
+        callSettled: null,
+        chargedAmount: null,
         updatedAt: Date.now(),
       });
     }, 1000);
   }
 
-  async saveCallHistory(room: Room) {
+  async saveCallHistory(room: Room, endedAt: number = Date.now()) {
     if (!room.currentCallId) {
       return;
     }
 
-    const endedAt = Date.now();
     const duration = room.callStartedAt ? endedAt - room.callStartedAt : 0;
 
-    const amount = room.callStartedAt
-      ? calculateCallAmount(room.callStartedAt, endedAt)
-      : 0;
+    const amount =
+      typeof room.chargedAmount === 'number'
+        ? room.chargedAmount
+        : room.callStartedAt
+        ? calculateCallAmount(room.callStartedAt, endedAt)
+        : 0;
 
     const history = {
       callId: room.currentCallId,
@@ -294,6 +436,16 @@ class RoomService {
     updates[`callHistory/${room?.female?.uid}/${room.currentCallId}`] = history;
 
     await database().ref().update(updates);
+
+    if (
+      amount > 0 &&
+      room.male?.uid &&
+      typeof room.chargedAmount !== 'number'
+    ) {
+      await database()
+        .ref(`users/${room.male.uid}/wallet/balance`)
+        .transaction(balance => Math.max(0, Number(balance || 0) - amount));
+    }
   }
 
   async getCallHistory() {

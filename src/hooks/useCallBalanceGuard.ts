@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 
+import { CALL_RATE_PER_MINUTE } from '../constants/constants';
 import { useUser } from './UserContext';
 
 /**
@@ -12,13 +13,13 @@ export const useCallBalanceGuard = (navigation: any) => {
     const isMale = user?.profile?.gender?.toLowerCase() === 'male';
     const balance = Number(user?.wallet?.balance || 0);
 
-    if (!isMale || balance > 0) {
+    if (!isMale || balance >= CALL_RATE_PER_MINUTE) {
       return true;
     }
 
     Alert.alert(
       'Insufficient Balance',
-      'Please add balance to your wallet before starting a call.',
+      `You need at least ₹${CALL_RATE_PER_MINUTE} in your wallet to start a call.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {

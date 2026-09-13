@@ -299,7 +299,7 @@ ${PLAY_STORE_URL}`,
                   marginHorizontal: 8,
                 }}
               >
-                0
+                {user?.wallet?.balance || 0}
               </Text>
 
               <View style={styles.plus}>
