@@ -8,6 +8,7 @@ import Colors from '../../constants/colors';
 import { femaleAvatars } from '../../constants/constants';
 
 import RoomService, { CallHistory } from '../../firebase/RoomService';
+import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 
 interface Props {
   item: CallHistory;
@@ -33,6 +34,7 @@ const formatDuration = (duration: number) => {
 
 const RecentCallCard = ({ item, navigation }: Props) => {
   const [calling, setCalling] = useState(false);
+  const canStartCall = useCallBalanceGuard(navigation);
   const avatar =
     femaleAvatars.find(a => a.id === Number(item.femaleInfo.avatarId)) ??
     femaleAvatars[0];
@@ -42,7 +44,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
 
   const handleCall = async () => {
     console.log('handleCall -> item', item);
-    if (calling) {
+    if (calling || !canStartCall()) {
       return;
     }
 

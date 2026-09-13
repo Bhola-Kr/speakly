@@ -11,6 +11,7 @@ import UserCard from './UserCard';
 import Colors from '../../constants/colors';
 import { categories } from '../../constants/dummyData';
 import { useUser } from '../../hooks/UserContext';
+import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
 
 interface Props {
@@ -22,6 +23,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
   const [calling, setCalling] = useState(false);
+  const canStartCall = useCallBalanceGuard(navigation);
 
   React.useEffect(() => {
     if (user?.profile?.gender?.toLowerCase() === 'male') {
@@ -52,7 +54,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   const handleCall = async (item: any) => {
-    if (calling) {
+    if (calling || !canStartCall()) {
       return;
     }
 
@@ -80,7 +82,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       : femaleUsers.filter(item => item.profile?.category === selected);
 
   const onRandomCall = async () => {
-    if (calling) {
+    if (calling || !canStartCall()) {
       return;
     }
 
