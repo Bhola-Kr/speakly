@@ -22,7 +22,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user, updateProfile } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
-  const [calling, setCalling] = useState(false);
+  const [isStartingCall, setIsStartingCall] = useState(false);
+  const [randomCalling, setRandomCalling] = useState(false);
+  const [callingUserId, setCallingUserId] = useState<string | null>(null);
   const canStartCall = useCallBalanceGuard(navigation);
 
   React.useEffect(() => {
@@ -54,12 +56,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   }, [updateProfile, user?.profile?.gender]);
 
   const handleCall = async (item: any) => {
-    if (calling || !canStartCall()) {
+    if (isStartingCall || !canStartCall()) {
       return;
     }
 
     try {
-      setCalling(true);
+      setIsStartingCall(true);
+      setCallingUserId(item.uid);
 
       const room = await RoomService.callFemale(item.uid);
 
@@ -72,7 +75,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         error?.message || 'Unable to connect the call. Please try again.',
       );
     } finally {
-      setCalling(false);
+      setIsStartingCall(false);
+      setCallingUserId(null);
     }
   };
 
@@ -82,12 +86,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       : femaleUsers.filter(item => item.profile?.category === selected);
 
   const onRandomCall = async () => {
-    if (calling || !canStartCall()) {
+    if (isStartingCall || !canStartCall()) {
       return;
     }
 
     try {
-      setCalling(true);
+      setIsStartingCall(true);
+      setRandomCalling(true);
       const randomRoom = await RoomService.getRandomFemaleRoom();
 
       await RoomService.callFemale(randomRoom?.female?.uid);
@@ -100,10 +105,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         },
         room: randomRoom,
       });
-      setCalling(false);
     } catch (e: any) {
-      setCalling(false);
       Alert.alert('Info', e.message);
+    } finally {
+      setRandomCalling(false);
+      setIsStartingCall(false);
     }
   };
 
@@ -127,7 +133,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               }
             />
 
-            <Banner randomCall={onRandomCall} calling={calling} />
+            <Banner randomCall={onRandomCall} calling={randomCalling} />
 
             <Text style={styles.heading}>Featured Experts</Text>
 
@@ -139,7 +145,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </>
         }
         renderItem={({ item }) => (
-          <UserCard item={item} callNow={() => handleCall(item)} />
+          <UserCard
+            item={item}
+            calling={callingUserId === item.uid}
+            callNow={() => handleCall(item)}
+          />
         )}
       />
     </SafeAreaView>

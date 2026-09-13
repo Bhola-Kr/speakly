@@ -110,12 +110,18 @@ const PaymentScreen = ({ navigation, route }: any) => {
         return;
       }
 
+      const packId = String(pack?.id || '');
+      if (!packId) {
+        Alert.alert('Invalid Pack', 'Please select a valid recharge pack.');
+        return;
+      }
+
       setLoading(true);
 
       console.log('Creating Cashfree order...');
 
       const response = await createOrder(
-        pack?.id,
+        packId,
         customerId,
         customerPhone,
         customerName,

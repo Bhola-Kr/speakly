@@ -64,7 +64,6 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
       // Verify OTP through your backend
       const response = await verifyMSGOtp(phoneNumber, otp, reqId);
-      authData.firebaseLogin(phoneNumber);
 
       console.log('verifyOtp -> response', response);
 
@@ -72,10 +71,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
         throw new Error(response?.message || 'Failed to authenticate user.');
       }
 
-      const firebaseUser = {
-        uid: response.uid,
-        token: response.token,
-      };
+      const firebaseUser = await authData.firebaseLogin(phoneNumber);
 
       // Get user information using the UID
       const userInfo = await authData.getUser(firebaseUser.uid);
@@ -176,7 +172,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <TouchableOpacity
             style={styles.backButton}

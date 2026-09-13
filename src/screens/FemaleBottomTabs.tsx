@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import Colors from '../constants/colors';
@@ -9,6 +10,8 @@ import FemaleHistoryScreen from './FemaleHistoryScreen';
 const Tab = createBottomTabNavigator();
 
 const FemaleBottomTabs = () => {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -23,7 +26,7 @@ const FemaleBottomTabs = () => {
 
           left: 20,
           right: 20,
-          bottom: 18,
+          bottom: Math.max(insets.bottom, 18),
           marginHorizontal: 10,
 
           height: 68,

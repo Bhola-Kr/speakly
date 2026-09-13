@@ -20,7 +20,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import Colors from '../../constants/colors';
 import IncomingCallModal from './IncomingCallModal';
-import { femaleAvatars } from '../../constants/constants';
+import { getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 import RoomService, { Room } from '../../firebase/RoomService';
 import authData from '../../firebase/authData';
@@ -32,7 +32,7 @@ type Props = {
 };
 
 const OnlineRoomScreen = ({ navigation }: Props) => {
-  const { updateProfile } = useUser();
+  const { user, updateProfile } = useUser();
   const [incomingRoom, setIncomingRoom] = useState<Room | null>(null);
   const isFocused = useIsFocused();
   const pulse = useRef(new Animated.Value(0)).current;
@@ -255,10 +255,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
               colors={Colors.goldGradient}
               style={styles.avatarBorder}
             >
-              <Image
-                source={femaleAvatars.at(0)?.image}
-                style={styles.avatar}
-              />
+              <Image source={getUserAvatar(user)} style={styles.avatar} />
             </LinearGradient>
           </Animated.View>
 

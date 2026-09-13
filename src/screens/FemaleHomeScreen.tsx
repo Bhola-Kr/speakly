@@ -11,6 +11,7 @@ import {
   View,
   ActivityIndicator,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
@@ -24,7 +25,6 @@ import RoomService from '../firebase/RoomService';
 
 const { width } = Dimensions.get('window');
 const BANNER_WIDTH = width - 40;
-const CARD_WIDTH = width - 70;
 
 const tutorialData = [
   {
@@ -66,6 +66,9 @@ interface Props {
 }
 
 const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
+  const { width: windowWidth } = useWindowDimensions();
+  const tutorialCardWidth = windowWidth - 50;
+  const tutorialSnapWidth = tutorialCardWidth + 10;
   const [page, setPage] = useState(0);
   const [goingOnline, setGoingOnline] = useState(false);
 
@@ -151,17 +154,20 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             }}
             keyExtractor={item => item.id}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={BANNER_WIDTH}
+            snapToInterval={tutorialSnapWidth}
             decelerationRate="fast"
             onMomentumScrollEnd={e => {
               const index = Math.round(
-                e.nativeEvent.contentOffset.x / BANNER_WIDTH,
+                e.nativeEvent.contentOffset.x / tutorialSnapWidth,
               );
 
               setPage(index);
             }}
             renderItem={({ item }) => (
-              <LinearGradient colors={item.colors} style={styles.tutorialCard}>
+              <LinearGradient
+                colors={item.colors}
+                style={[styles.tutorialCard, { width: tutorialCardWidth }]}
+              >
                 <View style={styles.tutorialTop}>
                   <View style={styles.iconCircle}>
                     <Ionicons name={item.icon} size={30} color="#FFF" />
@@ -303,7 +309,6 @@ const styles = StyleSheet.create({
   },
 
   tutorialCard: {
-    width: CARD_WIDTH,
     marginRight: 10,
     borderRadius: 24,
     padding: 22,

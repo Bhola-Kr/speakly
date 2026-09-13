@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
@@ -65,52 +66,57 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Back */}
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.content}
         >
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+          {/* Back */}
 
-        {/* Title */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Text style={styles.backIcon}>‹</Text>
+          </TouchableOpacity>
 
-        <View style={styles.titleContainer}>
-          <Text style={styles.smallTitle}>What is your</Text>
+          {/* Title */}
 
-          <Text style={styles.title}>Nickname?</Text>
-        </View>
+          <View style={styles.titleContainer}>
+            <Text style={styles.smallTitle}>What is your</Text>
 
-        {/* Input */}
-
-        <LinearGradient
-          colors={Colors.gradient}
-          style={styles.gradientBorder}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        >
-          <View style={styles.inputContainer}>
-            <TextInput
-              value={nickname}
-              onChangeText={setNickname}
-              placeholder="Enter your Nickname"
-              placeholderTextColor={Colors.placeholder}
-              autoCapitalize="words"
-              returnKeyType="done"
-              style={styles.input}
-            />
+            <Text style={styles.title}>Nickname?</Text>
           </View>
-        </LinearGradient>
 
-        <GradientButton
-          title={loading ? 'Please wait...' : 'Next'}
-          disabled={!isValid || loading}
-          onPress={saveUser}
-        />
+          {/* Input */}
+
+          <LinearGradient
+            colors={Colors.gradient}
+            style={styles.gradientBorder}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={nickname}
+                onChangeText={setNickname}
+                placeholder="Enter your Nickname"
+                placeholderTextColor={Colors.placeholder}
+                autoCapitalize="words"
+                returnKeyType="done"
+                style={styles.input}
+              />
+            </View>
+          </LinearGradient>
+
+          <GradientButton
+            title={loading ? 'Please wait...' : 'Next'}
+            disabled={!isValid || loading}
+            onPress={saveUser}
+          />
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -120,6 +126,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+
+  content: {
+    flexGrow: 1,
+    paddingBottom: 24,
   },
 
   backButton: {

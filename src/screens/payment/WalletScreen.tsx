@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '../../constants/colors';
 import GradientButton from '../../components/GradientButton';
@@ -20,6 +21,7 @@ import type { RechargePack } from '../../api/api';
 import { useUser } from '../../hooks/UserContext';
 
 const WalletScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const { user } = useUser();
   const [packs, setPacks] = useState<RechargePack[]>([]);
   const [selectedPack, setSelectedPack] = useState<RechargePack | null>(null);
@@ -217,7 +219,12 @@ const WalletScreen = ({ navigation }: any) => {
       </ScrollView>
 
       {!!selectedPack && (
-        <View style={styles.bottomContainer}>
+        <View
+          style={[
+            styles.bottomContainer,
+            { paddingBottom: Math.max(insets.bottom, 24) },
+          ]}
+        >
           <View style={styles.summaryRow}>
             <View>
               <Text style={styles.summaryTitle}>You'll Receive</Text>

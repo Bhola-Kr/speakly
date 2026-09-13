@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -9,6 +16,7 @@ import { calculateAge, femaleAvatars } from '../../constants/constants';
 interface Props {
   item: any;
   callNow: () => void;
+  calling?: boolean;
 }
 
 const statusConfig = {
@@ -29,7 +37,7 @@ const statusConfig = {
   },
 };
 
-const UserCard = ({ item, callNow }: Props) => {
+const UserCard = ({ item, callNow, calling = false }: Props) => {
   const currentStatus =
     statusConfig[item?.profile?.status as keyof typeof statusConfig] ||
     statusConfig.offline;
@@ -129,15 +137,22 @@ const UserCard = ({ item, callNow }: Props) => {
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={callNow}
+          disabled={calling}
           style={styles.callButton}
         >
-          <MaterialCommunityIcons
-            name="phone"
-            size={16}
-            color={Colors.secondary}
-          />
+          {calling ? (
+            <ActivityIndicator size="small" color={Colors.secondary} />
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="phone"
+                size={16}
+                color={Colors.secondary}
+              />
 
-          <Text style={styles.callText}>Call</Text>
+              <Text style={styles.callText}>Call</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </View>

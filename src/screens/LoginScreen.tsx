@@ -9,8 +9,8 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 
 import { Alert } from 'react-native';
@@ -31,8 +31,6 @@ import GradientButton from '../components/GradientButton';
 import Colors from '../constants/colors';
 import { sendOtp } from '../api/calls';
 
-const { width } = Dimensions.get('window');
-
 const slides = [
   {
     image: require('../assets/onboarding2.png'),
@@ -50,6 +48,7 @@ interface Props {
 }
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
+  const { width } = useWindowDimensions();
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
 
