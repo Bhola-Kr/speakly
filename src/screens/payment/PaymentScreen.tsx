@@ -19,12 +19,14 @@ import Colors from '../../constants/colors';
 import { createOrder, verifyOrder } from '../../api/calls';
 import { useUser } from '../../hooks/UserContext';
 
-const PRIVACY_POLICY_URL = 'https://voicetamil.com/privacy-policy';
+const PRIVACY_POLICY_URL = 'https://voice-tamil.web.app/privacy-policy.html';
+// Cashfree secrets remain on the server. The server must create the matching
+// production payment_session_id before this checkout can be opened.
+const CASHFREE_ENVIRONMENT = CFEnvironment.PRODUCTION;
 
 const PaymentScreen = ({ navigation, route }: any) => {
   const pack = route?.params?.pack;
   const { user } = useUser();
-  console.log('PaymentScreen -> user', user);
 
   const [loading, setLoading] = useState(false);
   const amount = Number(pack?.amount || 0);
@@ -34,7 +36,7 @@ const PaymentScreen = ({ navigation, route }: any) => {
     return amount + bonus;
   }, [amount, bonus]);
 
-  const customerId = user?.profile?.uid || '';
+  const customerId = user?.uid || user?.profile?.uid || '';
   const customerPhone = user?.phone || user?.profile?.phone || '';
   const customerName = user?.profile?.name || '';
 
@@ -80,15 +82,10 @@ const PaymentScreen = ({ navigation, route }: any) => {
   useEffect(() => {
     CFPaymentGatewayService.setCallback({
       onVerify: (orderId: string) => {
-        console.log('Cashfree payment verified:', orderId);
-
         handlePaymentVerification(orderId);
       },
 
-      onError: (error: any, orderId: string) => {
-        console.log('Cashfree payment error:', error);
-        console.log('Order ID:', orderId);
-
+      onError: (error: any) => {
         setLoading(false);
 
         Alert.alert(
@@ -97,6 +94,8 @@ const PaymentScreen = ({ navigation, route }: any) => {
         );
       },
     });
+
+    return () => CFPaymentGatewayService.removeCallback();
   }, [handlePaymentVerification]);
 
   const handlePayNow = async () => {
@@ -110,6 +109,14 @@ const PaymentScreen = ({ navigation, route }: any) => {
         return;
       }
 
+      if (!customerId || !customerPhone) {
+        Alert.alert(
+          'Profile Incomplete',
+          'Your account details are still loading. Please try again in a moment.',
+        );
+        return;
+      }
+
       const packId = String(pack?.id || '');
       if (!packId) {
         Alert.alert('Invalid Pack', 'Please select a valid recharge pack.');
@@ -118,16 +125,12 @@ const PaymentScreen = ({ navigation, route }: any) => {
 
       setLoading(true);
 
-      console.log('Creating Cashfree order...');
-
       const response = await createOrder(
         packId,
         customerId,
         customerPhone,
         customerName,
       );
-
-      console.log('Cashfree Create Order Response:', response);
 
       if (!response?.success) {
         throw new Error(response?.message || 'Unable to create payment order');
@@ -144,13 +147,10 @@ const PaymentScreen = ({ navigation, route }: any) => {
         throw new Error('Payment session was not returned by server');
       }
 
-      console.log('Order ID:', orderId);
-      console.log('Payment Session ID:', paymentSessionId);
-
       const session = new CFSession(
         paymentSessionId,
         orderId,
-        CFEnvironment.SANDBOX,
+        CASHFREE_ENVIRONMENT,
       );
 
       CFPaymentGatewayService.doWebPayment(session);

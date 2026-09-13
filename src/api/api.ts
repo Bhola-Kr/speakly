@@ -1,3 +1,5 @@
+import auth from '@react-native-firebase/auth';
+
 const BASE_URL = 'https://us-central1-voice-tamil.cloudfunctions.net/api';
 
 class Api {
@@ -6,10 +8,13 @@ class Api {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     body?: any,
   ): Promise<T> {
+    const idToken = await auth().currentUser?.getIdToken();
+
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method,
       headers: {
         'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
     });
