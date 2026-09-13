@@ -40,7 +40,7 @@ const AnimatedBar = ({
     return () => {
       animation.stop();
     };
-  }, []);
+  }, [delay, height, maxHeight, minHeight]);
 
   return (
     <Animated.View

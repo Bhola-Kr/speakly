@@ -96,7 +96,7 @@ const AudioVerificationScreen = ({ navigation }: any) => {
         VoiceDetector.stopAndVerify().catch(() => {});
       }
     };
-  }, [screenState]);
+  }, [glow, pulse, screenState]);
 
   const formatTime = () => {
     const m = Math.floor(seconds / 60)

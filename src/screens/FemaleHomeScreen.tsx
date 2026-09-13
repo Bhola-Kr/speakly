@@ -9,6 +9,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
@@ -59,23 +61,13 @@ const tutorialData = [
   },
 ];
 
-const noticeData = [
-  {
-    id: '1',
-    image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900',
-  },
-  {
-    id: '2',
-    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900',
-  },
-];
-
 interface Props {
   navigation: any;
 }
 
 const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [page, setPage] = useState(0);
+  const [goingOnline, setGoingOnline] = useState(false);
 
   const isFocused = useIsFocused();
 
@@ -87,14 +79,22 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     updateProfile({
       status: 'offline',
     });
-  }, [isFocused]);
+  }, [isFocused, updateProfile]);
 
   const goOnLine = async () => {
+    if (goingOnline) {
+      return;
+    }
+
     try {
+      setGoingOnline(true);
       await RoomService.goOnline();
       navigation.navigate('OnlineRoom');
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.log('Unable to go online:', error);
+      Alert.alert('Unable to Go Online', 'Please try again in a moment.');
+    } finally {
+      setGoingOnline(false);
     }
   };
 
@@ -189,14 +189,26 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* ================= GO ONLINE ================= */}
 
-        <TouchableOpacity activeOpacity={0.9} onPress={goOnLine}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={goOnLine}
+          disabled={goingOnline}
+        >
           <LinearGradient
             colors={Colors.buttonGradient}
-            style={styles.onlineButton}
+            style={[styles.onlineButton, goingOnline && styles.loadingButton]}
           >
-            <View style={styles.onlineDot} />
-
-            <Text style={styles.onlineText}>GO ONLINE</Text>
+            {goingOnline ? (
+              <>
+                <ActivityIndicator size="small" color={Colors.white} />
+                <Text style={styles.onlineText}>GOING ONLINE...</Text>
+              </>
+            ) : (
+              <>
+                <View style={styles.onlineDot} />
+                <Text style={styles.onlineText}>GO ONLINE</Text>
+              </>
+            )}
           </LinearGradient>
         </TouchableOpacity>
 
@@ -362,6 +374,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+  },
+
+  loadingButton: {
+    opacity: 0.75,
   },
 
   onlineDot: {

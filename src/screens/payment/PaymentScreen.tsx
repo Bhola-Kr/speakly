@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -23,7 +23,7 @@ const PRIVACY_POLICY_URL = 'https://voicetamil.com/privacy-policy';
 
 const PaymentScreen = ({ navigation, route }: any) => {
   const pack = route?.params?.pack;
-  const { user, updateProfile } = useUser();
+  const { user } = useUser();
   console.log('PaymentScreen -> user', user);
 
   const [loading, setLoading] = useState(false);
@@ -35,8 +35,47 @@ const PaymentScreen = ({ navigation, route }: any) => {
   }, [amount, bonus]);
 
   const customerId = user?.profile?.uid || '';
-  const customerPhone = user?.profile?.uid || '';
+  const customerPhone = user?.phone || user?.profile?.phone || '';
   const customerName = user?.profile?.name || '';
+
+  const handlePaymentVerification = useCallback(
+    async (orderId: string) => {
+      try {
+        setLoading(true);
+
+        const response = await verifyOrder(orderId, customerId);
+
+        if (!response.success) {
+          throw new Error(response.message || 'Unable to verify payment');
+        }
+
+        if (response.paid === true) {
+          Alert.alert(
+            'Payment Successful',
+            `₹${
+              response.data?.amount ?? amount
+            } payment completed successfully.`,
+            [{ text: 'Done', onPress: () => navigation.goBack() }],
+          );
+          return;
+        }
+
+        Alert.alert(
+          'Payment Pending',
+          'We could not confirm the payment yet. Please check your transactions.',
+        );
+      } catch (error: any) {
+        console.error('Payment verification error:', error);
+        Alert.alert(
+          'Payment Verification Failed',
+          error?.message || 'Unable to verify payment.',
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [amount, customerId, navigation],
+  );
 
   useEffect(() => {
     CFPaymentGatewayService.setCallback({
@@ -58,54 +97,7 @@ const PaymentScreen = ({ navigation, route }: any) => {
         );
       },
     });
-  }, []);
-
-  // VERIFY PAYMENT
-
-  const handlePaymentVerification = async (orderId: string) => {
-    try {
-      setLoading(true);
-
-      console.log('Verifying Cashfree order:', orderId);
-
-      const response = await verifyOrder(orderId, customerId);
-
-      console.log('Verify Order Response:', response);
-
-      if (!response.success) {
-        throw new Error(response.message || 'Unable to verify payment');
-      }
-
-      if (response.paid === true) {
-        Alert.alert(
-          'Payment Successful',
-          `₹${response.data?.amount ?? amount} payment completed successfully.`,
-          [
-            {
-              text: 'Done',
-              onPress: () => navigation.goBack(),
-            },
-          ],
-        );
-
-        return;
-      }
-
-      Alert.alert(
-        'Payment Pending',
-        'We could not confirm the payment yet. Please check your transactions.',
-      );
-    } catch (error: any) {
-      console.error('Payment verification error:', error);
-
-      Alert.alert(
-        'Payment Verification Failed',
-        error?.message || 'Unable to verify payment.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [handlePaymentVerification]);
 
   const handlePayNow = async () => {
     try {
@@ -177,7 +169,7 @@ const PaymentScreen = ({ navigation, route }: any) => {
       } else {
         Alert.alert('Error', 'Unable to open Privacy Policy.');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Unable to open Privacy Policy.');
     }
   };

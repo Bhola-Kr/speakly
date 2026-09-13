@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -14,18 +14,22 @@ import Colors from '../constants/colors';
 import authData from '../firebase/authData';
 
 const SplashScreen = ({ navigation }: any) => {
-  useEffect(() => {
-    initializeApp();
-  }, []);
+  const navigateTo = useCallback(
+    (screen: string) => {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: screen }],
+      });
+    },
+    [navigation],
+  );
 
-  const initializeApp = async () => {
+  const initializeApp = useCallback(async () => {
     try {
-      // Show splash for 1 second
-      await new Promise((resolve: any) => setTimeout(resolve, 1000));
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 1000));
 
       const currentUser = auth().currentUser;
 
-      // User not logged in
       if (!currentUser) {
         navigateTo('Login');
         return;
@@ -33,41 +37,30 @@ const SplashScreen = ({ navigation }: any) => {
 
       const userInfo = await authData.getUser(currentUser.uid);
 
-      // User document not found
       if (!userInfo) {
         navigateTo('Login');
         return;
       }
 
-      const gender = userInfo?.profile?.gender;
-
-      switch (gender) {
+      switch (userInfo?.profile?.gender) {
         case 'male':
           navigateTo('Main');
           break;
-
         case 'female':
           navigateTo('FemaleBottomTabs');
           break;
-
         default:
-          // Logged in but onboarding incomplete
           navigateTo('Gender');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('SplashScreen:', error);
-
-      // Safe fallback
       navigateTo('Login');
     }
-  };
+  }, [navigateTo]);
 
-  const navigateTo = (screen: string) => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: screen }],
-    });
-  };
+  useEffect(() => {
+    initializeApp();
+  }, [initializeApp]);
 
   return (
     <SafeAreaView style={styles.container}>

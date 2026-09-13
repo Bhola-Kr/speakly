@@ -38,7 +38,7 @@ const Bar = ({ delay }: { delay: number }) => {
     animation.start();
 
     return () => animation.stop();
-  }, []);
+  }, [delay, scale]);
 
   return (
     <Animated.View
@@ -75,7 +75,7 @@ const VerificationAnimation = () => {
         }),
       ]),
     ).start();
-  }, []);
+  }, [pulse]);
 
   return (
     <SafeAreaView style={styles.verifyContainer}>

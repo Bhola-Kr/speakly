@@ -2,7 +2,7 @@
 
 import { Dimensions, StyleSheet } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const PRIMARY = '#5B7CFF';
 const TEXT = '#1A1A1A';

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -14,7 +14,6 @@ import {
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import { Avatar, femaleAvatars } from '../constants/constants';
-import authData from '../firebase/authData';
 import { useUser } from '../hooks/UserContext';
 
 interface Props {

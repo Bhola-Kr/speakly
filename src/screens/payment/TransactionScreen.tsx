@@ -105,7 +105,7 @@ const TransactionScreen = ({ navigation }: any) => {
           'No email application is installed on this device.',
         );
       }
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Unable to open the email application.');
     }
   };

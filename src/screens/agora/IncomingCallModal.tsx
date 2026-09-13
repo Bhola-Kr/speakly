@@ -14,7 +14,6 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../../constants/colors';
-import InCallManager from 'react-native-incall-manager';
 
 interface Props {
   visible: boolean;
@@ -70,7 +69,7 @@ const IncomingCallModal = ({
       slideAnim.setValue(500);
       pulseAnim.setValue(1);
     }
-  }, [visible]);
+  }, [pulseAnim, slideAnim, visible]);
 
   if (!visible) {
     return null;

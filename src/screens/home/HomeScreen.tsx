@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet } from 'react-native';
 import database from '@react-native-firebase/database';
-import { SafeAreaView, FlatList, StatusBar, Text, View } from 'react-native';
+import { SafeAreaView, FlatList, StatusBar, Text } from 'react-native';
 
 import Header from './Header';
 import Banner from './Banner';
@@ -51,7 +51,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     });
 
     return () => ref.off();
-  }, []);
+  }, [updateProfile, user?.profile?.gender]);
 
   const handleCall = async (item: any) => {
     if (calling || !canStartCall()) {

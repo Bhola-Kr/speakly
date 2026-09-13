@@ -267,7 +267,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
                             'History Cleared',
                             'Your call history has been deleted successfully.',
                           );
-                        } catch (e) {
+                        } catch {
                           Alert.alert(
                             'Error',
                             'Unable to clear your call history. Please try again.',

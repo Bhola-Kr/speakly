@@ -4,11 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
-import {
-  calculateAge,
-  femaleAvatars,
-  transliterateToTamil,
-} from '../../constants/constants';
+import { calculateAge, femaleAvatars } from '../../constants/constants';
 
 interface Props {
   item: any;

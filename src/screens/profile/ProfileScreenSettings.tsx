@@ -33,7 +33,7 @@ interface Props {
   route: any;
 }
 
-const ProfileSettingScreen = ({ navigation, route }: Props) => {
+const ProfileSettingScreen = ({ navigation }: Props) => {
   const SUPPORT_EMAIL = 'tamizhkuralhelp@gmail.com';
 
   const { user } = useUser();
@@ -152,7 +152,7 @@ Thank you.
           'No email application is installed on this device.',
         );
       }
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Unable to open the email application.');
     }
   };
@@ -166,8 +166,8 @@ Thank you.
 Download now:
 ${PLAY_STORE_URL}`,
       });
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.log('Unable to share app:', error);
     }
   };
 
@@ -178,7 +178,7 @@ ${PLAY_STORE_URL}`,
       if (supported) {
         await Linking.openURL(PLAY_STORE_URL);
       }
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Unable to open the Play Store.');
     }
   };

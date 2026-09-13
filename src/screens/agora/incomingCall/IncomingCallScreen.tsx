@@ -55,7 +55,7 @@ export default function IncomingCallScreen() {
         }),
       ]),
     ).start();
-  }, []);
+  }, [pulse, wave]);
 
   const avatarScale = pulse.interpolate({
     inputRange: [0, 1],

@@ -42,7 +42,7 @@ const BirthYearScreen: React.FC<Props> = ({ navigation }) => {
         animated: false,
       });
     }, 100);
-  }, []);
+  }, [selectedYear, years]);
 
   const onScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetY = event.nativeEvent.contentOffset.y;

@@ -27,7 +27,7 @@ import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
 import FAQScreen from './screens/FAQScreen';
 import SplashScreen from './screens/SplashScreen';
 import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
-import { UserProvider, useUser } from './hooks/UserContext';
+import { UserProvider } from './hooks/UserContext';
 import authData from './firebase/authData';
 import PaymentScreen from './screens/payment/PaymentScreen';
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -61,7 +61,7 @@ const CallScreen = ({ navigation, route }: Props) => {
 
   const [timer, setTimer] = useState('00:00');
 
-  const requestPermission = async () => {
+  const requestPermission = useCallback(async () => {
     if (Platform.OS !== 'android') {
       return true;
     }
@@ -71,9 +71,9 @@ const CallScreen = ({ navigation, route }: Props) => {
     );
 
     return granted === PermissionsAndroid.RESULTS.GRANTED;
-  };
+  }, []);
 
-  const startTimer = () => {
+  const startTimer = useCallback(() => {
     timerRef.current = setInterval(() => {
       seconds.current++;
 
@@ -84,9 +84,9 @@ const CallScreen = ({ navigation, route }: Props) => {
         `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`,
       );
     }, 1000);
-  };
+  }, []);
 
-  const stopTimer = () => {
+  const stopTimer = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -94,9 +94,9 @@ const CallScreen = ({ navigation, route }: Props) => {
     seconds.current = 0;
 
     setTimer('00:00');
-  };
+  }, []);
 
-  const initializeAgora = async () => {
+  const initializeAgora = useCallback(async () => {
     const permission = await requestPermission();
 
     if (!permission) {
@@ -169,10 +169,25 @@ const CallScreen = ({ navigation, route }: Props) => {
 
     engine.current = rtcEngine;
 
+    if (!token || uid === undefined) {
+      Alert.alert('Call Error', 'Unable to initialize the call.');
+      navigation.goBack();
+      return;
+    }
+
     rtcEngine.joinChannel(token, channelName, uid, {
       clientRoleType: ClientRoleType.ClientRoleBroadcaster,
     });
-  };
+  }, [
+    channelName,
+    femaleUid,
+    navigation,
+    requestPermission,
+    startTimer,
+    stopTimer,
+    token,
+    uid,
+  ]);
 
   const leaveCall = () => {
     Alert.alert('End Call', 'Are you sure you want to end this call?', [
@@ -227,7 +242,7 @@ const CallScreen = ({ navigation, route }: Props) => {
         engine.current = null;
       }
     };
-  }, []);
+  }, [initializeAgora, stopTimer]);
 
   return (
     <LinearGradient colors={['#111111', '#181818']} style={styles.container}>

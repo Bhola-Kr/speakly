@@ -56,7 +56,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
         });
       }, 150);
     }
-  }, []);
+  }, [birthYear, years]);
 
   const onScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetY = event.nativeEvent.contentOffset.y;

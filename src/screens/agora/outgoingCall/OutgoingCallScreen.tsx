@@ -16,10 +16,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
 import strings from '../../../constants/strings';
-import RoomService, { Room } from '../../../firebase/RoomService';
+import RoomService from '../../../firebase/RoomService';
 import { calculateAge, femaleAvatars } from '../../../constants/constants';
-
-const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
 interface Props {
   navigation: any;
@@ -85,7 +83,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
     );
 
     return unsubscribe;
-  }, []);
+  }, [data?.avatarId, data?.name, data?.uid, femaleUid, navigation]);
 
   useEffect(() => {
     Animated.loop(
@@ -124,7 +122,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
     }, 500);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [glow, ripple]);
 
   const rippleScale = ripple.interpolate({
     inputRange: [0, 1],

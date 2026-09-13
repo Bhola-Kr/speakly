@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
-  StatusBar,
   ScrollView,
 } from 'react-native';
 
@@ -50,7 +49,7 @@ interface Props {
   route: any;
 }
 
-const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
+const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
 

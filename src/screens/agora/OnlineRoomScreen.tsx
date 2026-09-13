@@ -47,7 +47,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
   React.useEffect(() => {
     updateProfile({ status: 'online' });
-  }, [isFocused]);
+  }, [isFocused, updateProfile]);
 
   React.useEffect(() => {
     const unsubscribe = RoomService.listenIncomingCall(myUid, room => {
@@ -84,7 +84,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       subscription.remove();
       unsubscribe();
     };
-  }, []);
+  }, [myUid, updateProfile]);
 
   useEffect(() => {
     Animated.loop(
@@ -131,7 +131,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       clearInterval(timerInterval);
       clearInterval(dotInterval);
     };
-  }, []);
+  }, [pulse]);
 
   const avatarScale = pulse.interpolate({
     inputRange: [0, 1],

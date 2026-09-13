@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -26,7 +27,7 @@ export const UserProvider = ({ children }: any) => {
 
   const currentUser = useMemo(() => authData.getCurrentUser(), []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (!currentUser) {
       setLoading(false);
       return;
@@ -37,7 +38,7 @@ export const UserProvider = ({ children }: any) => {
     setUser(data);
 
     setLoading(false);
-  };
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -55,27 +56,33 @@ export const UserProvider = ({ children }: any) => {
     return () => {
       ref.off('value', listener);
     };
-  }, []);
+  }, [currentUser]);
 
-  const updateUser = async (data: any) => {
-    if (!currentUser) return;
+  const updateUser = useCallback(
+    async (data: any) => {
+      if (!currentUser) return;
 
-    await authData.updateUser(currentUser.uid, data);
-  };
+      await authData.updateUser(currentUser.uid, data);
+    },
+    [currentUser],
+  );
 
-  const updateProfile = async (profile: UpdateProfileData) => {
+  const updateProfile = useCallback(async (profile: UpdateProfileData) => {
     const res = await authData.updateProfile(profile);
     console.log('updateProfile -> res', res);
-  };
+  }, []);
 
-  const updateStatus = async (status: string) => {
-    if (!currentUser) return;
+  const updateStatus = useCallback(
+    async (status: string) => {
+      if (!currentUser) return;
 
-    await authData.updateUser(currentUser.uid, {
-      status,
-      lastSeen: Date.now(),
-    });
-  };
+      await authData.updateUser(currentUser.uid, {
+        status,
+        lastSeen: Date.now(),
+      });
+    },
+    [currentUser],
+  );
 
   const value = useMemo(
     () => ({
@@ -86,7 +93,7 @@ export const UserProvider = ({ children }: any) => {
       updateProfile,
       updateStatus,
     }),
-    [user, loading],
+    [user, loading, refreshUser, updateUser, updateProfile, updateStatus],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
