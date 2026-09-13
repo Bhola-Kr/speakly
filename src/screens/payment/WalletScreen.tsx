@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -8,67 +8,77 @@ import {
   ScrollView,
   StatusBar,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
 import GradientButton from '../../components/GradientButton';
-
-const PACKS = [
-  {
-    id: 1,
-    amount: 100,
-    bonus: 10,
-    tag: '',
-  },
-  {
-    id: 2,
-    amount: 200,
-    bonus: 25,
-    tag: '',
-  },
-  {
-    id: 3,
-    amount: 300,
-    bonus: 45,
-    tag: '',
-  },
-  {
-    id: 4,
-    amount: 500,
-    bonus: 80,
-    tag: 'POPULAR',
-  },
-  {
-    id: 5,
-    amount: 1000,
-    bonus: 180,
-    tag: '',
-  },
-  {
-    id: 6,
-    amount: 1500,
-    bonus: 320,
-    tag: '',
-  },
-  {
-    id: 7,
-    amount: 2000,
-    bonus: 500,
-    tag: 'BEST',
-  },
-];
+import { fetchRechargePacks } from '../../api/calls';
+import type { RechargePack } from '../../api/api';
+import { useUser } from '../../hooks/UserContext';
 
 const WalletScreen = ({ navigation }: any) => {
-  const [selectedPack, setSelectedPack] = useState(PACKS[3]);
+  const { user } = useUser();
+  const [packs, setPacks] = useState<RechargePack[]>([]);
+  const [selectedPack, setSelectedPack] = useState<RechargePack | null>(null);
+  const [loadingPacks, setLoadingPacks] = useState(true);
+  const [packsError, setPacksError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadRechargePacks = async () => {
+      try {
+        setLoadingPacks(true);
+        setPacksError('');
+
+        const response = await fetchRechargePacks();
+        console.log('loadRechargePacks -> response', response);
+
+        if (!mounted) {
+          return;
+        }
+
+        setPacks(response);
+        setSelectedPack(
+          response?.find(
+            (pack: any) => pack.tag?.toUpperCase() === 'POPULAR',
+          ) ||
+            response?.[0] ||
+            null,
+        );
+      } catch (error) {
+        if (mounted) {
+          setPacksError(
+            error instanceof Error
+              ? error.message
+              : 'Unable to load recharge packs.',
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoadingPacks(false);
+        }
+      }
+    };
+
+    loadRechargePacks();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const totalReceive = useMemo(() => {
-    return selectedPack.amount + selectedPack.bonus;
+    return selectedPack ? selectedPack.amount + selectedPack.bonus : 0;
   }, [selectedPack]);
 
   const onRecharge = () => {
-    navigation.navigate('Payment', { pack: selectedPack });
+    if (selectedPack) {
+      navigation.navigate('Payment', { pack: selectedPack });
+    }
   };
 
   return (
@@ -121,7 +131,9 @@ const WalletScreen = ({ navigation }: any) => {
 
           <View style={styles.balanceContent}>
             <Text style={styles.balanceLabel}>Your Coins</Text>
-            <Text style={styles.balanceAmount}>0</Text>
+            <Text style={styles.balanceAmount}>
+              {user?.wallet?.balance || 0}
+            </Text>
             <Text style={styles.balanceDescription} numberOfLines={1}>
               Recharge to continue voice calls
             </Text>
@@ -136,8 +148,26 @@ const WalletScreen = ({ navigation }: any) => {
           </Text>
 
           <View style={styles.grid}>
-            {PACKS.map(pack => {
-              const selected = selectedPack.id === pack.id;
+            {loadingPacks && (
+              <ActivityIndicator
+                style={styles.packsStatus}
+                size="large"
+                color={Colors.secondary}
+              />
+            )}
+
+            {!loadingPacks && !!packsError && (
+              <Text style={styles.packsStatus}>{packsError}</Text>
+            )}
+
+            {!loadingPacks && !packsError && packs.length === 0 && (
+              <Text style={styles.packsStatus}>
+                No recharge packs are available right now.
+              </Text>
+            )}
+
+            {packs.map(pack => {
+              const selected = selectedPack?.id === pack.id;
 
               return (
                 <TouchableOpacity
@@ -186,33 +216,35 @@ const WalletScreen = ({ navigation }: any) => {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomContainer}>
-        <View style={styles.summaryRow}>
-          <View>
-            <Text style={styles.summaryTitle}>You'll Receive</Text>
+      {!!selectedPack && (
+        <View style={styles.bottomContainer}>
+          <View style={styles.summaryRow}>
+            <View>
+              <Text style={styles.summaryTitle}>You'll Receive</Text>
 
-            <View style={styles.receiveContainer}>
-              <Image
-                source={require('../../assets/coin.png')}
-                style={styles.receiveCoin}
-              />
-              <Text style={styles.receive}>{totalReceive}</Text>
+              <View style={styles.receiveContainer}>
+                <Image
+                  source={require('../../assets/coin.png')}
+                  style={styles.receiveCoin}
+                />
+                <Text style={styles.receive}>{totalReceive}</Text>
+              </View>
+
+              <Text style={styles.summaryBonus}>
+                Includes Bonus ₹{selectedPack.bonus}
+              </Text>
             </View>
 
-            <Text style={styles.summaryBonus}>
-              Includes Bonus ₹{selectedPack.bonus}
-            </Text>
+            <Text style={styles.payAmount}>₹{selectedPack.amount}</Text>
           </View>
 
-          <Text style={styles.payAmount}>₹{selectedPack.amount}</Text>
+          <GradientButton
+            title={`Continue ₹${selectedPack.amount}`}
+            onPress={onRecharge}
+            style={{ marginTop: 12 }}
+          />
         </View>
-
-        <GradientButton
-          title={`Continue ₹${selectedPack.amount}`}
-          onPress={onRecharge}
-          style={{ marginTop: 12 }}
-        />
-      </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -313,6 +345,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginTop: 12,
+  },
+
+  packsStatus: {
+    width: '100%',
+    marginVertical: 24,
+    textAlign: 'center',
+    color: Colors.subText,
   },
 
   card: {

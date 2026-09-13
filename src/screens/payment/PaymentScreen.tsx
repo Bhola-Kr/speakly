@@ -68,7 +68,7 @@ const PaymentScreen = ({ navigation, route }: any) => {
 
       console.log('Verifying Cashfree order:', orderId);
 
-      const response = await verifyOrder(orderId);
+      const response = await verifyOrder(orderId, customerId);
 
       console.log('Verify Order Response:', response);
 
@@ -123,7 +123,7 @@ const PaymentScreen = ({ navigation, route }: any) => {
       console.log('Creating Cashfree order...');
 
       const response = await createOrder(
-        amount,
+        pack?.id,
         customerId,
         customerPhone,
         customerName,

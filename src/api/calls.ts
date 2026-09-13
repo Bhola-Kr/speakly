@@ -100,14 +100,14 @@ export const verifyMSGOtp = async (
 };
 
 export const createOrder = async (
-  amount: number,
+  packId: string,
   customerId: string,
   customerPhone: string,
   customerName: string,
 ): Promise<CreateOrderResponse> => {
   try {
     const response = await Api.createOrder(
-      amount,
+      packId,
       customerId,
       customerPhone,
       customerName,
@@ -120,8 +120,8 @@ export const createOrder = async (
   }
 };
 
-export const verifyOrder = async (orderId: string) => {
-  return Api.verifyOrder(orderId);
+export const verifyOrder = async (orderId: string, customerId: string) => {
+  return Api.verifyOrder(orderId, customerId);
 };
 
 // ============================================
@@ -150,6 +150,17 @@ export const fetchFirebaseToken = async (phone: string): Promise<string> => {
     return response.token;
   } catch (error) {
     console.log('fetchFirebaseToken Error:', error);
+    throw error;
+  }
+};
+
+export const fetchRechargePacks = async () => {
+  try {
+    const response = await Api.getRechargePacks();
+    // @ts-ignore
+    return response?.data;
+  } catch (error) {
+    console.log('fetchRechargePacks Error:', error);
     throw error;
   }
 };

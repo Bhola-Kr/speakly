@@ -90,23 +90,28 @@ class Api {
     });
   }
 
+  getRechargePacks() {
+    return this.get<RechargePack[]>('/rechargePacks');
+  }
+
   createOrder(
-    amount: number,
+    packId: string,
     customerId: string,
     customerPhone: string,
     customerName: string,
   ) {
     return this.post<CreateOrderResponse>('/createOrder', {
-      amount,
+      packId,
       customerId,
       customerPhone,
       customerName,
     });
   }
 
-  verifyOrder(orderId: string) {
+  verifyOrder(orderId: string, customerId: string) {
     return this.post<VerifyOrderResponse>('/verifyOrder', {
       orderId,
+      customerId,
     });
   }
 }
@@ -222,6 +227,13 @@ export interface CreateOrderResponse {
 
     terminal_data: any | null;
   };
+}
+
+export interface RechargePack {
+  id: number;
+  amount: number;
+  bonus: number;
+  tag: string;
 }
 
 export interface VerifyOrderResponse {
