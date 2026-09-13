@@ -158,6 +158,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       gender: 'female',
       userName: incomingRoom?.male?.name,
       avatarId: incomingRoom?.male?.avatarId,
+      maleUid: incomingRoom?.male?.uid,
       femaleUid: myUid,
       uid: incomingRoom?.roomId,
       agora: incomingRoom?.agora,

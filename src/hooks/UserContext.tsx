@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 
 import database from '@react-native-firebase/database';
+import auth from '@react-native-firebase/auth';
 import authData, { UpdateProfileData } from '../firebase/authData';
 
 interface UserContextType {
@@ -25,15 +26,33 @@ export const UserProvider = ({ children }: any) => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const currentUser = useMemo(() => authData.getCurrentUser(), []);
+  const [currentUser, setCurrentUser] = useState(() => auth().currentUser);
+
+  useEffect(() => {
+    const unsubscribe = auth().onAuthStateChanged(nextUser => {
+      setCurrentUser(nextUser);
+
+      if (nextUser) {
+        setLoading(true);
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   const refreshUser = useCallback(async () => {
-    if (!currentUser) {
+    const userToRefresh = currentUser ?? auth().currentUser;
+
+    if (!userToRefresh) {
+      setUser(null);
       setLoading(false);
       return;
     }
 
-    const data = await authData.getUser(currentUser.uid);
+    const data = await authData.getUser(userToRefresh.uid);
 
     setUser(data);
 
@@ -42,6 +61,7 @@ export const UserProvider = ({ children }: any) => {
 
   useEffect(() => {
     if (!currentUser) {
+      setUser(null);
       setLoading(false);
       return;
     }

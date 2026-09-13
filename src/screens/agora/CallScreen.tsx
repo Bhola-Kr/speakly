@@ -21,11 +21,12 @@ import {
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import auth from '@react-native-firebase/auth';
 
 import styles from './styles';
 import Colors from '../../constants/colors';
 import RoomService from '../../firebase/RoomService';
-import { femaleAvatars } from '../../constants/constants';
+import { getFemaleAvatar } from '../../constants/constants';
 
 type Props = {
   navigation: any;
@@ -39,6 +40,7 @@ const CallScreen = ({ navigation, route }: Props) => {
     avatarId = 1,
     gender = 'male',
     femaleUid,
+    maleUid,
     agora,
   } = route?.params ?? {};
 
@@ -60,6 +62,8 @@ const CallScreen = ({ navigation, route }: Props) => {
   const [muted, setMuted] = useState(false);
 
   const [speaker, setSpeaker] = useState(true);
+
+  const [safetyActionLoading, setSafetyActionLoading] = useState(false);
 
   const [timer, setTimer] = useState('00:00');
 
@@ -293,6 +297,103 @@ const CallScreen = ({ navigation, route }: Props) => {
     engine.current?.setEnableSpeakerphone(value);
   };
 
+  const reportUser = (reason: string) => {
+    const reporterUid = auth().currentUser?.uid;
+    const reportedUid = gender === 'male' ? femaleUid : maleUid;
+
+    if (!reporterUid || !reportedUid) {
+      Alert.alert(
+        'Unable to Report',
+        'The other user could not be identified.',
+      );
+      return;
+    }
+
+    RoomService.reportUser(reporterUid, reportedUid, reason)
+      .then(() => {
+        Alert.alert(
+          'Report Submitted',
+          'Your report has been received and will be reviewed by our moderation team.',
+        );
+      })
+      .catch(() => {
+        Alert.alert('Unable to Report', 'Please try again.');
+      });
+  };
+
+  const showReportOptions = () => {
+    Alert.alert('Report User', 'Choose a reason for this report.', [
+      {
+        text: 'Harassment',
+        onPress: () => reportUser('Harassment'),
+      },
+      {
+        text: 'Inappropriate behaviour',
+        onPress: () => reportUser('Inappropriate behaviour'),
+      },
+      {
+        text: 'Other',
+        onPress: () => reportUser('Other'),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const blockUser = () => {
+    const blockerUid = auth().currentUser?.uid;
+    const blockedUid = gender === 'male' ? femaleUid : maleUid;
+
+    if (!blockerUid || !blockedUid) {
+      Alert.alert('Unable to Block', 'The other user could not be identified.');
+      return;
+    }
+
+    Alert.alert(
+      'Block User',
+      `Block ${userName}? You will no longer be able to call each other.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            setSafetyActionLoading(true);
+
+            try {
+              await RoomService.blockUser(blockerUid, blockedUid);
+              stopTimer();
+              stopBilling();
+
+              if (engine.current) {
+                engine.current.leaveChannel();
+                engine.current.release();
+                engine.current = null;
+              }
+
+              await RoomService.endCall(femaleUid);
+              navigation.goBack();
+            } catch {
+              Alert.alert('Unable to Block', 'Please try again.');
+              setSafetyActionLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const showSafetyOptions = () => {
+    if (safetyActionLoading) {
+      return;
+    }
+
+    Alert.alert('Safety Options', `Manage your interaction with ${userName}.`, [
+      { text: 'Report User', onPress: showReportOptions },
+      { text: 'Block User', style: 'destructive', onPress: blockUser },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   useEffect(() => {
     initializeAgora();
 
@@ -323,11 +424,18 @@ const CallScreen = ({ navigation, route }: Props) => {
 
           <Text style={styles.headerTitle}>Encrypted Voice Call</Text>
 
-          <MaterialCommunityIcons
-            name="shield-check"
-            size={24}
-            color="#D4AF37"
-          />
+          <TouchableOpacity
+            accessibilityLabel="Safety options"
+            accessibilityRole="button"
+            disabled={safetyActionLoading}
+            onPress={showSafetyOptions}
+          >
+            <MaterialCommunityIcons
+              name={safetyActionLoading ? 'loading' : 'shield-alert-outline'}
+              size={25}
+              color="#D4AF37"
+            />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.avatarContainer}>
@@ -335,7 +443,7 @@ const CallScreen = ({ navigation, route }: Props) => {
             <Image
               source={
                 gender === 'male'
-                  ? femaleAvatars.at(avatarId)?.image
+                  ? getFemaleAvatar(avatarId)
                   : require('../../assets/man.png')
               }
               style={styles.avatar}

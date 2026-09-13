@@ -89,14 +89,17 @@ export const femaleAvatars: Avatar[] = [
   { id: 20, image: require('../assets/avatars/avatar20.png') },
 ];
 
+export const getFemaleAvatar = (avatarId: number | string | undefined) => {
+  return (
+    femaleAvatars.find(avatar => avatar.id === Number(avatarId))?.image ??
+    femaleAvatars[0].image
+  );
+};
+
 export const getUserAvatar = (user: any) => {
   try {
     if (user?.profile?.gender === 'female') {
-      const avatar = femaleAvatars.find(
-        item => item.id === Number(user?.profile?.avatarId),
-      );
-
-      return avatar?.image ?? femaleAvatars[0].image;
+      return getFemaleAvatar(user?.profile?.avatarId);
     }
 
     return require('../assets/man.png');

@@ -17,7 +17,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './styles';
 import strings from '../../../constants/strings';
 import RoomService from '../../../firebase/RoomService';
-import { calculateAge, femaleAvatars } from '../../../constants/constants';
+import { calculateAge, getFemaleAvatar } from '../../../constants/constants';
 
 interface Props {
   navigation: any;
@@ -215,9 +215,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <View style={styles.avatarBorder}>
             <Image
-              source={
-                femaleAvatars.at(data.avatarId)?.image ?? femaleAvatars[0].image
-              }
+              source={getFemaleAvatar(data?.avatarId)}
               style={styles.avatar}
             />
           </View>

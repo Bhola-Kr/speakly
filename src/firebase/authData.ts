@@ -175,6 +175,25 @@ class AuthData {
 
       await database().ref(`users/${user.uid}/profile`).update(profileData);
 
+      if (profileData.avatarId !== undefined) {
+        await database()
+          .ref(`rooms/${user.uid}`)
+          .transaction(room => {
+            if (!room?.female || room.female.uid !== user.uid) {
+              return;
+            }
+
+            return {
+              ...room,
+              female: {
+                ...room.female,
+                avatarId: profileData.avatarId,
+              },
+              updatedAt: Date.now(),
+            };
+          });
+      }
+
       // Keep Firebase Auth profile in sync
       if (profileData.name) {
         await user.updateProfile({

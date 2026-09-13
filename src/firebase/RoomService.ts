@@ -146,12 +146,13 @@ class RoomService {
     await database().ref().update(updates);
   }
 
-  async isBlocked(femaleUid: string, maleUid: string) {
-    const snapshot = await database()
-      .ref(`blocks/${femaleUid}/${maleUid}`)
-      .once('value');
+  async isBlocked(firstUid: string, secondUid: string) {
+    const [firstBlocksSecond, secondBlocksFirst] = await Promise.all([
+      database().ref(`blocks/${firstUid}/${secondUid}`).once('value'),
+      database().ref(`blocks/${secondUid}/${firstUid}`).once('value'),
+    ]);
 
-    return snapshot.exists();
+    return firstBlocksSecond.exists() || secondBlocksFirst.exists();
   }
 
   async callFemale(femaleUid: string) {
@@ -504,14 +505,14 @@ class RoomService {
     return () => ref.off('value', listener);
   }
 
-  async blockUser(femaleUid: string, maleUid: string) {
-    await database().ref(`blocks/${femaleUid}/${maleUid}`).set({
+  async blockUser(blockerUid: string, blockedUid: string) {
+    await database().ref(`blocks/${blockerUid}/${blockedUid}`).set({
       blockedAt: Date.now(),
     });
   }
 
-  async unblockUser(femaleUid: string, maleUid: string) {
-    await database().ref(`blocks/${femaleUid}/${maleUid}`).remove();
+  async unblockUser(blockerUid: string, blockedUid: string) {
+    await database().ref(`blocks/${blockerUid}/${blockedUid}`).remove();
   }
 
   async reportUser(reporterUid: string, reportedUid: string, reason: string) {

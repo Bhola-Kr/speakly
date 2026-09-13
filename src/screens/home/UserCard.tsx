@@ -11,7 +11,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
-import { calculateAge, femaleAvatars } from '../../constants/constants';
+import { calculateAge, getFemaleAvatar } from '../../constants/constants';
 
 interface Props {
   item: any;
@@ -47,10 +47,7 @@ const UserCard = ({ item, callNow, calling = false }: Props) => {
       <View style={styles.row}>
         <View style={styles.avatarWrapper}>
           <Image
-            source={
-              femaleAvatars[item?.profile?.avatarId]?.image ||
-              femaleAvatars[0].image
-            }
+            source={getFemaleAvatar(item?.profile?.avatarId)}
             style={styles.avatar}
           />
 
