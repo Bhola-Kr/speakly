@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   SafeAreaView,
   View,
   Text,
@@ -28,20 +29,22 @@ interface Props {
 }
 
 const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
-  const phoneNumber = route.params.phone;
-  const reqId = route.params.reqId;
-  console.log('reqId', reqId);
+  const phoneNumber = route?.params?.phone ?? '';
+  const [requestId, setRequestId] = useState(route?.params?.reqId ?? '');
   const { refreshUser } = useUser();
 
   const [otp, setOtp] = useState('');
   const [timer, setTimer] = useState(30);
   const [loading, setLoading] = useState(false);
+  const [isOtpFocused, setIsOtpFocused] = useState(false);
+  const otpInputRef = useRef<TextInput>(null);
+  const cursorOpacity = useRef(new Animated.Value(1)).current;
 
   const isValid = otp.length === 4;
+  const activeOtpIndex = Math.min(otp.length, 3);
 
   useEffect(() => {
     if (timer <= 0) {
-      setLoading(false);
       return;
     }
 
@@ -52,6 +55,42 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     return () => clearInterval(interval);
   }, [timer]);
 
+  useEffect(() => {
+    const focusTimer = setTimeout(() => otpInputRef.current?.focus(), 350);
+
+    return () => clearTimeout(focusTimer);
+  }, []);
+
+  useEffect(() => {
+    const cursorAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(cursorOpacity, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cursorOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    if (isOtpFocused && !isValid) {
+      cursorAnimation.start();
+    } else {
+      cursorAnimation.stop();
+      cursorOpacity.setValue(1);
+    }
+
+    return () => cursorAnimation.stop();
+  }, [cursorOpacity, isOtpFocused, isValid]);
+
+  const handleOtpChange = (value: string) => {
+    setOtp(value.replace(/\D/g, '').slice(0, 4));
+  };
+
   const verifyOtp = async () => {
     if (!isValid || loading) {
       return;
@@ -60,12 +99,8 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       setLoading(true);
 
-      console.log('verifyOtp ->', phoneNumber, otp, reqId);
-
       // Verify OTP through your backend
-      const response = await verifyMSGOtp(phoneNumber, otp, reqId);
-
-      console.log('verifyOtp -> response', response);
+      const response = await verifyMSGOtp(phoneNumber, otp, requestId);
 
       if (!response?.success || !response?.uid) {
         throw new Error(response?.message || 'Failed to authenticate user.');
@@ -75,8 +110,6 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
       // Get user information using the UID
       const userInfo = await authData.getUser(firebaseUser.uid);
-
-      console.log('verifyOtp -> userInfo', userInfo);
 
       // Brand new user
       if (!userInfo) {
@@ -130,12 +163,8 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       setLoading(true);
 
-      console.log('resendOtp ->', phoneNumber, reqId);
-
       // Resend OTP through your backend
-      const response = await resendMSGOtp(phoneNumber, reqId);
-
-      console.log('resendOtp -> response', response);
+      const response = await resendMSGOtp(phoneNumber, requestId);
 
       if (!response?.success) {
         throw new Error(
@@ -143,8 +172,14 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
         );
       }
 
+      const nextRequestId = response?.data?.reqId ?? response?.data?.requestId;
+      if (typeof nextRequestId === 'string' && nextRequestId) {
+        setRequestId(nextRequestId);
+      }
+
       setOtp('');
       setTimer(30);
+      requestAnimationFrame(() => otpInputRef.current?.focus());
 
       Alert.alert('Success', 'OTP has been sent successfully.');
     } catch (e: any) {
@@ -188,8 +223,10 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
             style={styles.image}
           />
 
+          <Text style={styles.title}>Verify your number</Text>
+
           <Text style={styles.description}>
-            Your login OTP is sent to{' '}
+            Enter the 4-digit code sent to{' '}
             <Text style={styles.bold}>{phoneNumber}</Text>
           </Text>
 
@@ -203,25 +240,60 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
             </Text>
           </TouchableOpacity>
 
-          <LinearGradient
-            colors={Colors.gradient}
-            style={styles.gradientBorder}
+          <TouchableOpacity
+            activeOpacity={1}
+            disabled={loading}
+            onPress={() => otpInputRef.current?.focus()}
+            style={styles.otpSection}
           >
-            <View style={styles.inputContainer}>
+            <Text style={styles.otpLabel}>ONE-TIME PASSWORD</Text>
+
+            <View style={styles.pinRow}>
               <TextInput
+                ref={otpInputRef}
                 value={otp}
-                onChangeText={text => setOtp(text.replace(/[^0-9]/g, ''))}
+                onChangeText={handleOtpChange}
                 keyboardType="number-pad"
+                inputMode="numeric"
                 maxLength={4}
-                placeholder="Enter OTP"
-                placeholderTextColor={Colors.placeholder}
-                style={styles.input}
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                editable={!loading}
+                onSubmitEditing={verifyOtp}
+                onFocus={() => setIsOtpFocused(true)}
+                onBlur={() => setIsOtpFocused(false)}
+                style={styles.hiddenInput}
               />
+
+              {[0, 1, 2, 3].map(index => (
+                <LinearGradient
+                  colors={
+                    otp[index] || (isOtpFocused && index === activeOtpIndex)
+                      ? Colors.gradient
+                      : ['#ECE5EA', '#ECE5EA']
+                  }
+                  key={index}
+                  style={styles.pinBorder}
+                >
+                  <View style={styles.pinCell}>
+                    <Text style={styles.pinDigit}>{otp[index] ?? ''}</Text>
+                    {isOtpFocused &&
+                      !otp[index] &&
+                      index === activeOtpIndex && (
+                        <Animated.View
+                          style={[styles.cursor, { opacity: cursorOpacity }]}
+                        />
+                      )}
+                  </View>
+                </LinearGradient>
+              ))}
             </View>
-          </LinearGradient>
+
+            <Text style={styles.pinHint}>{otp.length}/4 digits entered</Text>
+          </TouchableOpacity>
 
           <GradientButton
-            title={loading ? 'Please wait...' : 'Proceed'}
+            title={loading ? 'Verifying...' : 'Verify & Continue'}
             disabled={!isValid || loading}
             onPress={verifyOtp}
           />
@@ -233,12 +305,14 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
                 activeOpacity={0.8}
                 onPress={resendOtp}
               >
-                <Text style={styles.resend}>Resend OTP</Text>
+                <Text style={styles.resend}>Resend code</Text>
               </TouchableOpacity>
             ) : (
               <Text style={styles.timerText}>
-                Didn't receive an OTP?{' '}
-                <Text style={styles.timer}>Resend in {timer} seconds.</Text>
+                Didn&apos;t receive a code?{' '}
+                <Text style={styles.timer}>
+                  Resend in 00:{String(timer).padStart(2, '0')}
+                </Text>
               </Text>
             )}
           </View>
@@ -270,19 +344,27 @@ const styles = StyleSheet.create({
   },
 
   image: {
-    width: 240,
-    height: 240,
+    width: 190,
+    height: 190,
     alignSelf: 'center',
-    marginTop: 30,
-    marginBottom: 25,
+    marginTop: 16,
+    marginBottom: 12,
+  },
+
+  title: {
+    color: Colors.text,
+    fontSize: 27,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 10,
   },
 
   description: {
     fontSize: 17,
     color: '#8C8C8C',
     textAlign: 'center',
-    marginHorizontal: 30,
-    lineHeight: 26,
+    marginHorizontal: 28,
+    lineHeight: 24,
   },
 
   bold: {
@@ -291,8 +373,8 @@ const styles = StyleSheet.create({
   },
 
   changeText: {
-    marginTop: 5,
-    fontSize: 17,
+    marginTop: 8,
+    fontSize: 15,
     textAlign: 'center',
     color: '#8C8C8C',
   },
@@ -303,43 +385,76 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
-  gradientBorder: {
-    marginHorizontal: 20,
-    marginTop: 45,
-    borderRadius: 18,
+  otpSection: {
+    marginTop: 36,
+    alignItems: 'center',
+  },
+
+  otpLabel: {
+    color: Colors.subText,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    marginBottom: 15,
+  },
+
+  pinRow: {
+    flexDirection: 'row',
+    gap: 12,
+    position: 'relative',
+  },
+
+  hiddenInput: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0,
+    zIndex: 2,
+  },
+
+  pinBorder: {
+    width: 58,
+    height: 64,
+    borderRadius: 16,
     padding: 1.5,
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 3,
   },
 
-  inputContainer: {
+  pinCell: {
+    flex: 1,
+    borderRadius: 15,
     backgroundColor: '#FFF9FF',
-    borderRadius: 17,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 22,
   },
 
-  input: {
-    fontSize: 22,
+  pinDigit: {
     color: Colors.text,
-    fontWeight: '600',
-    letterSpacing: 1,
+    fontSize: 25,
+    fontWeight: '800',
+  },
+
+  cursor: {
+    position: 'absolute',
+    width: 2,
+    height: 26,
+    borderRadius: 1,
+    backgroundColor: Colors.primary,
+  },
+
+  pinHint: {
+    color: Colors.subText,
+    fontSize: 13,
+    marginTop: 12,
   },
 
   timerContainer: {
-    marginTop: 40,
+    marginTop: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   timerText: {
-    fontSize: 17,
+    fontSize: 15,
     color: '#3B3B3B',
   },
 
@@ -349,7 +464,7 @@ const styles = StyleSheet.create({
   },
 
   resend: {
-    fontSize: 18,
+    fontSize: 16,
     color: Colors.primary,
     fontWeight: '700',
   },
