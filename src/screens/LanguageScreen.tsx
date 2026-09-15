@@ -132,7 +132,7 @@ export default LanguageScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     paddingHorizontal: 24,
   },
 
@@ -143,21 +143,21 @@ const styles = StyleSheet.create({
 
   smallTitle: {
     fontSize: 20,
-    color: '#7A7A7A',
+    color: Colors.gray122,
     fontWeight: '400',
   },
 
   title: {
     marginTop: 2,
     fontSize: 30,
-    color: '#111111',
+    color: Colors.darkBackground,
     letterSpacing: -0.8,
   },
 
   note: {
     marginTop: 4,
     fontSize: 14,
-    color: '#4E7CF7',
+    color: Colors.blueAction,
     fontWeight: '500',
   },
 
@@ -168,10 +168,10 @@ const styles = StyleSheet.create({
 
     marginBottom: 16,
 
-    backgroundColor: '#EEF3FF',
+    backgroundColor: Colors.blueLight,
 
     borderWidth: 1.8,
-    borderColor: '#4E7CF7',
+    borderColor: Colors.blueAction,
 
     flexDirection: 'row',
 
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
 
   selectedCard: {
-    backgroundColor: '#4E7CF7',
+    backgroundColor: Colors.blueAction,
   },
 
   radio: {
@@ -194,16 +194,16 @@ const styles = StyleSheet.create({
 
     borderWidth: 3,
 
-    borderColor: '#4E7CF7',
+    borderColor: Colors.blueAction,
 
     justifyContent: 'center',
     alignItems: 'center',
 
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
   },
 
   radioSelected: {
-    borderColor: '#FFFFFF',
+    borderColor: Colors.white,
   },
 
   innerRadio: {
@@ -212,14 +212,14 @@ const styles = StyleSheet.create({
 
     borderRadius: 11,
 
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
 
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   check: {
-    color: '#4E7CF7',
+    color: Colors.blueAction,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -231,11 +231,11 @@ const styles = StyleSheet.create({
 
     fontWeight: '700',
 
-    color: '#3E72F0',
+    color: Colors.blueActionDark,
   },
 
   languageActive: {
-    color: '#FFFFFF',
+    color: Colors.white,
   },
 
   symbol: {
@@ -249,10 +249,10 @@ const styles = StyleSheet.create({
 
     fontWeight: '700',
 
-    color: 'rgba(78,124,247,0.12)',
+    color: Colors.blueOverlay,
   },
 
   symbolActive: {
-    color: 'rgba(255,255,255,0.18)',
+    color: Colors.overlayWhite18,
   },
 });

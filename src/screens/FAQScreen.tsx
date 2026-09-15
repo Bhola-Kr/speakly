@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     borderRadius: 18,
     marginBottom: 14,
     paddingHorizontal: 18,
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
 
   helpCard: {
     marginTop: 18,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     borderRadius: 22,
     padding: 24,
     alignItems: 'center',

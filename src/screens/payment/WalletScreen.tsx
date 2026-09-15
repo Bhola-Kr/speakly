@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
 
   balanceDescription: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.9)',
+    color: Colors.overlayWhite90,
   },
   section: {
     marginTop: 28,
@@ -363,14 +363,14 @@ const styles = StyleSheet.create({
 
   card: {
     width: '48%',
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     borderRadius: 22,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: Colors.border,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: {
@@ -461,14 +461,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 24,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.12,
     shadowRadius: 18,
     shadowOffset: {

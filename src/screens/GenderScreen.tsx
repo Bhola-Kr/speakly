@@ -118,7 +118,7 @@ export default GenderScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     paddingHorizontal: 26,
   },
 
@@ -145,12 +145,12 @@ const styles = StyleSheet.create({
     maxWidth: 310,
     alignSelf: 'center',
 
-    backgroundColor: '#FFF',
+    backgroundColor: Colors.white,
 
     borderRadius: 22,
 
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: Colors.transparent,
 
     paddingTop: 22,
     paddingBottom: 18,
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
 
   check: {
-    color: '#FFF',
+    color: Colors.white,
     fontSize: 18,
     fontWeight: '700',
   },
@@ -196,14 +196,14 @@ const styles = StyleSheet.create({
     marginTop: 14,
     fontSize: 20,
     fontWeight: '500',
-    color: '#2F2F2F',
+    color: Colors.gray47,
     textAlign: 'center',
   },
 
   subTitle: {
     marginTop: 3,
     fontSize: 12,
-    color: '#8E8E8E',
+    color: Colors.gray142,
     textAlign: 'center',
     fontWeight: '400',
   },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   note: {
     marginBottom: 18,
     textAlign: 'center',
-    color: '#5A5A5A',
+    color: Colors.gray90,
     fontSize: 15,
     fontWeight: '400',
   },

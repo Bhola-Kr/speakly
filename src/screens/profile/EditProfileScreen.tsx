@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
 
   input: {
     height: 56,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     borderRadius: 16,
     paddingHorizontal: 18,
     color: Colors.text,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 1.5,
 
-    shadowColor: '#5B6CFF',
+    shadowColor: Colors.blueBrandMuted,
     shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
 
   yearText: {
     fontSize: 18,
-    color: '#BEBEBE',
+    color: Colors.gray190,
   },
 
   selectedYear: {

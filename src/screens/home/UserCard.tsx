@@ -22,18 +22,18 @@ interface Props {
 const statusConfig = {
   online: {
     text: 'Online',
-    color: '#18C964',
-    background: '#ECFDF3',
+    color: Colors.onlineStatus,
+    background: Colors.onlineSurface,
   },
   busy: {
     text: 'Busy',
-    color: '#F59E0B',
-    background: '#FFF7E6',
+    color: Colors.busy,
+    background: Colors.busySurface,
   },
   offline: {
     text: 'Offline',
-    color: '#9CA3AF',
-    background: '#F3F4F6',
+    color: Colors.offline,
+    background: Colors.offlineSurface,
   },
 };
 
@@ -114,7 +114,7 @@ const UserCard = ({ item, callNow, calling = false }: Props) => {
 
       <View style={styles.footer}>
         <LinearGradient
-          colors={['#FFF8E4', '#FFE39A']}
+          colors={[Colors.coinGradientStart, Colors.coinGradientEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.coinCard}
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
 
     padding: 12,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.07,
     shadowRadius: 8,
     shadowOffset: {
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: '#18C964',
+    backgroundColor: Colors.onlineStatus,
   },
 
   info: {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
 
-    backgroundColor: '#FFF8E0',
+    backgroundColor: Colors.coinSurface,
 
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -262,14 +262,14 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontWeight: '700',
     fontSize: 12,
-    color: '#A97400',
+    color: Colors.coinText,
   },
 
   onlineChip: {
     flexDirection: 'row',
     alignItems: 'center',
 
-    backgroundColor: '#ECFDF3',
+    backgroundColor: Colors.onlineSurface,
 
     marginLeft: 6,
 
@@ -284,14 +284,14 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 4,
 
-    backgroundColor: '#18C964',
+    backgroundColor: Colors.onlineStatus,
   },
 
   onlineText: {
     marginLeft: 4,
     fontWeight: '700',
     fontSize: 11,
-    color: '#18C964',
+    color: Colors.onlineStatus,
   },
 
   divider: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
 
     borderWidth: 1,
-    borderColor: '#F3D36A',
+    borderColor: Colors.coinBorder,
 
     minWidth: 105,
   },
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#B8860B',
+    color: Colors.coinHighlight,
     lineHeight: 22,
   },
 
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     marginTop: -1,
     fontSize: 10,
     fontWeight: '600',
-    color: '#8B6A00',
+    color: Colors.coinDark,
   },
 
   callButton: {

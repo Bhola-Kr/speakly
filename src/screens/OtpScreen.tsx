@@ -270,7 +270,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
                   colors={
                     otp[index] || (isOtpFocused && index === activeOtpIndex)
                       ? Colors.gradient
-                      : ['#ECE5EA', '#ECE5EA']
+                      : [Colors.gray236, Colors.gray236]
                   }
                   key={index}
                   style={styles.pinBorder}
@@ -361,14 +361,14 @@ const styles = StyleSheet.create({
 
   description: {
     fontSize: 17,
-    color: '#8C8C8C',
+    color: Colors.gray140,
     textAlign: 'center',
     marginHorizontal: 28,
     lineHeight: 24,
   },
 
   bold: {
-    color: '#666666',
+    color: Colors.gray102,
     fontWeight: '600',
   },
 
@@ -376,11 +376,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 15,
     textAlign: 'center',
-    color: '#8C8C8C',
+    color: Colors.gray140,
   },
 
   changeLink: {
-    color: '#3E3E3E',
+    color: Colors.gray62,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   pinCell: {
     flex: 1,
     borderRadius: 15,
-    backgroundColor: '#FFF9FF',
+    backgroundColor: Colors.otpInputSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -455,11 +455,11 @@ const styles = StyleSheet.create({
 
   timerText: {
     fontSize: 15,
-    color: '#3B3B3B',
+    color: Colors.gray59,
   },
 
   timer: {
-    color: '#8D8D8D',
+    color: Colors.gray141,
     fontWeight: '500',
   },
 

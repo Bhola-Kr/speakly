@@ -403,13 +403,13 @@ const styles = StyleSheet.create({
   // PAYMENT CARD
 
   paymentCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
     borderColor: Colors.border,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.06,
     shadowRadius: 10,
     shadowOffset: {
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.12,
     shadowRadius: 8,
     shadowOffset: {

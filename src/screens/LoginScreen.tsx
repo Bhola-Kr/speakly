@@ -181,7 +181,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 keyboardType="number-pad"
                 maxLength={10}
                 placeholder="Your Mobile Number"
-                placeholderTextColor="#999"
+                placeholderTextColor={Colors.gray153}
                 style={styles.input}
               />
             </View>
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: moderateScale(34),
     fontWeight: '800',
-    color: '#7B61FF',
+    color: Colors.purpleBrand,
   },
 
   slide: {
@@ -265,14 +265,14 @@ const styles = StyleSheet.create({
     width: moderateScale(8),
     height: moderateScale(8),
     borderRadius: 10,
-    backgroundColor: '#D6D6D6',
+    backgroundColor: Colors.gray214,
     marginHorizontal: moderateScale(4),
   },
 
   activeDot: {
     width: moderateScale(8),
     height: moderateScale(8),
-    backgroundColor: '#5B7CFF',
+    backgroundColor: Colors.blueBrand,
   },
 
   gradientBorder: {
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
 
   inputBox: {
     height: verticalScale(40),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: moderateScale(16),
     flexDirection: 'row',
     alignItems: 'center',
@@ -298,27 +298,27 @@ const styles = StyleSheet.create({
   callingCode: {
     fontSize: moderateScale(18),
     fontWeight: '600',
-    color: '#222',
+    color: Colors.gray34,
     marginLeft: moderateScale(4),
   },
 
   arrow: {
     fontSize: moderateScale(10),
-    color: '#777',
+    color: Colors.gray119,
     marginLeft: moderateScale(5),
   },
 
   divider: {
     width: 1,
     height: verticalScale(32),
-    backgroundColor: '#E3E3E3',
+    backgroundColor: Colors.gray227,
     marginHorizontal: moderateScale(15),
   },
 
   input: {
     flex: 1,
     fontSize: moderateScale(18),
-    color: '#111',
+    color: Colors.darkBackground,
     padding: 0,
   },
 
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
 
-    shadowColor: '#5B7CFF',
+    shadowColor: Colors.blueBrand,
 
     shadowOffset: {
       width: 0,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: moderateScale(19),
     fontWeight: '700',
   },
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(32),
     paddingHorizontal: moderateScale(25),
     textAlign: 'center',
-    color: '#777777',
+    color: Colors.gray119,
     fontSize: moderateScale(14),
     lineHeight: verticalScale(20),
   },
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   safeText: {
     marginTop: verticalScale(8),
     textAlign: 'center',
-    color: '#888888',
+    color: Colors.gray136,
     fontSize: moderateScale(13),
   },
 });

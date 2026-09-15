@@ -1,3 +1,4 @@
+import Colors from '../../../constants/colors';
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
@@ -87,7 +88,7 @@ export default function IncomingCallScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#0F172A" barStyle="light-content" />
+      <StatusBar backgroundColor={Colors.navy} barStyle="light-content" />
       <View style={styles.header}>
         <Text style={styles.logo}>{strings.appName}</Text>
 
@@ -136,7 +137,7 @@ export default function IncomingCallScreen() {
         </Animated.View>
 
         <View style={styles.secureCard}>
-          <Icon name="shield-check" size={18} color="#00E676" />
+          <Icon name="shield-check" size={18} color={Colors.online} />
 
           <Text style={styles.secureText}>End-to-End Encrypted</Text>
         </View>
@@ -150,7 +151,7 @@ export default function IncomingCallScreen() {
               activeOpacity={0.85}
               onPress={onDecline}
             >
-              <Icon name="phone-hangup" size={34} color="#FFFFFF" />
+              <Icon name="phone-hangup" size={34} color={Colors.white} />
             </TouchableOpacity>
 
             <Text style={styles.actionText}>Decline</Text>
@@ -162,7 +163,7 @@ export default function IncomingCallScreen() {
               activeOpacity={0.85}
               onPress={onAccept}
             >
-              <Icon name="phone" size={34} color="#FFFFFF" />
+              <Icon name="phone" size={34} color={Colors.white} />
             </TouchableOpacity>
 
             <Text style={styles.actionText}>Accept</Text>

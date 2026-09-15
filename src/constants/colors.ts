@@ -1,40 +1,134 @@
-const Colors = {
+const palette = {
+  transparent: 'transparent',
+  black: '#000000',
+  white: '#FFFFFF',
+
   primary: '#121212',
   secondary: '#D4AF37',
-
   background: '#F8F7F4',
-
-  card: '#FFFFFF',
   surface: '#F1EFE8',
-
   text: '#1A1A1A',
   subText: '#787878',
-
   placeholder: '#A8A8A8',
-
   border: '#E4DED0',
-
   disabled: '#D7D2C5',
-
-  white: '#FFFFFF',
-  black: '#000000',
-
-  shadow: 'rgba(0,0,0,0.12)',
-
-  inputBg: '#FFFFFF',
   inputBackground: '#FCFBF8',
-
   success: '#0BA360',
   danger: '#E53935',
   warning: '#F4B400',
-
   divider: '#EFEAE0',
+  shadow: 'rgba(0,0,0,0.12)',
 
-  gradient: ['#121212', '#2F2F2F'],
+  neutralGray: '#808080',
+  online: '#00E676',
+  onlineStatus: '#18C964',
+  presenceGreen: '#16C784',
+  onlineSurface: '#ECFDF3',
+  busy: '#F59E0B',
+  busySurface: '#FFF7E6',
+  offline: '#9CA3AF',
+  offlineSurface: '#F3F4F6',
 
-  buttonGradient: ['#121212', '#4A4A4A'],
+  coinGradientStart: '#FFF8E4',
+  coinGradientEnd: '#FFE39A',
+  coinSurface: '#FFF8E0',
+  coinBorder: '#F3D36A',
+  coinText: '#A97400',
+  coinHighlight: '#B8860B',
+  coinDark: '#8B6A00',
 
-  goldGradient: ['#B88A1C', '#D4AF37'],
+  darkBackground: '#111111',
+  darkBackgroundAlt: '#181818',
+  darkSurface: '#202020',
+  darkSurfaceElevated: '#1C1C1C',
+  darkSurfaceCard: '#1D1D1D',
+  darkSurfaceMuted: '#242424',
+  darkAvatarSurface: '#2B2B2B',
+  darkTextMuted: '#C5C5C5',
+  switchTrackOn: '#1F1F1F',
+  connectionWarning: '#FFC107',
+
+  navy: '#0F172A',
+  navySurface: '#1E293B',
+  navyCard: '#182234',
+  slate: '#94A3B8',
+  slateLight: '#CBD5E1',
+  inkBlue: '#111827',
+  slateDark: '#374151',
+
+  errorBright: '#EF4444',
+  errorStrong: '#DC2626',
+  errorStrongSurface: '#FDECEC',
+  successStrong: '#16A34A',
+  successStrongSurface: '#EAF8EF',
+  warningStrong: '#D97706',
+  warningStrongSurface: '#FFF6E8',
+
+  tealDark: '#0F766E',
+  teal: '#14B8A6',
+  purpleDark: '#6D28D9',
+  purple: '#8B5CF6',
+  purpleBrand: '#7B61FF',
+  goldDark: '#B88A1C',
+
+  blueLight: '#EEF3FF',
+  blueBrand: '#5B7CFF',
+  blueBrandMuted: '#5B6CFF',
+  blueLink: '#4D73F8',
+  blueAction: '#4E7CF7',
+  blueActionDark: '#3E72F0',
+  blueOverlay: 'rgba(78,124,247,0.12)',
+
+  screenSurface: '#F8F9FE',
+  screenBorder: '#EEF2FF',
+  screenTint: '#E8EEFF',
+  errorSurface: '#FFECEC',
+  errorAccent: '#FF5B5B',
+  emptyStateSurface: '#F7F1D8',
+  otpInputSurface: '#FFF9FF',
+
+  gray34: '#222222',
+  gray47: '#2F2F2F',
+  gray59: '#3B3B3B',
+  gray62: '#3E3E3E',
+  gray74: '#4A4A4A',
+  gray90: '#5A5A5A',
+  gray102: '#666666',
+  gray119: '#777777',
+  gray122: '#7A7A7A',
+  gray123: '#7B7B7B',
+  gray136: '#888888',
+  gray138: '#8A8A8A',
+  gray140: '#8C8C8C',
+  gray141: '#8D8D8D',
+  gray142: '#8E8E8E',
+  gray143: '#8F8F8F',
+  gray153: '#999999',
+  gray184: '#B8B8B8',
+  gray190: '#BEBEBE',
+  gray214: '#D6D6D6',
+  gray227: '#E3E3E3',
+  gray236: '#ECE5EA',
+  gray238: '#EEEEEE',
+  gray244: '#F4F3F4',
+  lightGray: '#F5F5F5',
+
+  overlayBlack15: 'rgba(0,0,0,0.15)',
+  overlayBlack45: 'rgba(0,0,0,0.45)',
+  overlayWhite15: 'rgba(255,255,255,0.15)',
+  overlayWhite18: 'rgba(255,255,255,0.18)',
+  overlayWhite90: 'rgba(255,255,255,0.9)',
+  overlayWhite92: 'rgba(255,255,255,0.92)',
+  overlayGold12: 'rgba(212,175,55,0.12)',
+  overlayGold15: 'rgba(212,175,55,0.15)',
+  overlayGold18: 'rgba(212,175,55,0.18)',
+};
+
+const Colors = {
+  ...palette,
+  gradient: [palette.primary, palette.gray47],
+  buttonGradient: [palette.primary, palette.gray74],
+  goldGradient: [palette.goldDark, palette.secondary],
 };
 
 export default Colors;

@@ -1,3 +1,4 @@
+import Colors from '../../constants/colors';
 import { Dimensions, StyleSheet } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -5,7 +6,7 @@ const { width } = Dimensions.get('window');
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111111',
+    backgroundColor: Colors.darkBackground,
   },
 
   header: {
@@ -17,7 +18,7 @@ export default StyleSheet.create({
   },
 
   headerTitle: {
-    color: '#fff',
+    color: Colors.white,
     fontSize: 18,
     fontWeight: '700',
   },
@@ -34,7 +35,7 @@ export default StyleSheet.create({
     borderRadius: 105,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2b2b2b',
+    backgroundColor: Colors.darkAvatarSurface,
   },
 
   avatar: {
@@ -44,14 +45,14 @@ export default StyleSheet.create({
   },
 
   name: {
-    color: '#fff',
+    color: Colors.white,
     fontSize: 30,
     fontWeight: '700',
     marginTop: 20,
   },
 
   city: {
-    color: '#C5C5C5',
+    color: Colors.darkTextMuted,
     marginTop: 8,
     fontSize: 16,
   },
@@ -60,7 +61,7 @@ export default StyleSheet.create({
     marginTop: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#242424',
+    backgroundColor: Colors.darkSurfaceMuted,
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 25,
@@ -71,16 +72,16 @@ export default StyleSheet.create({
     height: 10,
     borderRadius: 5,
     marginRight: 10,
-    backgroundColor: '#00E676',
+    backgroundColor: Colors.online,
   },
 
   status: {
-    color: '#fff',
+    color: Colors.white,
     fontWeight: '600',
   },
 
   timer: {
-    color: '#D4AF37',
+    color: Colors.secondary,
     fontSize: 50,
     fontWeight: '700',
     marginTop: 35,
@@ -88,7 +89,7 @@ export default StyleSheet.create({
 
   wallet: {
     width: width - 40,
-    backgroundColor: '#1D1D1D',
+    backgroundColor: Colors.darkSurfaceCard,
     borderRadius: 20,
     marginTop: 35,
     paddingVertical: 18,
@@ -101,12 +102,12 @@ export default StyleSheet.create({
   },
 
   walletTitle: {
-    color: '#888',
+    color: Colors.gray136,
     fontSize: 13,
   },
 
   walletValue: {
-    color: '#D4AF37',
+    color: Colors.secondary,
     fontSize: 20,
     fontWeight: '700',
     marginTop: 5,
@@ -132,11 +133,11 @@ export default StyleSheet.create({
     borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#242424',
+    backgroundColor: Colors.darkSurfaceMuted,
   },
 
   controlText: {
-    color: '#fff',
+    color: Colors.white,
     marginTop: 10,
     fontWeight: '600',
   },
@@ -145,14 +146,14 @@ export default StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#E53935',
+    backgroundColor: Colors.danger,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
   },
 
   endText: {
-    color: '#fff',
+    color: Colors.white,
     fontWeight: '700',
     textAlign: 'center',
     marginTop: 10,

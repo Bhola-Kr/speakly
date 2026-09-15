@@ -128,7 +128,7 @@ export default AvatarScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     paddingHorizontal: 24,
   },
   imageWrapper: {
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
 
     overflow: 'hidden',
 
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Colors.lightGray,
   },
 
   backButton: {
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
 
   back: {
     fontSize: 42,
-    color: '#111',
+    color: Colors.darkBackground,
     fontWeight: '300',
     marginTop: -5,
   },
@@ -189,13 +189,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
 
     borderWidth: 1,
-    borderColor: 'gray',
+    borderColor: Colors.neutralGray,
 
     position: 'relative',
   },
 
   selectedAvatar: {
-    borderColor: '#4D73F8',
+    borderColor: Colors.blueLink,
     borderWidth: 3,
   },
 
@@ -216,19 +216,19 @@ const styles = StyleSheet.create({
 
     borderRadius: 17,
 
-    backgroundColor: '#4D73F8',
+    backgroundColor: Colors.blueLink,
 
     justifyContent: 'center',
     alignItems: 'center',
 
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: Colors.white,
 
     zIndex: 999,
   },
 
   check: {
-    color: '#FFF',
+    color: Colors.white,
     fontSize: 17,
     fontWeight: '700',
   },

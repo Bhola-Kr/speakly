@@ -1,3 +1,4 @@
+import Colors from '../../../constants/colors';
 import { Dimensions, StyleSheet } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -5,7 +6,7 @@ const { width } = Dimensions.get('window');
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: Colors.navy,
     paddingHorizontal: 24,
   },
 
@@ -17,20 +18,20 @@ export default StyleSheet.create({
   logo: {
     fontSize: 34,
     fontWeight: '700',
-    color: '#D4AF37',
+    color: Colors.secondary,
     letterSpacing: 1,
   },
 
   status: {
     marginTop: 8,
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: 22,
     fontWeight: '700',
   },
 
   statusSub: {
     marginTop: 6,
-    color: '#94A3B8',
+    color: Colors.slate,
     fontSize: 15,
   },
 
@@ -53,7 +54,7 @@ export default StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: 'rgba(212,175,55,.12)',
+    backgroundColor: Colors.overlayGold12,
   },
 
   avatarBorder: {
@@ -61,10 +62,10 @@ export default StyleSheet.create({
     height: 200,
     borderRadius: 100,
     borderWidth: 3,
-    borderColor: '#D4AF37',
+    borderColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.navySurface,
   },
 
   avatar: {
@@ -76,14 +77,14 @@ export default StyleSheet.create({
   name: {
     marginTop: 24,
     fontSize: 34,
-    color: '#FFFFFF',
+    color: Colors.white,
     fontWeight: '700',
   },
 
   city: {
     marginTop: 6,
     fontSize: 16,
-    color: '#94A3B8',
+    color: Colors.slate,
   },
 
   waveContainer: {
@@ -98,14 +99,14 @@ export default StyleSheet.create({
     height: 110,
     borderRadius: 55,
     borderWidth: 2,
-    borderColor: '#D4AF37',
+    borderColor: Colors.secondary,
   },
 
   phoneButton: {
     width: 82,
     height: 82,
     borderRadius: 41,
-    backgroundColor: '#D4AF37',
+    backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 10,
@@ -113,12 +114,12 @@ export default StyleSheet.create({
 
   callingText: {
     marginTop: 22,
-    color: '#CBD5E1',
+    color: Colors.slateLight,
     fontSize: 16,
   },
 
   footer: {
-    backgroundColor: '#182234',
+    backgroundColor: Colors.navyCard,
     borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
@@ -129,7 +130,7 @@ export default StyleSheet.create({
   footerText: {
     flex: 1,
     marginLeft: 12,
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -138,7 +139,7 @@ export default StyleSheet.create({
     width: width - 48,
     height: 58,
     borderRadius: 30,
-    backgroundColor: '#EF4444',
+    backgroundColor: Colors.errorBright,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -146,7 +147,7 @@ export default StyleSheet.create({
   },
 
   endText: {
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: 18,
     fontWeight: '700',
   },

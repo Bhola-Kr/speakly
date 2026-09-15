@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
 
   inputContainer: {
     borderRadius: 17,
-    backgroundColor: '#FFF9FF',
+    backgroundColor: Colors.otpInputSurface,
     justifyContent: 'center',
     paddingHorizontal: 22,
   },

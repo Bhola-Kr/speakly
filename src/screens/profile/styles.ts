@@ -80,13 +80,13 @@ export default StyleSheet.create({
   },
 
   profileCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
 
     borderRadius: 24,
 
     padding: 22,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
 
     shadowOpacity: 0.08,
 
@@ -203,13 +203,13 @@ export default StyleSheet.create({
   },
 
   menuCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
 
     borderRadius: 22,
 
     overflow: 'hidden',
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
 
     shadowOpacity: 0.06,
 

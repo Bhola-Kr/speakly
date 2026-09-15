@@ -1,3 +1,4 @@
+import Colors from '../constants/colors';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -239,7 +240,7 @@ const AudioVerificationScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
       <TouchableOpacity
         onPress={() => navigation.goBack()}
@@ -304,7 +305,7 @@ const AudioVerificationScreen = ({ navigation }: any) => {
               width: 42,
               height: 42,
               resizeMode: 'contain',
-              tintColor: '#FFFFFF',
+              tintColor: Colors.white,
             }}
           />
         </TouchableOpacity>

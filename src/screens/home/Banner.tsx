@@ -12,7 +12,7 @@ interface Props {
 const Banner = ({ randomCall, calling }: Props) => {
   return (
     <LinearGradient
-      colors={['#202020', '#121212']}
+      colors={[Colors.darkSurface, Colors.primary]}
       style={{
         marginHorizontal: 16,
         marginTop: 16,
@@ -41,7 +41,7 @@ const Banner = ({ randomCall, calling }: Props) => {
 
           <Text
             style={{
-              color: '#B8B8B8',
+              color: Colors.gray184,
               fontSize: 13,
               marginTop: 6,
               lineHeight: 18,
@@ -57,7 +57,7 @@ const Banner = ({ randomCall, calling }: Props) => {
             disabled={calling}
             style={{
               marginTop: 12,
-              backgroundColor: calling ? '#8A8A8A' : Colors.secondary,
+              backgroundColor: calling ? Colors.gray138 : Colors.secondary,
               height: 42,
               borderRadius: 21,
               alignSelf: 'flex-start',
@@ -109,7 +109,7 @@ const Banner = ({ randomCall, calling }: Props) => {
         <MaterialCommunityIcons
           name="account-voice"
           size={60}
-          color="rgba(212,175,55,0.18)"
+          color={Colors.overlayGold18}
         />
       </View>
     </LinearGradient>

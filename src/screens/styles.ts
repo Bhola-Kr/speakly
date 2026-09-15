@@ -1,18 +1,19 @@
+import Colors from '../constants/colors';
 // styles.ts
 
 import { Dimensions, StyleSheet } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
-const PRIMARY = '#5B7CFF';
-const TEXT = '#1A1A1A';
-const SUBTEXT = '#7B7B7B';
-const CARD = '#F8F9FE';
+const PRIMARY = Colors.blueBrand;
+const TEXT = Colors.text;
+const SUBTEXT = Colors.gray123;
+const CARD = Colors.screenSurface;
 
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     paddingHorizontal: 24,
   },
 
@@ -52,7 +53,7 @@ export default StyleSheet.create({
     paddingVertical: 28,
 
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: Colors.screenBorder,
 
     shadowColor: PRIMARY,
     shadowOffset: {
@@ -91,7 +92,7 @@ export default StyleSheet.create({
 
     borderRadius: 70,
 
-    backgroundColor: '#E8EEFF',
+    backgroundColor: Colors.screenTint,
   },
 
   micButton: {
@@ -144,15 +145,15 @@ export default StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
 
-    backgroundColor: '#FFECEC',
+    backgroundColor: Colors.errorSurface,
 
     borderWidth: 3,
-    borderColor: '#FF5B5B',
+    borderColor: Colors.errorAccent,
   },
 
   failedIcon: {
     fontSize: 60,
-    color: '#FF5B5B',
+    color: Colors.errorAccent,
     fontWeight: '700',
   },
 
@@ -160,14 +161,14 @@ export default StyleSheet.create({
     marginTop: 28,
     fontSize: 30,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: Colors.text,
   },
 
   failedSubtitle: {
     marginTop: 15,
     textAlign: 'center',
     fontSize: 16,
-    color: '#666',
+    color: Colors.gray102,
     lineHeight: 28,
     paddingHorizontal: 25,
   },
@@ -178,7 +179,7 @@ export default StyleSheet.create({
   },
 
   skipText: {
-    color: '#888',
+    color: Colors.gray136,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -206,7 +207,7 @@ export default StyleSheet.create({
 
   tick: {
     fontSize: 58,
-    color: '#FFFFFF',
+    color: Colors.white,
     fontWeight: '800',
   },
 
@@ -251,7 +252,7 @@ export default StyleSheet.create({
   },
 
   continueText: {
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: 18,
     fontWeight: '700',
   },
@@ -289,7 +290,7 @@ export default StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 30,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
   },
 
   verifyTitle: {

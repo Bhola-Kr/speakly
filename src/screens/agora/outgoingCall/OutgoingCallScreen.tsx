@@ -1,3 +1,4 @@
+import Colors from '../../../constants/colors';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -183,7 +184,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#0F172A" barStyle="light-content" />
+      <StatusBar backgroundColor={Colors.navy} barStyle="light-content" />
       <View style={styles.header}>
         <Text style={styles.logo}>{strings.appName}</Text>
 
@@ -239,7 +240,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           />
 
           <TouchableOpacity activeOpacity={0.9} style={styles.phoneButton}>
-            <Icon name="phone" size={34} color="#111827" />
+            <Icon name="phone" size={34} color={Colors.inkBlue} />
           </TouchableOpacity>
 
           <Text style={styles.callingText}>Calling user...</Text>
@@ -247,7 +248,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       </View>
 
       <View style={styles.footer}>
-        <Icon name="headphones" size={28} color="#D4AF37" />
+        <Icon name="headphones" size={28} color={Colors.secondary} />
 
         <Text style={styles.footerText}>
           Use headphones for better voice quality and reduced background noise.

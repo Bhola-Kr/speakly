@@ -33,7 +33,7 @@ const tutorialData = [
     subtitle:
       'Become available and receive anonymous voice calls from people who want to talk.',
     icon: 'radio',
-    colors: ['#111827', '#374151'],
+    colors: [Colors.inkBlue, Colors.slateDark],
   },
   {
     id: '2',
@@ -41,7 +41,7 @@ const tutorialData = [
     subtitle:
       'Enjoy one-on-one conversations without sharing your personal identity.',
     icon: 'chatbubbles',
-    colors: ['#B88A1C', '#D4AF37'],
+    colors: [Colors.goldDark, Colors.secondary],
   },
   {
     id: '3',
@@ -49,7 +49,7 @@ const tutorialData = [
     subtitle:
       'Block or report anyone at any time. Your privacy always comes first.',
     icon: 'shield-checkmark',
-    colors: ['#0F766E', '#14B8A6'],
+    colors: [Colors.tealDark, Colors.teal],
   },
   {
     id: '4',
@@ -57,7 +57,7 @@ const tutorialData = [
     subtitle:
       'Relax, make new friends, pass the time, and enjoy meaningful voice conversations.',
     icon: 'happy',
-    colors: ['#6D28D9', '#8B5CF6'],
+    colors: [Colors.purpleDark, Colors.purple],
   },
 ];
 
@@ -170,7 +170,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <View style={styles.tutorialTop}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name={item.icon} size={30} color="#FFF" />
+                    <Ionicons name={item.icon} size={30} color={Colors.white} />
                   </View>
 
                   <View style={styles.tipBadge}>
@@ -324,13 +324,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: Colors.overlayWhite18,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   tipBadge: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: Colors.overlayWhite18,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
 
   cardSubtitle: {
     marginTop: 10,
-    color: 'rgba(255,255,255,0.9)',
+    color: Colors.overlayWhite90,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#00E676',
+    backgroundColor: Colors.online,
     marginRight: 12,
   },
 
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   rewardBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 18,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   },
 
   reminderDesc: {
-    color: 'rgba(255,255,255,0.92)',
+    color: Colors.overlayWhite92,
     marginTop: 10,
     lineHeight: 22,
     fontSize: 15,
@@ -453,19 +453,19 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: Colors.overlayWhite15,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 20,
   },
 
   statusCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     marginHorizontal: 18,
     borderRadius: 24,
     padding: 22,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: {
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#00E676',
+    backgroundColor: Colors.online,
     marginRight: 10,
   },
 
@@ -549,12 +549,12 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: {
@@ -573,13 +573,13 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     marginHorizontal: 18,
     marginBottom: 22,
     borderRadius: 24,
     paddingVertical: 20,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 14,
     shadowOffset: {
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 31,
 
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: Colors.overlayBlack45,
 
     justifyContent: 'center',
     alignItems: 'center',
@@ -664,13 +664,13 @@ const styles = StyleSheet.create({
   },
 
   bannerTitle: {
-    color: '#FFF',
+    color: Colors.white,
     fontSize: 18,
     fontWeight: '700',
   },
 
   bannerSubtitle: {
-    color: '#EEE',
+    color: Colors.gray238,
     marginTop: 4,
     fontSize: 13,
   },

@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
 
     padding: 16,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: {
@@ -233,12 +233,12 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#16C784',
+    backgroundColor: Colors.presenceGreen,
   },
 
   online: {
     marginLeft: 6,
-    color: '#16C784',
+    color: Colors.presenceGreen,
     fontWeight: '600',
   },
 

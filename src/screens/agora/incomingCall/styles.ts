@@ -1,3 +1,4 @@
+import Colors from '../../../constants/colors';
 import { Dimensions, StyleSheet } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -5,7 +6,7 @@ const { width } = Dimensions.get('window');
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: Colors.navy,
     paddingHorizontal: 24,
   },
 
@@ -17,20 +18,20 @@ export default StyleSheet.create({
   logo: {
     fontSize: 34,
     fontWeight: '700',
-    color: '#D4AF37',
+    color: Colors.secondary,
     letterSpacing: 1,
   },
 
   title: {
     marginTop: 12,
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: 24,
     fontWeight: '700',
   },
 
   subTitle: {
     marginTop: 8,
-    color: '#94A3B8',
+    color: Colors.slate,
     fontSize: 15,
   },
 
@@ -52,7 +53,7 @@ export default StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: 'rgba(212,175,55,.15)',
+    backgroundColor: Colors.overlayGold15,
   },
 
   avatarBorder: {
@@ -60,10 +61,10 @@ export default StyleSheet.create({
     height: 200,
     borderRadius: 100,
     borderWidth: 3,
-    borderColor: '#D4AF37',
+    borderColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.navySurface,
   },
 
   avatar: {
@@ -76,26 +77,26 @@ export default StyleSheet.create({
     marginTop: 22,
     fontSize: 34,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
 
   city: {
     marginTop: 8,
     fontSize: 16,
-    color: '#94A3B8',
+    color: Colors.slate,
   },
 
   secureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#182234',
+    backgroundColor: Colors.navyCard,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 30,
   },
 
   secureText: {
-    color: '#00E676',
+    color: Colors.online,
     marginLeft: 10,
     fontWeight: '600',
     fontSize: 14,
@@ -119,7 +120,7 @@ export default StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 41,
-    backgroundColor: '#EF4444',
+    backgroundColor: Colors.errorBright,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -128,28 +129,28 @@ export default StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 41,
-    backgroundColor: '#16A34A',
+    backgroundColor: Colors.successStrong,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   actionText: {
     marginTop: 12,
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: 15,
     fontWeight: '600',
   },
 
   swipeCard: {
     marginTop: 35,
-    backgroundColor: '#182234',
+    backgroundColor: Colors.navyCard,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
   },
 
   swipeText: {
-    color: '#D4AF37',
+    color: Colors.secondary,
     fontWeight: '700',
     fontSize: 15,
   },
@@ -165,6 +166,6 @@ export default StyleSheet.create({
     width: width * 0.55,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D4AF37',
+    backgroundColor: Colors.secondary,
   },
 });

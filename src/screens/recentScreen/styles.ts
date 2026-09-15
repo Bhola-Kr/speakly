@@ -47,7 +47,7 @@ export default StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -87,7 +87,7 @@ export default StyleSheet.create({
 
     marginBottom: 18,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
 
     shadowOpacity: 0.08,
 

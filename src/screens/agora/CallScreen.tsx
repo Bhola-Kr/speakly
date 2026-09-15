@@ -410,7 +410,10 @@ const CallScreen = ({ navigation, route }: Props) => {
   }, [initializeAgora, stopBilling, stopTimer]);
 
   return (
-    <LinearGradient colors={['#111111', '#181818']} style={styles.container}>
+    <LinearGradient
+      colors={[Colors.darkBackground, Colors.darkBackgroundAlt]}
+      style={styles.container}
+    >
       <StatusBar backgroundColor={Colors.primary} barStyle={'light-content'} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
@@ -418,7 +421,7 @@ const CallScreen = ({ navigation, route }: Props) => {
             <MaterialCommunityIcons
               name="arrow-left"
               size={26}
-              color="#FFFFFF"
+              color={Colors.white}
             />
           </TouchableOpacity>
 
@@ -433,7 +436,7 @@ const CallScreen = ({ navigation, route }: Props) => {
             <MaterialCommunityIcons
               name={safetyActionLoading ? 'loading' : 'shield-alert-outline'}
               size={25}
-              color="#D4AF37"
+              color={Colors.secondary}
             />
           </TouchableOpacity>
         </View>
@@ -456,7 +459,9 @@ const CallScreen = ({ navigation, route }: Props) => {
               style={[
                 styles.dot,
                 {
-                  backgroundColor: connected ? '#00E676' : '#FFC107',
+                  backgroundColor: connected
+                    ? Colors.online
+                    : Colors.connectionWarning,
                 },
               ]}
             />
@@ -476,7 +481,7 @@ const CallScreen = ({ navigation, route }: Props) => {
                 style={[
                   styles.controlButton,
                   speaker && {
-                    backgroundColor: '#D4AF37',
+                    backgroundColor: Colors.secondary,
                   },
                 ]}
                 activeOpacity={0.8}
@@ -485,7 +490,7 @@ const CallScreen = ({ navigation, route }: Props) => {
                 <MaterialCommunityIcons
                   name={speaker ? 'volume-high' : 'volume-off'}
                   size={30}
-                  color={speaker ? '#111111' : '#FFFFFF'}
+                  color={speaker ? Colors.darkBackground : Colors.white}
                 />
               </TouchableOpacity>
 
@@ -499,7 +504,7 @@ const CallScreen = ({ navigation, route }: Props) => {
                 style={[
                   styles.controlButton,
                   muted && {
-                    backgroundColor: '#D4AF37',
+                    backgroundColor: Colors.secondary,
                   },
                 ]}
                 activeOpacity={0.8}
@@ -508,7 +513,7 @@ const CallScreen = ({ navigation, route }: Props) => {
                 <MaterialCommunityIcons
                   name={muted ? 'microphone-off' : 'microphone'}
                   size={30}
-                  color={muted ? '#111111' : '#FFFFFF'}
+                  color={muted ? Colors.darkBackground : Colors.white}
                 />
               </TouchableOpacity>
 
@@ -528,7 +533,7 @@ const CallScreen = ({ navigation, route }: Props) => {
             <MaterialCommunityIcons
               name="phone-hangup"
               size={40}
-              color="#FFFFFF"
+              color={Colors.white}
             />
           </TouchableOpacity>
 

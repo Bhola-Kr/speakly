@@ -21,7 +21,7 @@ const EmptyState = ({ onPress }: Props) => {
           width: 150,
           height: 150,
           borderRadius: 75,
-          backgroundColor: '#F7F1D8',
+          backgroundColor: Colors.emptyStateSurface,
           justifyContent: 'center',
           alignItems: 'center',
         }}

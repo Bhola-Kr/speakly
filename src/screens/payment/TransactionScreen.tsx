@@ -49,22 +49,22 @@ const transactions = [
 
 const STATUS = {
   success: {
-    color: '#16a34a',
-    background: '#eaf8ef',
+    color: Colors.successStrong,
+    background: Colors.successStrongSurface,
     icon: 'check-circle',
     text: 'SUCCESS',
   },
 
   pending: {
-    color: '#d97706',
-    background: '#fff6e8',
+    color: Colors.warningStrong,
+    background: Colors.warningStrongSurface,
     icon: 'clock-outline',
     text: 'PENDING',
   },
 
   failed: {
-    color: '#dc2626',
-    background: '#fdecec',
+    color: Colors.errorStrong,
+    background: Colors.errorStrongSurface,
     icon: 'close-circle',
     text: 'FAILED',
   },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     borderRadius: 22,
     padding: 18,
     marginBottom: 18,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: {
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
 
   failedText: {
     fontSize: 15,
-    color: '#dc2626',
+    color: Colors.errorStrong,
     fontWeight: '600',
     marginBottom: 16,
   },

@@ -31,7 +31,7 @@ const BottomTabs = () => {
 
           height: 68,
 
-          backgroundColor: '#1C1C1C',
+          backgroundColor: Colors.darkSurfaceElevated,
 
           borderRadius: 34,
 
@@ -39,7 +39,7 @@ const BottomTabs = () => {
 
           elevation: 15,
 
-          shadowColor: '#000',
+          shadowColor: Colors.black,
           shadowOffset: {
             width: 0,
             height: 8,
@@ -55,7 +55,7 @@ const BottomTabs = () => {
 
         tabBarActiveTintColor: Colors.secondary,
 
-        tabBarInactiveTintColor: '#8F8F8F',
+        tabBarInactiveTintColor: Colors.gray143,
 
         tabBarLabelStyle: {
           fontSize: 12,
@@ -72,7 +72,7 @@ const BottomTabs = () => {
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
               size={22}
-              color={focused ? Colors.secondary : '#8F8F8F'}
+              color={focused ? Colors.secondary : Colors.gray143}
             />
           ),
         }}
@@ -86,7 +86,7 @@ const BottomTabs = () => {
             <Ionicons
               name={focused ? 'time' : 'time-outline'}
               size={22}
-              color={focused ? Colors.secondary : '#8F8F8F'}
+              color={focused ? Colors.secondary : Colors.gray143}
             />
           ),
         }}

@@ -60,10 +60,10 @@ const Header = ({ online, onToggle }: Props) => {
         <Switch
           value={online}
           onValueChange={onToggle}
-          thumbColor={online ? Colors.secondary : '#f4f3f4'}
+          thumbColor={online ? Colors.secondary : Colors.gray244}
           trackColor={{
-            false: '#999',
-            true: '#1f1f1f',
+            false: Colors.gray153,
+            true: Colors.switchTrackOn,
           }}
         />
       </View>

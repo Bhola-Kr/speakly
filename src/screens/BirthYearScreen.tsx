@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 1.5,
 
-    shadowColor: '#5B6CFF',
+    shadowColor: Colors.blueBrandMuted,
     shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: {
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
 
   pickerContainer: {
     height: ITEM_HEIGHT * 3,
-    backgroundColor: '#FFF',
+    backgroundColor: Colors.white,
     borderRadius: 18,
     overflow: 'hidden',
   },
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
 
   yearText: {
     fontSize: 18,
-    color: '#BEBEBE',
+    color: Colors.gray190,
   },
 
   selectedYear: {

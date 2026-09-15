@@ -330,11 +330,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: {
@@ -376,13 +376,13 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 20,
     marginBottom: 16,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     borderRadius: 22,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
 
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.15)',
+    backgroundColor: Colors.overlayBlack15,
     alignItems: 'flex-end',
     justifyContent: 'flex-start',
     paddingTop: 90,
@@ -441,11 +441,11 @@ const styles = StyleSheet.create({
 
   popup: {
     width: 220,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     borderRadius: 22,
     overflow: 'hidden',
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.12,
     shadowRadius: 18,
     shadowOffset: {

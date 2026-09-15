@@ -1,3 +1,4 @@
+import Colors from '../constants/colors';
 // VerificationAnimation.tsx
 
 import React, { useEffect, useRef } from 'react';
@@ -93,7 +94,7 @@ const VerificationAnimation = () => {
             width: 120,
             height: 120,
             borderRadius: 60,
-            backgroundColor: '#EEF3FF',
+            backgroundColor: Colors.blueLight,
             justifyContent: 'center',
             alignItems: 'center',
           }}
@@ -103,7 +104,7 @@ const VerificationAnimation = () => {
               width: 92,
               height: 92,
               borderRadius: 46,
-              backgroundColor: '#5B7CFF',
+              backgroundColor: Colors.blueBrand,
               justifyContent: 'center',
               alignItems: 'center',
             }}
@@ -114,7 +115,7 @@ const VerificationAnimation = () => {
                 width: 42,
                 height: 42,
                 resizeMode: 'contain',
-                tintColor: '#FFFFFF',
+                tintColor: Colors.white,
               }}
             />
           </View>

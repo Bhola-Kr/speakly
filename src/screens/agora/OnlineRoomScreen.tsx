@@ -346,12 +346,12 @@ const styles = StyleSheet.create({
   onlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: {
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     width: 230,
     height: 230,
     borderRadius: 115,
-    backgroundColor: '#D4AF37',
+    backgroundColor: Colors.secondary,
     opacity: 0.18,
   },
 
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
 
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOpacity: 0.12,
     shadowRadius: 10,
     shadowOffset: {
