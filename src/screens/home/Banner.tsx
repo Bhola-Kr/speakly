@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -116,4 +116,4 @@ const Banner = ({ randomCall, calling }: Props) => {
   );
 };
 
-export default Banner;
+export default memo(Banner);

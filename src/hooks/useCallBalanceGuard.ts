@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Alert } from 'react-native';
 
 import { CALL_RATE_PER_MINUTE } from '../constants/constants';
@@ -9,7 +10,7 @@ import { useUser } from './UserContext';
 export const useCallBalanceGuard = (navigation: any) => {
   const { user } = useUser();
 
-  const canStartCall = () => {
+  return useCallback(() => {
     const isMale = user?.profile?.gender?.toLowerCase() === 'male';
     const balance = Number(user?.wallet?.balance || 0);
 
@@ -30,7 +31,5 @@ export const useCallBalanceGuard = (navigation: any) => {
     );
 
     return false;
-  };
-
-  return canStartCall;
+  }, [navigation, user?.profile?.gender, user?.wallet?.balance]);
 };

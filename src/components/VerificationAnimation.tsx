@@ -61,7 +61,7 @@ const VerificationAnimation = () => {
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const pulseAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
           toValue: 1.08,
@@ -75,7 +75,11 @@ const VerificationAnimation = () => {
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    );
+
+    pulseAnimation.start();
+
+    return () => pulseAnimation.stop();
   }, [pulse]);
 
   return (

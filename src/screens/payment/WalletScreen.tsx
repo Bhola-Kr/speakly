@@ -37,7 +37,6 @@ const WalletScreen = ({ navigation }: any) => {
         setPacksError('');
 
         const response = await fetchRechargePacks();
-        console.log('loadRechargePacks -> response', response);
 
         if (!mounted) {
           return;

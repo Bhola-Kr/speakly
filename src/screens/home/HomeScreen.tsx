@@ -1,4 +1,10 @@
-import React, { useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Alert, StyleSheet } from 'react-native';
 import database from '@react-native-firebase/database';
 import { SafeAreaView, FlatList, StatusBar, Text } from 'react-native';
@@ -18,80 +24,87 @@ interface Props {
   navigation: any;
 }
 
+const keyExtractor = (item: any) => item?.uid;
+
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user, updateProfile } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
-  const [isStartingCall, setIsStartingCall] = useState(false);
   const [randomCalling, setRandomCalling] = useState(false);
   const [callingUserId, setCallingUserId] = useState<string | null>(null);
+  const callInProgressRef = useRef(false);
   const canStartCall = useCallBalanceGuard(navigation);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (user?.profile?.gender?.toLowerCase() === 'male') {
       updateProfile({ status: 'online' });
     }
+  }, [updateProfile, user?.profile?.gender]);
 
+  useEffect(() => {
     const ref = database()
       .ref('users')
       .orderByChild('profile/gender')
       .equalTo('female');
 
-    ref.on('value', snapshot => {
-      console.log('Exists:', snapshot.exists());
-
+    const listener = ref.on('value', snapshot => {
       const users: any[] = [];
 
       snapshot.forEach(child => {
-        console.log(child.val());
         users.push(child.val());
       });
-
-      console.log('Female Users:', users);
 
       setFemaleUsers(users);
     });
 
-    return () => ref.off();
-  }, [updateProfile, user?.profile?.gender]);
+    return () => ref.off('value', listener);
+  }, []);
 
-  const handleCall = async (item: any) => {
-    if (isStartingCall || !canStartCall()) {
+  const handleCall = useCallback(
+    async (item: any) => {
+      if (callInProgressRef.current || !canStartCall()) {
+        return;
+      }
+
+      callInProgressRef.current = true;
+
+      try {
+        setCallingUserId(item.uid);
+
+        const room = await RoomService.callFemale(item.uid);
+
+        navigation.navigate('OutgoingCall', { user: item?.profile, room });
+      } catch (error: any) {
+        console.log('Call Error:', error);
+
+        Alert.alert(
+          'Call Failed',
+          error?.message || 'Unable to connect the call. Please try again.',
+        );
+      } finally {
+        setCallingUserId(null);
+        callInProgressRef.current = false;
+      }
+    },
+    [canStartCall, navigation],
+  );
+
+  const filtered = useMemo(
+    () =>
+      selected === 'All'
+        ? femaleUsers
+        : femaleUsers.filter(item => item.profile?.category === selected),
+    [femaleUsers, selected],
+  );
+
+  const onRandomCall = useCallback(async () => {
+    if (callInProgressRef.current || !canStartCall()) {
       return;
     }
 
-    try {
-      setIsStartingCall(true);
-      setCallingUserId(item.uid);
-
-      const room = await RoomService.callFemale(item.uid);
-
-      navigation.navigate('OutgoingCall', { user: item?.profile, room });
-    } catch (error: any) {
-      console.log('Call Error:', error);
-
-      Alert.alert(
-        'Call Failed',
-        error?.message || 'Unable to connect the call. Please try again.',
-      );
-    } finally {
-      setIsStartingCall(false);
-      setCallingUserId(null);
-    }
-  };
-
-  const filtered =
-    selected === 'All'
-      ? femaleUsers
-      : femaleUsers.filter(item => item.profile?.category === selected);
-
-  const onRandomCall = async () => {
-    if (isStartingCall || !canStartCall()) {
-      return;
-    }
+    callInProgressRef.current = true;
 
     try {
-      setIsStartingCall(true);
       setRandomCalling(true);
       const randomRoom = await RoomService.getRandomFemaleRoom();
 
@@ -109,48 +122,64 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Info', e.message);
     } finally {
       setRandomCalling(false);
-      setIsStartingCall(false);
+      callInProgressRef.current = false;
     }
-  };
+  }, [canStartCall, navigation]);
+
+  const walletPress = useCallback(
+    () => navigation.navigate('Wallet'),
+    [navigation],
+  );
+
+  const userProfilePress = useCallback(
+    () => navigation.navigate('ProfileSetting', { gender: 'male' }),
+    [navigation],
+  );
+
+  const listHeader = useMemo(
+    () => (
+      <>
+        <Header walletPress={walletPress} userProfilePress={userProfilePress} />
+
+        <Banner randomCall={onRandomCall} calling={randomCalling} />
+
+        <Text style={styles.heading}>Featured Experts</Text>
+
+        <CategoryList
+          categories={categories}
+          selected={selected}
+          onSelect={setSelected}
+        />
+      </>
+    ),
+    [onRandomCall, randomCalling, selected, userProfilePress, walletPress],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: any }) => (
+      <UserCard
+        item={item}
+        calling={callingUserId === item.uid}
+        onCall={handleCall}
+      />
+    ),
+    [callingUserId, handleCall],
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
 
       <FlatList
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={styles.listContent}
         data={filtered}
-        keyExtractor={item => item?.uid}
+        keyExtractor={keyExtractor}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <>
-            <Header
-              walletPress={() => navigation.navigate('Wallet')}
-              userProfilePress={() =>
-                navigation.navigate('ProfileSetting', {
-                  gender: 'male',
-                })
-              }
-            />
-
-            <Banner randomCall={onRandomCall} calling={randomCalling} />
-
-            <Text style={styles.heading}>Featured Experts</Text>
-
-            <CategoryList
-              categories={categories}
-              selected={selected}
-              onSelect={setSelected}
-            />
-          </>
-        }
-        renderItem={({ item }) => (
-          <UserCard
-            item={item}
-            calling={callingUserId === item.uid}
-            callNow={() => handleCall(item)}
-          />
-        )}
+        ListHeaderComponent={listHeader}
+        renderItem={renderItem}
       />
     </SafeAreaView>
   );
@@ -168,6 +197,10 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginHorizontal: 20,
     marginVertical: 12,
+  },
+
+  listContent: {
+    paddingBottom: 120,
   },
 
   card: {

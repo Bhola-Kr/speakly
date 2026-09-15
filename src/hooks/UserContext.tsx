@@ -88,8 +88,7 @@ export const UserProvider = ({ children }: any) => {
   );
 
   const updateProfile = useCallback(async (profile: UpdateProfileData) => {
-    const res = await authData.updateProfile(profile);
-    console.log('updateProfile -> res', res);
+    await authData.updateProfile(profile);
   }, []);
 
   const updateStatus = useCallback(

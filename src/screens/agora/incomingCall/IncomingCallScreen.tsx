@@ -23,7 +23,7 @@ export default function IncomingCallScreen() {
   const wave = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const pulseAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
           toValue: 1,
@@ -39,9 +39,9 @@ export default function IncomingCallScreen() {
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    );
 
-    Animated.loop(
+    const waveAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(wave, {
           toValue: 1,
@@ -55,7 +55,15 @@ export default function IncomingCallScreen() {
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    );
+
+    pulseAnimation.start();
+    waveAnimation.start();
+
+    return () => {
+      pulseAnimation.stop();
+      waveAnimation.stop();
+    };
   }, [pulse, wave]);
 
   const avatarScale = pulse.interpolate({

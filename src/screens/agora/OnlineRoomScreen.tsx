@@ -90,7 +90,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   }, [myUid, updateProfile]);
 
   useEffect(() => {
-    Animated.loop(
+    const pulseAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
           toValue: 1,
@@ -106,7 +106,9 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    );
+
+    pulseAnimation.start();
 
     const timerInterval = setInterval(() => {
       seconds.current++;
@@ -131,6 +133,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     }, 500);
 
     return () => {
+      pulseAnimation.stop();
       clearInterval(timerInterval);
       clearInterval(dotInterval);
     };

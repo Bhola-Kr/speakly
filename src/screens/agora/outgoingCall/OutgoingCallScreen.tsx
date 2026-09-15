@@ -27,7 +27,6 @@ interface Props {
 
 export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const data = route?.params?.user;
-  console.log('data', data);
   const femaleUid = data.uid;
 
   const ripple = useRef(new Animated.Value(0)).current;
@@ -129,16 +128,16 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   }, [data?.avatarId, data?.name, data?.uid, femaleUid, navigation]);
 
   useEffect(() => {
-    Animated.loop(
+    const rippleAnimation = Animated.loop(
       Animated.timing(ripple, {
         toValue: 1,
         duration: 1800,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
-    ).start();
+    );
 
-    Animated.loop(
+    const glowAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(glow, {
           toValue: 1,
@@ -152,7 +151,10 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    );
+
+    rippleAnimation.start();
+    glowAnimation.start();
 
     const timer = setInterval(() => {
       setDots(prev => {
@@ -164,7 +166,11 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       });
     }, 500);
 
-    return () => clearInterval(timer);
+    return () => {
+      rippleAnimation.stop();
+      glowAnimation.stop();
+      clearInterval(timer);
+    };
   }, [glow, ripple]);
 
   const rippleScale = ripple.interpolate({

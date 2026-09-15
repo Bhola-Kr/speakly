@@ -40,7 +40,7 @@ const IncomingCallModal = ({
   useEffect(() => {
     if (visible) {
       // InCallManager.startRingtone('', 0, 'default', 30);
-      Animated.parallel([
+      const callAnimation = Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
           useNativeDriver: true,
@@ -63,7 +63,11 @@ const IncomingCallModal = ({
             }),
           ]),
         ),
-      ]).start();
+      ]);
+
+      callAnimation.start();
+
+      return () => callAnimation.stop();
     } else {
       slideAnim.setValue(500);
       pulseAnim.setValue(1);

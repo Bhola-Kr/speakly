@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { calculateAge, getFemaleAvatar } from '../../constants/constants';
 
 interface Props {
   item: any;
-  callNow: () => void;
+  onCall: (item: any) => void;
   calling?: boolean;
 }
 
@@ -37,7 +37,7 @@ const statusConfig = {
   },
 };
 
-const UserCard = ({ item, callNow, calling = false }: Props) => {
+const UserCard = ({ item, onCall, calling = false }: Props) => {
   const currentStatus =
     statusConfig[item?.profile?.status as keyof typeof statusConfig] ||
     statusConfig.offline;
@@ -133,7 +133,7 @@ const UserCard = ({ item, callNow, calling = false }: Props) => {
 
         <TouchableOpacity
           activeOpacity={0.9}
-          onPress={callNow}
+          onPress={() => onCall(item)}
           disabled={calling}
           style={styles.callButton}
         >
@@ -156,7 +156,7 @@ const UserCard = ({ item, callNow, calling = false }: Props) => {
   );
 };
 
-export default UserCard;
+export default memo(UserCard);
 
 const styles = StyleSheet.create({
   card: {

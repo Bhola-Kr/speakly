@@ -80,6 +80,10 @@ const CallScreen = ({ navigation, route }: Props) => {
   }, []);
 
   const startTimer = useCallback(() => {
+    if (timerRef.current) {
+      return;
+    }
+
     timerRef.current = setInterval(() => {
       seconds.current++;
 
@@ -95,6 +99,7 @@ const CallScreen = ({ navigation, route }: Props) => {
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
 
     seconds.current = 0;
@@ -186,9 +191,7 @@ const CallScreen = ({ navigation, route }: Props) => {
         setStatus('Waiting for user...');
       },
 
-      onUserJoined: async (_connection, remoteUid) => {
-        console.log('Remote Joined', remoteUid);
-
+      onUserJoined: async () => {
         setConnected(true);
 
         setStatus('Connected');
