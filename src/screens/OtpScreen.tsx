@@ -137,7 +137,14 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       } else if (userInfo?.profile?.gender === 'female') {
         navigation.reset({
           index: 0,
-          routes: [{ name: 'FemaleBottomTabs' }],
+          routes: [
+            {
+              name:
+                userInfo?.verification?.voiceVerified === true
+                  ? 'FemaleBottomTabs'
+                  : 'AudioVerification',
+            },
+          ],
         });
       } else {
         navigation.replace('Gender', {

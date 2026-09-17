@@ -47,7 +47,11 @@ const SplashScreen = ({ navigation }: any) => {
           navigateTo('Main');
           break;
         case 'female':
-          navigateTo('FemaleBottomTabs');
+          navigateTo(
+            userInfo?.verification?.voiceVerified === true
+              ? 'FemaleBottomTabs'
+              : 'AudioVerification',
+          );
           break;
         default:
           navigateTo('Gender');

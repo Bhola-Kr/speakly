@@ -8,10 +8,12 @@ import {
   StatusBar,
   Animated,
   Image,
+  Alert,
 } from 'react-native';
 import styles from './styles';
 import AnimatedWaveform from '../components/AnimatedWaveform';
 import VerificationAnimation from '../components/VerificationAnimation';
+import authData from '../firebase/authData';
 
 import { PermissionsAndroid, Platform } from 'react-native';
 
@@ -26,7 +28,7 @@ enum ScreenState {
 }
 
 const AudioVerificationScreen = ({ navigation }: any) => {
-  const [screenState, setScreenState] = useState(ScreenState.SUCCESS);
+  const [screenState, setScreenState] = useState(ScreenState.IDLE);
   const [seconds, setSeconds] = useState(0);
 
   const pulse = useRef(new Animated.Value(1)).current;
@@ -149,7 +151,19 @@ const AudioVerificationScreen = ({ navigation }: any) => {
          */
 
         if (result.gender === 'female' && result.confidence >= 0.5) {
-          setScreenState(ScreenState.SUCCESS);
+          try {
+            await authData.updateVerification({ voiceVerified: true });
+
+            setScreenState(ScreenState.SUCCESS);
+          } catch (error) {
+            console.log('Unable to save voice verification:', error);
+
+            Alert.alert(
+              'Verification could not be saved',
+              'Please check your connection and try again.',
+            );
+            setScreenState(ScreenState.IDLE);
+          }
         } else {
           setScreenState(ScreenState.FAILED);
         }
@@ -183,7 +197,9 @@ const AudioVerificationScreen = ({ navigation }: any) => {
 
           <TouchableOpacity
             style={styles.continueButton}
-            onPress={() => {
+            onPress={async () => {
+              await authData.updateVerification({ voiceVerified: true });
+
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'FemaleBottomTabs' }], // Home Screen

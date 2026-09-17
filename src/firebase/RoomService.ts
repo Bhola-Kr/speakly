@@ -384,12 +384,6 @@ class RoomService {
       await this.saveCallHistory(room, endedAt);
     }
 
-    if (room.female?.uid) {
-      await database()
-        .ref(`users/${room.female.uid}/profile/status`)
-        .transaction(status => (status === 'busy' ? 'online' : status));
-    }
-
     // Wait a moment so both users receive "ended"
     setTimeout(async () => {
       await roomRef.update({

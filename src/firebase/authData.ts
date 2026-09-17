@@ -14,6 +14,11 @@ export type UpdateProfileData = {
   status?: string;
 };
 
+export type VerificationData = {
+  phoneVerified?: boolean;
+  voiceVerified?: boolean;
+};
+
 class AuthData {
   confirmation: any = null;
 
@@ -94,7 +99,7 @@ class AuthData {
 
         profile: {
           uid: user?.uid,
-          phone: user?.phoneNumber,
+          phone: user?.phoneNumber || user?.uid,
           avatarId: 1,
           maritalStatus: 'Single',
           category: 'Relationship',
@@ -159,6 +164,18 @@ class AuthData {
 
   updateUser = async (uid: string, data: any) => {
     await database().ref(`users/${uid}`).update(data);
+  };
+
+  updateVerification = async (verificationData: VerificationData) => {
+    const user = this.getCurrentUser();
+
+    if (!user) {
+      throw new Error('No authenticated user found.');
+    }
+
+    await database()
+      .ref(`users/${user.uid}/verification`)
+      .update(verificationData);
   };
 
   updateProfile = async (profileData: UpdateProfileData) => {

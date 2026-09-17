@@ -37,7 +37,7 @@ const PaymentScreen = ({ navigation, route }: any) => {
   }, [amount, bonus]);
 
   const customerId = user?.uid || user?.profile?.uid || '';
-  const customerPhone = user?.phone || user?.profile?.phone || '';
+  const customerPhone = user?.phone || user?.profile?.uid || '';
   const customerName = user?.profile?.name || '';
 
   const handlePaymentVerification = useCallback(
