@@ -26,10 +26,13 @@ interface Props {
 const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
   const gender = route.params.gender;
   const [nickname, setNickname] = useState('');
+  const [tamilName, setTamilName] = useState('');
 
   const [loading, setLoading] = useState(false);
 
-  const isValid = nickname.trim().length >= 3;
+  const isValid =
+    nickname.trim().length >= 3 &&
+    (gender !== 'female' || tamilName.trim().length >= 2);
 
   const saveUser = async () => {
     if (!isValid || loading) {
@@ -40,7 +43,8 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
       setLoading(true);
 
       await authData.updateProfile({
-        name: nickname,
+        name: nickname.trim(),
+        ...(gender === 'female' ? { tamilName: tamilName.trim() } : {}),
       });
 
       if (gender === 'male') {
@@ -110,6 +114,31 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
               />
             </View>
           </LinearGradient>
+
+          {gender === 'female' && (
+            <>
+              <Text style={styles.tamilNameLabel}>Tamil Name</Text>
+
+              <LinearGradient
+                colors={Colors.gradient}
+                style={[styles.gradientBorder, styles.tamilNameBorder]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    value={tamilName}
+                    onChangeText={setTamilName}
+                    placeholder="பெயரை தமிழில் உள்ளிடவும்"
+                    placeholderTextColor={Colors.placeholder}
+                    autoCapitalize="words"
+                    returnKeyType="done"
+                    style={styles.input}
+                  />
+                </View>
+              </LinearGradient>
+            </>
+          )}
 
           <GradientButton
             title={loading ? 'Please wait...' : 'Next'}
@@ -183,6 +212,18 @@ const styles = StyleSheet.create({
   input: {
     fontSize: 20,
     color: Colors.text,
+  },
+
+  tamilNameLabel: {
+    marginHorizontal: 25,
+    marginTop: 24,
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  tamilNameBorder: {
+    marginTop: 10,
   },
 });
 

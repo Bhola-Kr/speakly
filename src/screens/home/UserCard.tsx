@@ -38,6 +38,18 @@ const statusConfig = {
 };
 
 const UserCard = ({ item, onCall, calling = false }: Props) => {
+  const tamilName = String(item?.profile?.tamilName || '').trim();
+  const englishName = String(item?.profile?.name || '').trim();
+  const displayName = tamilName || englishName || 'N/A';
+  const subtitle = [
+    tamilName && tamilName !== englishName ? englishName : '',
+    calculateAge(item?.profile?.birthYear)
+      ? `${calculateAge(item?.profile?.birthYear)} yrs`
+      : '',
+    item?.profile?.maritalStatus,
+  ]
+    .filter(Boolean)
+    .join(' • ');
   const currentStatus =
     statusConfig[item?.profile?.status as keyof typeof statusConfig] ||
     statusConfig.offline;
@@ -65,12 +77,11 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
 
         <View style={styles.info}>
           <Text numberOfLines={1} style={styles.name}>
-            {item?.profile?.tamilName}
+            {displayName}
           </Text>
 
           <Text numberOfLines={1} style={styles.subTitle}>
-            {item?.profile?.name} • {calculateAge(item?.profile?.birthYear)} yrs
-            • {item?.profile?.maritalStatus}
+            {subtitle}
           </Text>
 
           {/* <Text numberOfLines={1} style={styles.location}>

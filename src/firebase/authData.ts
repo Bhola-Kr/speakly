@@ -7,6 +7,7 @@ import { Alert } from 'react-native';
 export type UpdateProfileData = {
   id?: string;
   name?: string;
+  tamilName?: string;
   image?: string;
   gender?: string;
   birthYear?: number | string;
@@ -93,6 +94,7 @@ class AuthData {
             rating: 4.9,
             status: 'offline',
             name: '',
+            tamilName: '',
             image: '',
             birthYear: '',
             age: '',
@@ -180,7 +182,11 @@ class AuthData {
 
       await database().ref(`users/${user.uid}/profile`).update(profileData);
 
-      if (profileData.avatarId !== undefined) {
+      if (
+        profileData.avatarId !== undefined ||
+        profileData.name !== undefined ||
+        profileData.tamilName !== undefined
+      ) {
         await database()
           .ref(`rooms/${user.uid}`)
           .transaction(room => {
@@ -188,12 +194,22 @@ class AuthData {
               return;
             }
 
+            const female = {
+              ...room.female,
+              ...(profileData.avatarId !== undefined
+                ? { avatarId: profileData.avatarId }
+                : {}),
+              ...(profileData.name !== undefined
+                ? { name: profileData.name }
+                : {}),
+              ...(profileData.tamilName !== undefined
+                ? { tamilName: profileData.tamilName }
+                : {}),
+            };
+
             return {
               ...room,
-              female: {
-                ...room.female,
-                avatarId: profileData.avatarId,
-              },
+              female,
               updatedAt: Date.now(),
             };
           });

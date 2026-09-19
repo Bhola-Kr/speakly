@@ -35,6 +35,16 @@ export default StyleSheet.create({
     fontSize: 15,
   },
 
+  statusTamilName: {
+    color: Colors.slateLight,
+    fontWeight: '700',
+  },
+
+  statusEnglishName: {
+    color: Colors.slate,
+    fontWeight: '400',
+  },
+
   body: {
     flex: 1,
     justifyContent: 'space-evenly',
@@ -79,6 +89,12 @@ export default StyleSheet.create({
     fontSize: 34,
     color: Colors.white,
     fontWeight: '700',
+  },
+
+  englishName: {
+    marginTop: 4,
+    fontSize: 17,
+    color: Colors.slate,
   },
 
   city: {

@@ -38,6 +38,7 @@ const CallScreen = ({ navigation, route }: Props) => {
   const {
     channelName = 'voice_tamil',
     userName = 'N/A',
+    tamilName: routeTamilName,
     avatarId = 1,
     gender = 'male',
     femaleUid,
@@ -47,6 +48,15 @@ const CallScreen = ({ navigation, route }: Props) => {
 
   const token = gender === 'male' ? agora?.male?.token : agora?.female?.token;
   const uid = gender === 'male' ? agora?.male?.uid : agora?.female?.uid;
+  const tamilName = String(routeTamilName || '').trim();
+  const englishName = String(userName || '').trim();
+  const displayName =
+    gender === 'male'
+      ? tamilName || englishName || 'N/A'
+      : englishName || 'N/A';
+  const showEnglishName = Boolean(
+    gender === 'male' && tamilName && englishName && tamilName !== englishName,
+  );
 
   const engine = useRef<IRtcEngine | null>(null);
 
@@ -386,7 +396,7 @@ const CallScreen = ({ navigation, route }: Props) => {
 
     Alert.alert(
       'Block User',
-      `Block ${userName}? You will no longer be able to call each other.`,
+      `Block ${displayName}? You will no longer be able to call each other.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -423,11 +433,15 @@ const CallScreen = ({ navigation, route }: Props) => {
       return;
     }
 
-    Alert.alert('Safety Options', `Manage your interaction with ${userName}.`, [
-      { text: 'Report User', onPress: showReportOptions },
-      { text: 'Block User', style: 'destructive', onPress: blockUser },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    Alert.alert(
+      'Safety Options',
+      `Manage your interaction with ${displayName}.`,
+      [
+        { text: 'Report User', onPress: showReportOptions },
+        { text: 'Block User', style: 'destructive', onPress: blockUser },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+    );
   };
 
   useEffect(() => {
@@ -493,7 +507,11 @@ const CallScreen = ({ navigation, route }: Props) => {
             />
           </View>
 
-          <Text style={styles.name}>{userName}</Text>
+          <Text style={styles.name}>{displayName}</Text>
+
+          {showEnglishName && (
+            <Text style={styles.englishName}>{englishName}</Text>
+          )}
           <View style={styles.statusContainer}>
             <View
               style={[

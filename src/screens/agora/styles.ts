@@ -56,6 +56,12 @@ export default StyleSheet.create({
     marginTop: 20,
   },
 
+  englishName: {
+    color: Colors.darkTextMuted,
+    fontSize: 16,
+    marginTop: 4,
+  },
+
   city: {
     color: Colors.darkTextMuted,
     marginTop: 8,

@@ -32,6 +32,7 @@ export interface CallHistory {
 export interface UserInfo {
   uid: string;
   name: string;
+  tamilName?: string;
   avatarId: number | string;
 }
 
@@ -106,6 +107,7 @@ class RoomService {
     const firebaseUser = this.getCurrentUser();
     const user = await this.getUser(firebaseUser?.uid);
     const agoraRes = await fetchAgoraToken();
+    const tamilName = String(user?.profile?.tamilName || '').trim();
 
     const room: Room = {
       roomId: firebaseUser.uid,
@@ -114,6 +116,7 @@ class RoomService {
       female: {
         uid: firebaseUser.uid,
         name: user.profile.name,
+        ...(tamilName ? { tamilName } : {}),
         avatarId: user.profile.avatarId,
       },
       male: null,

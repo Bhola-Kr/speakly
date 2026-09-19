@@ -41,6 +41,8 @@ export const EditProfileScreen = ({ navigation }: any) => {
 
   const [nickname, setNickname] = useState(profile?.name || '');
 
+  const [tamilName, setTamilName] = useState(profile?.tamilName || '');
+
   const [birthYear, setBirthYear] = useState(
     Number(profile?.birthYear) || 2000,
   );
@@ -82,6 +84,11 @@ export const EditProfileScreen = ({ navigation }: any) => {
       return false;
     }
 
+    if (gender === 'female' && tamilName.trim().length < 2) {
+      Alert.alert('Validation', 'Please enter your Tamil name.');
+      return false;
+    }
+
     const currentYear = new Date().getFullYear();
 
     if (birthYear < 1950 || birthYear > currentYear) {
@@ -103,6 +110,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
 
       await updateProfile({
         name: nickname.trim(),
+        ...(gender === 'female' ? { tamilName: tamilName.trim() } : {}),
         birthYear,
       });
 
@@ -164,6 +172,21 @@ export const EditProfileScreen = ({ navigation }: any) => {
           style={styles.input}
           maxLength={20}
         />
+
+        {gender === 'female' && (
+          <>
+            <Text style={styles.label}>Tamil Name</Text>
+
+            <TextInput
+              value={tamilName}
+              onChangeText={setTamilName}
+              placeholder="பெயரை தமிழில் உள்ளிடவும்"
+              placeholderTextColor={Colors.placeholder}
+              style={styles.input}
+              maxLength={40}
+            />
+          </>
+        )}
 
         <Text style={styles.label}>Birth Year</Text>
 

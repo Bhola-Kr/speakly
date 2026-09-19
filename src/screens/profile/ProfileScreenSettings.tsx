@@ -41,6 +41,8 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const profile = user?.profile;
   const gender = profile?.gender || 'male';
   const phoneNumber = user?.phone || profile?.phone || 'Not available';
+  const profileName =
+    gender === 'female' ? profile?.tamilName || profile?.name : profile?.name;
   const [totalCallDuration, setTotalCallDuration] = useState(0);
 
   useEffect(() => {
@@ -345,7 +347,14 @@ ${PLAY_STORE_URL}`,
         <View style={styles.profileCard}>
           <Image source={getUserAvatar(user)} style={styles.avatar} />
 
-          <Text style={styles.tamilName}>{profile?.name ?? 'N/A'}</Text>
+          <Text style={styles.tamilName}>{profileName ?? 'N/A'}</Text>
+
+          {gender === 'female' &&
+            profile?.tamilName &&
+            profile?.name &&
+            profile.tamilName !== profile.name && (
+              <Text style={styles.englishName}>{profile.name}</Text>
+            )}
 
           <View style={styles.phoneRow}>
             <MaterialCommunityIcons

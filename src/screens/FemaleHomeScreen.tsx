@@ -75,6 +75,12 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const isFocused = useIsFocused();
 
   const { user, updateProfile } = useUser();
+  const tamilName = String(user?.profile?.tamilName || '').trim();
+  const englishName = String(user?.profile?.name || '').trim();
+  const displayName = tamilName || englishName || 'N/A';
+  const showEnglishName = Boolean(
+    tamilName && englishName && tamilName !== englishName,
+  );
 
   const bannerRef = useRef<FlatList>(null);
 
@@ -118,8 +124,14 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.greeting}>Good To See You! 👋</Text>
 
             <Text numberOfLines={1} style={styles.userName}>
-              {user?.profile?.name || 'N/A'}
+              {displayName}
             </Text>
+
+            {showEnglishName && (
+              <Text numberOfLines={1} style={styles.userEnglishName}>
+                {englishName}
+              </Text>
+            )}
 
             <Text style={styles.subtitle}>
               Ready to receive voice calls today?
@@ -532,6 +544,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.text,
     marginTop: 4,
+  },
+
+  userEnglishName: {
+    fontSize: 16,
+    color: Colors.subText,
+    marginTop: 2,
   },
 
   subtitle: {

@@ -35,6 +35,12 @@ const formatDuration = (duration: number) => {
 const RecentCallCard = ({ item, navigation }: Props) => {
   const [calling, setCalling] = useState(false);
   const canStartCall = useCallBalanceGuard(navigation);
+  const tamilName = String(item?.femaleInfo?.tamilName || '').trim();
+  const englishName = String(item?.femaleInfo?.name || '').trim();
+  const displayName = tamilName || englishName || 'N/A';
+  const showEnglishName = Boolean(
+    tamilName && englishName && tamilName !== englishName,
+  );
   const avatar =
     femaleAvatars.find(a => a.id === Number(item.femaleInfo.avatarId)) ??
     femaleAvatars[0];
@@ -56,7 +62,8 @@ const RecentCallCard = ({ item, navigation }: Props) => {
       navigation.navigate('OutgoingCall', {
         user: {
           uid: item?.femaleInfo?.uid,
-          name: item?.femaleInfo?.name,
+          name: englishName || displayName,
+          tamilName,
           avatarId: item?.femaleInfo?.avatarId,
         },
         room,
@@ -79,9 +86,11 @@ const RecentCallCard = ({ item, navigation }: Props) => {
         <Image source={avatar.image} style={styles.avatar} />
 
         <View style={styles.info}>
-          <Text style={styles.tamilName}>{item.femaleInfo.name}</Text>
+          <Text style={styles.tamilName}>{displayName}</Text>
 
-          <Text style={styles.englishName}>Voice Call</Text>
+          <Text style={styles.englishName}>
+            {showEnglishName ? englishName : 'Voice Call'}
+          </Text>
         </View>
       </View>
 

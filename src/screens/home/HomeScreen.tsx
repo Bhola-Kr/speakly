@@ -16,7 +16,6 @@ import UserCard from './UserCard';
 
 import Colors from '../../constants/colors';
 import { categories } from '../../constants/dummyData';
-import { useUser } from '../../hooks/UserContext';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
 
@@ -27,7 +26,6 @@ interface Props {
 const keyExtractor = (item: any) => item?.uid;
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, updateProfile } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
   const [randomCalling, setRandomCalling] = useState(false);
@@ -108,6 +106,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         user: {
           uid: randomRoom?.female?.uid,
           name: randomRoom?.female?.name,
+          tamilName: randomRoom?.female?.tamilName,
           avatarId: randomRoom?.female?.avatarId,
         },
         room: randomRoom,

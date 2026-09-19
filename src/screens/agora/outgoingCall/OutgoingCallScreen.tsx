@@ -28,6 +28,12 @@ interface Props {
 export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const data = route?.params?.user;
   const femaleUid = data.uid;
+  const tamilName = String(data?.tamilName || '').trim();
+  const englishName = String(data?.name || '').trim();
+  const displayName = tamilName || englishName || 'N/A';
+  const showEnglishName = Boolean(
+    tamilName && englishName && tamilName !== englishName,
+  );
 
   const ripple = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0)).current;
@@ -94,7 +100,8 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             clearTimeout(timeout);
             navigation.replace('Call', {
               gender: 'male',
-              userName: data?.name,
+              userName: englishName || displayName,
+              tamilName,
               avatarId: data?.avatarId,
               femaleUid: data?.uid,
               agora: room?.agora,
@@ -125,7 +132,17 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       clearTimeout(timeout);
       unsubscribe();
     };
-  }, [data?.avatarId, data?.name, data?.uid, femaleUid, navigation]);
+  }, [
+    data?.avatarId,
+    data?.name,
+    data?.tamilName,
+    data?.uid,
+    displayName,
+    englishName,
+    femaleUid,
+    navigation,
+    tamilName,
+  ]);
 
   useEffect(() => {
     const rippleAnimation = Animated.loop(
@@ -196,9 +213,13 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
         <Text style={styles.status}>Connecting{dots}</Text>
 
-        <Text style={styles.statusSub}>{`Waiting for ${
-          data?.name ?? 'N/A'
-        } to answer`}</Text>
+        <Text style={styles.statusSub}>
+          Waiting for <Text style={styles.statusTamilName}>{displayName}</Text>
+          {showEnglishName && (
+            <Text style={styles.statusEnglishName}>{` (${englishName})`}</Text>
+          )}{' '}
+          to answer
+        </Text>
       </View>
 
       <View style={styles.body}>
@@ -228,7 +249,11 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </Animated.View>
 
-        <Text style={styles.name}>{`${data?.name ?? 'N/A'}`}</Text>
+        <Text style={styles.name}>{displayName}</Text>
+
+        {showEnglishName && (
+          <Text style={styles.englishName}>{englishName}</Text>
+        )}
 
         <Text style={styles.city}>{`${data?.maritalStatus} • ${calculateAge(
           data?.birthYear,
