@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  Alert,
   Animated,
   Easing,
   Image,
@@ -21,8 +20,6 @@ interface Props {
   verified?: boolean;
   onAccept: () => void;
   onDecline: () => void;
-  onBlock?: () => void;
-  onReport?: (reason: string) => void;
 }
 
 const IncomingCallModal = ({
@@ -31,8 +28,6 @@ const IncomingCallModal = ({
   verified = true,
   onAccept,
   onDecline,
-  onBlock,
-  onReport,
 }: Props) => {
   const slideAnim = useRef(new Animated.Value(500)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -77,38 +72,6 @@ const IncomingCallModal = ({
   if (!visible) {
     return null;
   }
-
-  const showBlockAlert = () => {
-    Alert.alert(
-      'Block User',
-      `Block ${userName}? You won't receive calls from this user again.`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Block',
-          style: 'destructive',
-          onPress: () => onBlock?.(),
-        },
-      ],
-    );
-  };
-
-  const showReportAlert = () => {
-    Alert.alert('Report User', 'Do you want to report this user?', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Report',
-        style: 'destructive',
-        onPress: () => onReport?.('Report'),
-      },
-    ]);
-  };
 
   return (
     <Modal visible={visible} transparent animationType="none">
@@ -177,37 +140,6 @@ const IncomingCallModal = ({
             </Text>
           </View>
 
-          <View style={styles.optionCard}>
-            <TouchableOpacity
-              style={styles.optionRow}
-              activeOpacity={0.8}
-              onPress={showBlockAlert}
-            >
-              <MaterialCommunityIcons
-                name="block-helper"
-                size={22}
-                color={Colors.danger}
-              />
-
-              <Text style={styles.optionText}>Block User</Text>
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            <TouchableOpacity
-              style={styles.optionRow}
-              activeOpacity={0.8}
-              onPress={showReportAlert}
-            >
-              <MaterialCommunityIcons
-                name="alert-circle-outline"
-                size={22}
-                color={Colors.warning}
-              />
-
-              <Text style={styles.optionText}>Report User</Text>
-            </TouchableOpacity>
-          </View>
           <View style={styles.callButtonContainer}>
             <TouchableOpacity
               activeOpacity={0.9}

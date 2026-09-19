@@ -27,6 +27,7 @@ export interface CallHistory {
   status: CallStatus;
   maleInfo: UserInfo;
   femaleInfo: UserInfo;
+  archivedAt?: number;
 }
 export interface UserInfo {
   uid: string;
@@ -126,7 +127,7 @@ class RoomService {
 
     const updates: Record<string, any> = {
       [`rooms/${firebaseUser.uid}`]: room,
-      [`users/${user.uid}/profile/status`]: 'online',
+      [`users/${firebaseUser.uid}/profile/status`]: 'online',
     };
 
     await database().ref().update(updates);
@@ -152,7 +153,10 @@ class RoomService {
       database().ref(`blocks/${secondUid}/${firstUid}`).once('value'),
     ]);
 
-    return firstBlocksSecond.exists() || secondBlocksFirst.exists();
+    const isActiveBlock = (snapshot: any) =>
+      snapshot.exists() && snapshot.val()?.isActive !== false;
+
+    return isActiveBlock(firstBlocksSecond) || isActiveBlock(secondBlocksFirst);
   }
 
   async callFemale(femaleUid: string) {
@@ -452,10 +456,15 @@ class RoomService {
 
     const snapshot = await database().ref(`callHistory/${uid}`).once('value');
 
-    const history: any[] = [];
+    const history: CallHistory[] = [];
 
     snapshot.forEach(child => {
-      history.push(child.val());
+      const item = child.val() as CallHistory;
+
+      if (!item.archivedAt) {
+        history.push(item);
+      }
+
       return false;
     });
 
@@ -471,7 +480,25 @@ class RoomService {
       throw new Error('User not logged in');
     }
 
-    await database().ref(`callHistory/${uid}`).remove();
+    const historyRef = database().ref(`callHistory/${uid}`);
+    const snapshot = await historyRef.once('value');
+
+    if (!snapshot.exists()) {
+      return;
+    }
+
+    const archivedAt = Date.now();
+    const updates: Record<string, number> = {};
+
+    snapshot.forEach(child => {
+      if (child.key) {
+        updates[`${child.key}/archivedAt`] = archivedAt;
+      }
+
+      return false;
+    });
+
+    await historyRef.update(updates);
   }
 
   listenCallHistory(callback: (history: CallHistory[]) => void) {
@@ -487,7 +514,12 @@ class RoomService {
       const history: CallHistory[] = [];
 
       snapshot.forEach(child => {
-        history.push(child.val() as CallHistory);
+        const item = child.val() as CallHistory;
+
+        if (!item.archivedAt) {
+          history.push(item);
+        }
+
         return false;
       });
 
@@ -499,14 +531,53 @@ class RoomService {
     return () => ref.off('value', listener);
   }
 
+  listenTotalCallDuration(callback: (duration: number) => void) {
+    const uid = auth().currentUser?.uid;
+
+    if (!uid) {
+      callback(0);
+      return () => {};
+    }
+
+    const ref = database().ref(`callHistory/${uid}`);
+
+    const listener = ref.on('value', snapshot => {
+      let totalDuration = 0;
+
+      snapshot.forEach(child => {
+        const duration = Number(child.val()?.duration || 0);
+        totalDuration += Number.isFinite(duration) ? Math.max(0, duration) : 0;
+
+        return false;
+      });
+
+      callback(totalDuration);
+    });
+
+    return () => ref.off('value', listener);
+  }
+
   async blockUser(blockerUid: string, blockedUid: string) {
-    await database().ref(`blocks/${blockerUid}/${blockedUid}`).set({
-      blockedAt: Date.now(),
+    const blockRef = database().ref(`blocks/${blockerUid}/${blockedUid}`);
+
+    await blockRef.transaction(existing => {
+      const now = Date.now();
+
+      return {
+        ...(existing || {}),
+        blockedAt: existing?.blockedAt || now,
+        lastBlockedAt: now,
+        isActive: true,
+        unblockedAt: null,
+      };
     });
   }
 
   async unblockUser(blockerUid: string, blockedUid: string) {
-    await database().ref(`blocks/${blockerUid}/${blockedUid}`).remove();
+    await database().ref(`blocks/${blockerUid}/${blockedUid}`).update({
+      isActive: false,
+      unblockedAt: Date.now(),
+    });
   }
 
   async reportUser(reporterUid: string, reportedUid: string, reason: string) {
@@ -523,7 +594,22 @@ class RoomService {
   }
 
   async removeRoom(uid: string) {
-    await database().ref(`rooms/${uid}`).remove();
+    await database()
+      .ref(`rooms/${uid}`)
+      .transaction(room => {
+        if (!room) {
+          return;
+        }
+
+        return {
+          ...room,
+          status: 'offline',
+          currentCallId: '',
+          male: null,
+          closedAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+      });
   }
 
   async cancelCall(femaleUid: string) {

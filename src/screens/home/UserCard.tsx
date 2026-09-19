@@ -65,7 +65,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
 
         <View style={styles.info}>
           <Text numberOfLines={1} style={styles.name}>
-            {item?.profile?.name}
+            {item?.profile?.tamilName}
           </Text>
 
           <Text numberOfLines={1} style={styles.subTitle}>

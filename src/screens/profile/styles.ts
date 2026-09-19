@@ -122,6 +122,19 @@ export default StyleSheet.create({
     color: Colors.text,
   },
 
+  phoneRow: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+
+  phoneNumber: {
+    color: Colors.subText,
+    fontSize: 14,
+    marginLeft: 6,
+  },
+
   englishName: {
     marginTop: 6,
 
@@ -188,6 +201,56 @@ export default StyleSheet.create({
     color: Colors.secondary,
 
     fontWeight: '700',
+  },
+
+  callTimeCard: {
+    marginTop: 16,
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: Colors.black,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 3,
+  },
+
+  callTimeIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+
+  callTimeContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  callTimeLabel: {
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  callTimeDescription: {
+    color: Colors.subText,
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  callTimeValue: {
+    color: Colors.secondary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginLeft: 12,
   },
 
   sectionTitle: {

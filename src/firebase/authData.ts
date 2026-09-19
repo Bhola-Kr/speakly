@@ -65,69 +65,57 @@ class AuthData {
   // Create User
   //-----------------------------
   createUser = async (user: any, gender: string) => {
-    console.log('createUser started');
-
-    console.log('uid:', user.uid);
-
-    console.log('Checking existing user...');
-    const snapshot = await database().ref(`users/${user.uid}`).once('value');
-
-    console.log('Snapshot received:', snapshot.exists());
-
-    if (snapshot.exists()) {
-      console.log('Updating existing user...');
-
-      await database().ref(`users/${user.uid}`).update({
-        lastSeen: Date.now(),
-        'profile/gender': gender,
-      });
-
-      console.log('User updated');
-
-      return;
+    if (!user?.uid) {
+      throw new Error('A valid user is required to create an account.');
     }
 
-    console.log('Creating new user...');
+    const uid = user.uid;
+    const phone = user.phoneNumber || uid;
+    const now = Date.now();
 
     await database()
-      .ref(`users/${user.uid}`)
-      .set({
-        uid: user.uid,
-        phone: user.phoneNumber,
-        createdAt: Date.now(),
-        lastSeen: Date.now(),
+      .ref(`users/${uid}`)
+      .transaction(currentUser => {
+        const existing = currentUser || {};
+        const profile = existing.profile || {};
 
-        profile: {
-          uid: user?.uid,
-          phone: user?.phoneNumber || user?.uid,
-          avatarId: 1,
-          maritalStatus: 'Single',
-          category: 'Relationship',
-          price: 16,
-          rating: 4.9,
-          status: 'offline',
-          name: '',
-          image: '',
-          gender: '',
-          birthYear: '',
-          age: '',
-        },
-
-        verification: {
-          phoneVerified: true,
-          voiceVerified: false,
-        },
-
-        wallet: {
-          balance: 0,
-        },
-
-        settings: {
-          notification: true,
-        },
+        return {
+          ...existing,
+          uid,
+          phone: existing.phone || phone,
+          createdAt: existing.createdAt || now,
+          lastSeen: now,
+          profile: {
+            avatarId: 1,
+            maritalStatus: 'Single',
+            category: 'Relationship',
+            price: 16,
+            rating: 4.9,
+            status: 'offline',
+            name: '',
+            image: '',
+            birthYear: '',
+            age: '',
+            ...profile,
+            uid,
+            phone: profile.phone || phone,
+            gender,
+          },
+          verification: {
+            phoneVerified: true,
+            voiceVerified: false,
+            ...(existing.verification || {}),
+          },
+          wallet: {
+            balance: 0,
+            ...(existing.wallet || {}),
+          },
+          settings: {
+            notification: true,
+            ...(existing.settings || {}),
+          },
+        };
       });
-
-    console.log('User created');
   };
 
   //-----------------------------

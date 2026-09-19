@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   SafeAreaView,
   StatusBar,
@@ -14,9 +14,10 @@ import {
   AppStateStatus,
 } from 'react-native';
 
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import InCallManager from 'react-native-incall-manager';
 
 import Colors from '../../constants/colors';
 import IncomingCallModal from './IncomingCallModal';
@@ -32,11 +33,12 @@ type Props = {
 };
 
 const OnlineRoomScreen = ({ navigation }: Props) => {
-  const { user, updateProfile } = useUser();
+  const { user } = useUser();
   const [incomingRoom, setIncomingRoom] = useState<Room | null>(null);
   const isFocused = useIsFocused();
   const pulse = useRef(new Animated.Value(0)).current;
   const appState = useRef(AppState.currentState);
+  const isJoiningCall = useRef(false);
   const myUid = authData.getCurrentUser()?.uid || 'unknown';
 
   const [timer, setTimer] = useState('00:00:00');
@@ -45,9 +47,27 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
   const seconds = useRef(0);
 
-  React.useEffect(() => {
-    updateProfile({ status: 'online' });
-  }, [isFocused, updateProfile]);
+  const markOffline = useCallback(async () => {
+    try {
+      await RoomService.goOffline();
+    } catch (error) {
+      console.error('Unable to go offline:', error);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      InCallManager.setKeepScreenOn(true);
+
+      return () => {
+        InCallManager.setKeepScreenOn(false);
+
+        if (!isJoiningCall.current) {
+          markOffline();
+        }
+      };
+    }, [markOffline]),
+  );
 
   React.useEffect(() => {
     const unsubscribe = RoomService.listenCallStatus(myUid, room => {
@@ -76,10 +96,20 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     const subscription = AppState.addEventListener(
       'change',
       async (nextState: AppStateStatus) => {
-        if (nextState === 'active') {
-          await updateProfile({ status: 'online' });
-        }
+        const previousState = appState.current;
         appState.current = nextState;
+
+        if (nextState === 'active' && previousState !== 'active' && isFocused) {
+          try {
+            InCallManager.setKeepScreenOn(true);
+            await RoomService.goOnline();
+          } catch (error) {
+            console.error('Unable to restore online status:', error);
+          }
+        } else if (previousState === 'active' && nextState !== 'active') {
+          InCallManager.setKeepScreenOn(false);
+          await markOffline();
+        }
       },
     );
 
@@ -87,7 +117,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       subscription.remove();
       unsubscribe();
     };
-  }, [myUid, updateProfile]);
+  }, [isFocused, markOffline, myUid]);
 
   useEffect(() => {
     const pulseAnimation = Animated.loop(
@@ -157,6 +187,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
     setShowIncoming(false);
     await RoomService.acceptCall(myUid);
+    isJoiningCall.current = true;
     navigation.replace('Call', {
       gender: 'female',
       userName: incomingRoom?.male?.name,
@@ -194,9 +225,6 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await updateProfile({
-                status: 'offline',
-              });
               await RoomService.goOffline();
 
               navigation.goBack();
@@ -295,29 +323,6 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
         visible={showIncoming}
         onAccept={acceptCall}
         onDecline={declineCall}
-        onBlock={async () => {
-          RoomService.blockUser(
-            incomingRoom?.female?.uid || 'falseBlock',
-            incomingRoom?.male?.uid || 'falseBlock',
-          );
-          await declineCall();
-          Alert.alert(
-            'Blocked Successfully',
-            'The user has been added to your blocked list.',
-          );
-        }}
-        onReport={async reason => {
-          RoomService.reportUser(
-            incomingRoom?.female?.uid || 'falseBlock',
-            incomingRoom?.male?.uid || 'falseBlock',
-            reason,
-          );
-          await declineCall();
-          Alert.alert(
-            'Report Submitted',
-            'Your report has been received successfully and will be reviewed by our moderation team.',
-          );
-        }}
         userName={incomingRoom?.male?.name || 'N/A'}
         verified={false}
         avatar={AVATAR}

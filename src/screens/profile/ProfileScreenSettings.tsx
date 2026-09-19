@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import {
   SafeAreaView,
@@ -27,6 +27,7 @@ import {
 } from './dummyData';
 import { formatDate, getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
+import RoomService from '../../firebase/RoomService';
 
 interface Props {
   navigation: any;
@@ -39,6 +40,34 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const { user } = useUser();
   const profile = user?.profile;
   const gender = profile?.gender || 'male';
+  const phoneNumber = user?.phone || profile?.phone || 'Not available';
+  const [totalCallDuration, setTotalCallDuration] = useState(0);
+
+  useEffect(() => {
+    if (gender !== 'female') {
+      setTotalCallDuration(0);
+      return;
+    }
+
+    return RoomService.listenTotalCallDuration(setTotalCallDuration);
+  }, [gender]);
+
+  const formattedTotalCallDuration = useMemo(() => {
+    const totalSeconds = Math.floor(totalCallDuration / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+
+    return `${seconds}s`;
+  }, [totalCallDuration]);
 
   // Replace with your Play Store package name
   const PLAY_STORE_URL =
@@ -318,6 +347,16 @@ ${PLAY_STORE_URL}`,
 
           <Text style={styles.tamilName}>{profile?.name ?? 'N/A'}</Text>
 
+          <View style={styles.phoneRow}>
+            <MaterialCommunityIcons
+              name="phone-outline"
+              size={16}
+              color={Colors.subText}
+            />
+
+            <Text style={styles.phoneNumber}>{phoneNumber}</Text>
+          </View>
+
           <Text style={styles.memberSince}>
             Member since: {formatDate(user?.createdAt)}
           </Text>
@@ -346,6 +385,29 @@ ${PLAY_STORE_URL}`,
             )}
           </View>
         </View>
+
+        {gender === 'female' && (
+          <View style={styles.callTimeCard}>
+            <View style={styles.callTimeIcon}>
+              <MaterialCommunityIcons
+                name="clock-outline"
+                size={24}
+                color={Colors.secondary}
+              />
+            </View>
+
+            <View style={styles.callTimeContent}>
+              <Text style={styles.callTimeLabel}>Total call time</Text>
+              <Text style={styles.callTimeDescription}>
+                Across all completed calls
+              </Text>
+            </View>
+
+            <Text style={styles.callTimeValue}>
+              {formattedTotalCallDuration}
+            </Text>
+          </View>
+        )}
 
         {renderSection(
           'Account',

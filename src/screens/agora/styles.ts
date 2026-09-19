@@ -23,6 +23,11 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
 
+  safetyPlaceholder: {
+    width: 25,
+    height: 25,
+  },
+
   avatarContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -78,6 +83,36 @@ export default StyleSheet.create({
   status: {
     color: Colors.white,
     fontWeight: '600',
+  },
+
+  callerBalance: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.darkSurfaceMuted,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+
+  callerBalanceLabel: {
+    color: Colors.darkTextMuted,
+    fontSize: 12,
+    marginLeft: 6,
+  },
+
+  callerBalanceValue: {
+    color: Colors.secondary,
+    fontSize: 14,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+
+  callDurationLabel: {
+    color: Colors.darkTextMuted,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 18,
   },
 
   timer: {

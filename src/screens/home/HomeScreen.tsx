@@ -36,12 +36,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const canStartCall = useCallBalanceGuard(navigation);
 
   useEffect(() => {
-    if (user?.profile?.gender?.toLowerCase() === 'male') {
-      updateProfile({ status: 'online' });
-    }
-  }, [updateProfile, user?.profile?.gender]);
-
-  useEffect(() => {
     const ref = database()
       .ref('users')
       .orderByChild('profile/gender')

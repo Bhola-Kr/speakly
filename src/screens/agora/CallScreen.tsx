@@ -22,6 +22,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import auth from '@react-native-firebase/auth';
+import database from '@react-native-firebase/database';
 
 import styles from './styles';
 import Colors from '../../constants/colors';
@@ -66,6 +67,26 @@ const CallScreen = ({ navigation, route }: Props) => {
   const [safetyActionLoading, setSafetyActionLoading] = useState(false);
 
   const [timer, setTimer] = useState('00:00');
+
+  const [callerBalance, setCallerBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (gender !== 'female' || !maleUid) {
+      setCallerBalance(null);
+      return;
+    }
+
+    const balanceRef = database().ref(`users/${maleUid}/wallet/balance`);
+    const listener = balanceRef.on('value', snapshot => {
+      const balance = Number(snapshot.val());
+
+      setCallerBalance(Number.isFinite(balance) ? Math.max(0, balance) : 0);
+    });
+
+    return () => {
+      balanceRef.off('value', listener);
+    };
+  }, [gender, maleUid]);
 
   const requestPermission = useCallback(async () => {
     if (Platform.OS !== 'android') {
@@ -301,6 +322,10 @@ const CallScreen = ({ navigation, route }: Props) => {
   };
 
   const reportUser = (reason: string) => {
+    if (!connected) {
+      return;
+    }
+
     const reporterUid = auth().currentUser?.uid;
     const reportedUid = gender === 'male' ? femaleUid : maleUid;
 
@@ -325,6 +350,10 @@ const CallScreen = ({ navigation, route }: Props) => {
   };
 
   const showReportOptions = () => {
+    if (!connected) {
+      return;
+    }
+
     Alert.alert('Report User', 'Choose a reason for this report.', [
       {
         text: 'Harassment',
@@ -343,6 +372,10 @@ const CallScreen = ({ navigation, route }: Props) => {
   };
 
   const blockUser = () => {
+    if (!connected) {
+      return;
+    }
+
     const blockerUid = auth().currentUser?.uid;
     const blockedUid = gender === 'male' ? femaleUid : maleUid;
 
@@ -386,7 +419,7 @@ const CallScreen = ({ navigation, route }: Props) => {
   };
 
   const showSafetyOptions = () => {
-    if (safetyActionLoading) {
+    if (!connected || safetyActionLoading) {
       return;
     }
 
@@ -430,18 +463,22 @@ const CallScreen = ({ navigation, route }: Props) => {
 
           <Text style={styles.headerTitle}>Encrypted Voice Call</Text>
 
-          <TouchableOpacity
-            accessibilityLabel="Safety options"
-            accessibilityRole="button"
-            disabled={safetyActionLoading}
-            onPress={showSafetyOptions}
-          >
-            <MaterialCommunityIcons
-              name={safetyActionLoading ? 'loading' : 'shield-alert-outline'}
-              size={25}
-              color={Colors.secondary}
-            />
-          </TouchableOpacity>
+          {connected ? (
+            <TouchableOpacity
+              accessibilityLabel="Safety options"
+              accessibilityRole="button"
+              disabled={safetyActionLoading}
+              onPress={showSafetyOptions}
+            >
+              <MaterialCommunityIcons
+                name={safetyActionLoading ? 'loading' : 'shield-alert-outline'}
+                size={25}
+                color={Colors.secondary}
+              />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.safetyPlaceholder} />
+          )}
         </View>
 
         <View style={styles.avatarContainer}>
@@ -471,6 +508,26 @@ const CallScreen = ({ navigation, route }: Props) => {
 
             <Text style={styles.status}>{status}</Text>
           </View>
+
+          {gender === 'female' && (
+            <View style={styles.callerBalance}>
+              <MaterialCommunityIcons
+                name="wallet-outline"
+                size={16}
+                color={Colors.secondary}
+              />
+
+              <Text style={styles.callerBalanceLabel}>Caller balance</Text>
+
+              <Text style={styles.callerBalanceValue}>
+                ₹{callerBalance ?? '--'}
+              </Text>
+            </View>
+          )}
+
+          {gender === 'female' && (
+            <Text style={styles.callDurationLabel}>Current call time</Text>
+          )}
 
           <Text style={styles.timer}>{timer}</Text>
         </View>

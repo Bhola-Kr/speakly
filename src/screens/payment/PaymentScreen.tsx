@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   SafeAreaView,
   View,
@@ -6,7 +12,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Alert,
   ActivityIndicator,
   Linking,
 } from 'react-native';
@@ -23,12 +28,25 @@ const PRIVACY_POLICY_URL = 'https://voice-tamil.web.app/privacy-policy.html';
 // Cashfree secrets remain on the server. The server must create the matching
 // production payment_session_id before this checkout can be opened.
 const CASHFREE_ENVIRONMENT = CFEnvironment.PRODUCTION;
+const PAYMENT_VERIFICATION_MAX_ATTEMPTS = 6;
+const PAYMENT_VERIFICATION_RETRY_DELAY_MS = 1500;
+
+const wait = (milliseconds: number) =>
+  new Promise<void>(resolve => setTimeout(resolve, milliseconds));
+
+type PaymentNotice = {
+  type: 'error' | 'info';
+  message: string;
+};
 
 const PaymentScreen = ({ navigation, route }: any) => {
   const pack = route?.params?.pack;
   const { user } = useUser();
 
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<PaymentNotice | null>(null);
+  const verificationInProgress = useRef(false);
+  const paymentVerified = useRef(false);
   const amount = Number(pack?.amount || 0);
   const bonus = Number(pack?.bonus || 0);
 
@@ -40,43 +58,68 @@ const PaymentScreen = ({ navigation, route }: any) => {
   const customerPhone = user?.phone || user?.profile?.uid || '';
   const customerName = user?.profile?.name || '';
 
+  const redirectToHome = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'Home' } }],
+    });
+  }, [navigation]);
+
   const handlePaymentVerification = useCallback(
     async (orderId: string) => {
+      if (
+        !orderId ||
+        verificationInProgress.current ||
+        paymentVerified.current
+      ) {
+        return;
+      }
+
+      verificationInProgress.current = true;
+
       try {
         setLoading(true);
+        setNotice(null);
 
-        const response = await verifyOrder(orderId, customerId);
+        for (
+          let attempt = 0;
+          attempt < PAYMENT_VERIFICATION_MAX_ATTEMPTS;
+          attempt += 1
+        ) {
+          const response = await verifyOrder(orderId, customerId);
 
-        if (!response.success) {
-          throw new Error(response.message || 'Unable to verify payment');
+          if (!response.success) {
+            throw new Error(response.message || 'Unable to verify payment');
+          }
+
+          if (response.paid === true) {
+            paymentVerified.current = true;
+            redirectToHome();
+            return;
+          }
+
+          if (attempt < PAYMENT_VERIFICATION_MAX_ATTEMPTS - 1) {
+            await wait(PAYMENT_VERIFICATION_RETRY_DELAY_MS);
+          }
         }
 
-        if (response.paid === true) {
-          Alert.alert(
-            'Payment Successful',
-            `₹${
-              response.data?.amount ?? amount
-            } payment completed successfully.`,
-            [{ text: 'Done', onPress: () => navigation.goBack() }],
-          );
-          return;
-        }
-
-        Alert.alert(
-          'Payment Pending',
-          'We could not confirm the payment yet. Please check your transactions.',
-        );
+        setNotice({
+          type: 'info',
+          message:
+            'Your payment is being confirmed. It may take a few seconds to appear in your wallet.',
+        });
       } catch (error: any) {
         console.error('Payment verification error:', error);
-        Alert.alert(
-          'Payment Verification Failed',
-          error?.message || 'Unable to verify payment.',
-        );
+        setNotice({
+          type: 'error',
+          message: error?.message || 'Unable to verify payment.',
+        });
       } finally {
         setLoading(false);
+        verificationInProgress.current = false;
       }
     },
-    [amount, customerId, navigation],
+    [customerId, redirectToHome],
   );
 
   useEffect(() => {
@@ -87,11 +130,10 @@ const PaymentScreen = ({ navigation, route }: any) => {
 
       onError: (error: any) => {
         setLoading(false);
-
-        Alert.alert(
-          'Payment Failed',
-          error?.message || 'Payment was not completed.',
-        );
+        setNotice({
+          type: 'error',
+          message: error?.message || 'Payment was not completed.',
+        });
       },
     });
 
@@ -104,22 +146,31 @@ const PaymentScreen = ({ navigation, route }: any) => {
         return;
       }
 
+      setNotice(null);
+
       if (!amount || amount <= 0) {
-        Alert.alert('Invalid Amount', 'Please select a valid recharge pack.');
+        setNotice({
+          type: 'error',
+          message: 'Please select a valid recharge pack.',
+        });
         return;
       }
 
       if (!customerId || !customerPhone) {
-        Alert.alert(
-          'Profile Incomplete',
-          'Your account details are still loading. Please try again in a moment.',
-        );
+        setNotice({
+          type: 'error',
+          message:
+            'Your account details are still loading. Please try again in a moment.',
+        });
         return;
       }
 
       const packId = String(pack?.id || '');
       if (!packId) {
-        Alert.alert('Invalid Pack', 'Please select a valid recharge pack.');
+        setNotice({
+          type: 'error',
+          message: 'Please select a valid recharge pack.',
+        });
         return;
       }
 
@@ -159,10 +210,10 @@ const PaymentScreen = ({ navigation, route }: any) => {
 
       setLoading(false);
 
-      Alert.alert(
-        'Payment Failed',
-        error?.message || 'Unable to start payment.',
-      );
+      setNotice({
+        type: 'error',
+        message: error?.message || 'Unable to start payment.',
+      });
     }
   };
 
@@ -173,10 +224,16 @@ const PaymentScreen = ({ navigation, route }: any) => {
       if (supported) {
         await Linking.openURL(PRIVACY_POLICY_URL);
       } else {
-        Alert.alert('Error', 'Unable to open Privacy Policy.');
+        setNotice({
+          type: 'error',
+          message: 'Unable to open Privacy Policy.',
+        });
       }
     } catch {
-      Alert.alert('Error', 'Unable to open Privacy Policy.');
+      setNotice({
+        type: 'error',
+        message: 'Unable to open Privacy Policy.',
+      });
     }
   };
 
@@ -293,6 +350,41 @@ const PaymentScreen = ({ navigation, route }: any) => {
             Secure payment powered by Cashfree
           </Text>
         </View>
+
+        {notice && (
+          <View
+            accessibilityRole="alert"
+            style={[
+              styles.notice,
+              notice.type === 'error' ? styles.noticeError : styles.noticeInfo,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name={
+                notice.type === 'error'
+                  ? 'alert-circle-outline'
+                  : 'information-outline'
+              }
+              size={18}
+              color={
+                notice.type === 'error'
+                  ? Colors.errorStrong
+                  : Colors.warningStrong
+              }
+            />
+
+            <Text
+              style={[
+                styles.noticeText,
+                notice.type === 'error'
+                  ? styles.noticeErrorText
+                  : styles.noticeInfoText,
+              ]}
+            >
+              {notice.message}
+            </Text>
+          </View>
+        )}
 
         <TouchableOpacity
           activeOpacity={0.85}
@@ -533,6 +625,38 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 12,
     color: Colors.subText,
+  },
+
+  notice: {
+    marginTop: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  noticeError: {
+    backgroundColor: Colors.errorStrongSurface,
+  },
+
+  noticeInfo: {
+    backgroundColor: Colors.warningStrongSurface,
+  },
+
+  noticeText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  noticeErrorText: {
+    color: Colors.errorStrong,
+  },
+
+  noticeInfoText: {
+    color: Colors.warningStrong,
   },
 
   // PAY BUTTON

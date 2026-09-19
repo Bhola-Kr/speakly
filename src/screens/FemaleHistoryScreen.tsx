@@ -249,28 +249,27 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
                 setMenuVisible(false);
 
                 Alert.alert(
-                  'Clear Call History',
-                  'Are you sure you want to delete your entire call history? This action cannot be undone.',
+                  'Archive Call History',
+                  'Older calls will be hidden from this list but safely retained. New calls will continue to appear here.',
                   [
                     {
                       text: 'Cancel',
                       style: 'cancel',
                     },
                     {
-                      text: 'Clear',
-                      style: 'destructive',
+                      text: 'Archive',
                       onPress: async () => {
                         try {
                           await RoomService.clearCallHistory();
 
                           Alert.alert(
-                            'History Cleared',
-                            'Your call history has been deleted successfully.',
+                            'History Archived',
+                            'Older calls have been hidden from this list.',
                           );
                         } catch {
                           Alert.alert(
                             'Error',
-                            'Unable to clear your call history. Please try again.',
+                            'Unable to archive your call history. Please try again.',
                           );
                         }
                       },
@@ -279,17 +278,21 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
                 );
               }}
             >
-              <Ionicons name="trash-outline" size={20} color={Colors.danger} />
+              <Ionicons
+                name="archive-outline"
+                size={20}
+                color={Colors.secondary}
+              />
 
               <Text
                 style={[
                   styles.popupText,
                   {
-                    color: Colors.danger,
+                    color: Colors.secondary,
                   },
                 ]}
               >
-                Clear History
+                Archive History
               </Text>
             </TouchableOpacity>
           </View>

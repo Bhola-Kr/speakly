@@ -68,28 +68,27 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
             style={styles.clearButton}
             onPress={() => {
               Alert.alert(
-                'Clear History',
-                'Are you sure you want to delete your entire call history?',
+                'Archive History',
+                'Older calls will be hidden from this list but safely retained. New calls will continue to appear here.',
                 [
                   {
                     text: 'Cancel',
                     style: 'cancel',
                   },
                   {
-                    text: 'Clear',
-                    style: 'destructive',
+                    text: 'Archive',
                     onPress: async () => {
                       try {
                         await RoomService.clearCallHistory();
 
                         Alert.alert(
-                          'History Cleared',
-                          'Your call history has been deleted successfully.',
+                          'History Archived',
+                          'Older calls have been hidden from this list.',
                         );
                       } catch {
                         Alert.alert(
                           'Error',
-                          'Unable to clear your call history.',
+                          'Unable to archive your call history.',
                         );
                       }
                     },
@@ -99,12 +98,12 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
             }}
           >
             <MaterialCommunityIcons
-              name="delete-outline"
+              name="archive-outline"
               size={22}
-              color={Colors.danger}
+              color={Colors.secondary}
             />
 
-            <Text style={styles.clearText}>Clear</Text>
+            <Text style={styles.clearText}>Archive</Text>
           </TouchableOpacity>
         )}
       </View>
