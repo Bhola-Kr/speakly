@@ -72,6 +72,8 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   React.useEffect(() => {
     const unsubscribe = RoomService.listenCallStatus(myUid, room => {
       if (!room) {
+        setIncomingRoom(null);
+        setShowIncoming(false);
         return;
       }
 
@@ -82,6 +84,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
           setShowIncoming(true);
           break;
 
+        case 'active':
         case 'men_rejected':
         case 'rejected':
         case 'ended':
@@ -107,6 +110,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
             console.error('Unable to restore online status:', error);
           }
         } else if (previousState === 'active' && nextState !== 'active') {
+          setShowIncoming(false);
           InCallManager.setKeepScreenOn(false);
           await markOffline();
         }
@@ -320,7 +324,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       </SafeAreaView>
 
       <IncomingCallModal
-        visible={showIncoming}
+        visible={showIncoming && isFocused}
         onAccept={acceptCall}
         onDecline={declineCall}
         userName={incomingRoom?.male?.name || 'N/A'}

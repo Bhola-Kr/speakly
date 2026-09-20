@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import auth from '@react-native-firebase/auth';
+import DeviceInfo from 'react-native-device-info';
 import Colors from '../constants/colors';
 import authData from '../firebase/authData';
 
@@ -87,7 +88,7 @@ const SplashScreen = ({ navigation }: any) => {
 
         <Text style={styles.loading}>Loading...</Text>
 
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>Version {DeviceInfo.getVersion()}</Text>
       </View>
     </SafeAreaView>
   );

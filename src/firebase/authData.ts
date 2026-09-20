@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import { fetchFirebaseToken } from '../api/calls';
 import { Alert } from 'react-native';
+import { CALL_RATE_PER_MINUTE } from '../constants/constants';
 
 export type UpdateProfileData = {
   id?: string;
@@ -90,7 +91,6 @@ class AuthData {
             avatarId: 1,
             maritalStatus: 'Single',
             category: 'Relationship',
-            price: 16,
             rating: 4.9,
             status: 'offline',
             name: '',
@@ -99,6 +99,7 @@ class AuthData {
             birthYear: '',
             age: '',
             ...profile,
+            price: CALL_RATE_PER_MINUTE,
             uid,
             phone: profile.phone || phone,
             gender,

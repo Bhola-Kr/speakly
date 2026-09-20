@@ -28,6 +28,7 @@ import {
 import { formatDate, getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 import RoomService from '../../firebase/RoomService';
+import { openAppReview } from '../../firebase/appReview';
 
 interface Props {
   navigation: any;
@@ -204,11 +205,7 @@ ${PLAY_STORE_URL}`,
 
   const handleRateApp = async () => {
     try {
-      const supported = await Linking.canOpenURL(PLAY_STORE_URL);
-
-      if (supported) {
-        await Linking.openURL(PLAY_STORE_URL);
-      }
+      await openAppReview(auth().currentUser?.uid);
     } catch {
       Alert.alert('Error', 'Unable to open the Play Store.');
     }

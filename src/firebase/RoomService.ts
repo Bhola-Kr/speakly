@@ -504,7 +504,10 @@ class RoomService {
     await historyRef.update(updates);
   }
 
-  listenCallHistory(callback: (history: CallHistory[]) => void) {
+  listenCallHistory(
+    callback: (history: CallHistory[]) => void,
+    includeArchived = false,
+  ) {
     const uid = auth().currentUser?.uid;
 
     if (!uid) {
@@ -519,7 +522,7 @@ class RoomService {
       snapshot.forEach(child => {
         const item = child.val() as CallHistory;
 
-        if (!item.archivedAt) {
+        if (includeArchived || !item.archivedAt) {
           history.push(item);
         }
 

@@ -63,6 +63,7 @@ const CallScreen = ({ navigation, route }: Props) => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const billingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const billingStartingRef = useRef(false);
+  const callEndedRef = useRef(false);
 
   const seconds = useRef(0);
 
@@ -145,27 +146,55 @@ const CallScreen = ({ navigation, route }: Props) => {
     }
   }, []);
 
-  const endForInsufficientBalance = useCallback(async () => {
+  const finishCall = useCallback(async (updateRoom = true) => {
+    if (callEndedRef.current) {
+      return;
+    }
+
+    callEndedRef.current = true;
     stopBilling();
     stopTimer();
 
-    if (engine.current) {
-      engine.current.leaveChannel();
-      engine.current.release();
-      engine.current = null;
+    const rtcEngine = engine.current;
+    engine.current = null;
+    rtcEngine?.leaveChannel();
+    rtcEngine?.release();
+
+    navigation.reset({
+      index: 0,
+      routes: [{
+        name: gender === 'female' ? 'FemaleBottomTabs' : 'Main',
+        params: { screen: 'Home' },
+      }],
+    });
+
+    if (updateRoom && femaleUid) {
+      try {
+        await RoomService.endCall(femaleUid);
+      } catch (error) {
+        console.error('Unable to update ended call:', error);
+      }
+    }
+  }, [femaleUid, gender, navigation, stopBilling, stopTimer]);
+
+  const endForInsufficientBalance = useCallback(async () => {
+    if (callEndedRef.current) {
+      return;
     }
 
-    await RoomService.endCall(femaleUid);
+    const ending = finishCall();
     Alert.alert(
       'Balance Exhausted',
       'Your wallet balance is insufficient to continue this call.',
-      [{ text: 'Add Balance', onPress: () => navigation.replace('Wallet') }],
+      [{ text: 'OK' }],
     );
-  }, [femaleUid, navigation, stopBilling, stopTimer]);
+    await ending;
+  }, [finishCall]);
 
   const startBilling = useCallback(async () => {
     if (
       gender !== 'male' ||
+      callEndedRef.current ||
       billingTimerRef.current ||
       billingStartingRef.current
     ) {
@@ -176,6 +205,10 @@ const CallScreen = ({ navigation, route }: Props) => {
 
     try {
       const firstMinuteCharged = await RoomService.chargeCallMinute(femaleUid);
+
+      if (callEndedRef.current) {
+        return;
+      }
 
       if (!firstMinuteCharged) {
         await endForInsufficientBalance();
@@ -197,9 +230,13 @@ const CallScreen = ({ navigation, route }: Props) => {
   const initializeAgora = useCallback(async () => {
     const permission = await requestPermission();
 
+    if (callEndedRef.current) {
+      return;
+    }
+
     if (!permission) {
       Alert.alert('Permission', 'Microphone permission required.');
-      navigation.goBack();
+      await finishCall();
       return;
     }
 
@@ -223,6 +260,9 @@ const CallScreen = ({ navigation, route }: Props) => {
       },
 
       onUserJoined: async () => {
+        if (callEndedRef.current) {
+          return;
+        }
         setConnected(true);
 
         setStatus('Connected');
@@ -234,14 +274,7 @@ const CallScreen = ({ navigation, route }: Props) => {
       },
 
       onUserOffline: () => {
-        setConnected(false);
-
-        setStatus('User Left');
-
-        stopTimer();
-        stopBilling();
-        RoomService.endCall(femaleUid);
-        navigation.goBack();
+        finishCall();
       },
 
       onConnectionStateChanged: (_connection, state: ConnectionStateType) => {
@@ -259,7 +292,8 @@ const CallScreen = ({ navigation, route }: Props) => {
             break;
 
           case ConnectionStateType.ConnectionStateDisconnected:
-            setStatus('Disconnected');
+          case ConnectionStateType.ConnectionStateFailed:
+            finishCall();
             break;
         }
       },
@@ -269,7 +303,7 @@ const CallScreen = ({ navigation, route }: Props) => {
 
     if (!token || uid === undefined) {
       Alert.alert('Call Error', 'Unable to initialize the call.');
-      navigation.goBack();
+      await finishCall();
       return;
     }
 
@@ -279,12 +313,10 @@ const CallScreen = ({ navigation, route }: Props) => {
   }, [
     channelName,
     femaleUid,
-    navigation,
+    finishCall,
     requestPermission,
     startTimer,
     startBilling,
-    stopBilling,
-    stopTimer,
     token,
     uid,
   ]);
@@ -299,17 +331,7 @@ const CallScreen = ({ navigation, route }: Props) => {
         text: 'End',
         style: 'destructive',
         onPress: async () => {
-          stopTimer();
-          stopBilling();
-
-          if (engine.current) {
-            engine.current.leaveChannel();
-            engine.current.release();
-            engine.current = null;
-          }
-
-          await RoomService.endCall(femaleUid);
-          navigation.goBack();
+          await finishCall();
         },
       },
     ]);
@@ -407,17 +429,7 @@ const CallScreen = ({ navigation, route }: Props) => {
 
             try {
               await RoomService.blockUser(blockerUid, blockedUid);
-              stopTimer();
-              stopBilling();
-
-              if (engine.current) {
-                engine.current.leaveChannel();
-                engine.current.release();
-                engine.current = null;
-              }
-
-              await RoomService.endCall(femaleUid);
-              navigation.goBack();
+              await finishCall();
             } catch {
               Alert.alert('Unable to Block', 'Please try again.');
               setSafetyActionLoading(false);
@@ -445,9 +457,11 @@ const CallScreen = ({ navigation, route }: Props) => {
   };
 
   useEffect(() => {
+    callEndedRef.current = false;
     initializeAgora();
 
     return () => {
+      callEndedRef.current = true;
       stopTimer();
       stopBilling();
 
@@ -458,6 +472,21 @@ const CallScreen = ({ navigation, route }: Props) => {
       }
     };
   }, [initializeAgora, stopBilling, stopTimer]);
+
+  useEffect(() => {
+    if (!femaleUid) {
+      return;
+    }
+
+    return RoomService.listenCallStatus(femaleUid, room => {
+      if (
+        !room ||
+        ['ended', 'waiting', 'offline', 'rejected', 'men_rejected'].includes(room.status)
+      ) {
+        finishCall(false);
+      }
+    });
+  }, [femaleUid, finishCall]);
 
   return (
     <LinearGradient

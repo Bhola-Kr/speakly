@@ -112,7 +112,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
           <Text style={styles.value}>{formatDuration(item.duration)}</Text>
         </View>
 
-        <View>
+        {/* <View>
           <Text style={styles.label}>Amount</Text>
 
           <View style={styles.receiveContainer}>
@@ -123,7 +123,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
 
             <Text style={styles.value}>{item.amount}</Text>
           </View>
-        </View>
+        </View> */}
       </View>
 
       <View

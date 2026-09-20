@@ -1,6 +1,11 @@
 import * as React from 'react';
 import { StatusBar } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  createNavigationContainerRef,
+  NavigationContainer,
+  ParamListBase,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './screens/LoginScreen';
 import BirthYearScreen from './screens/BirthYearScreen';
@@ -29,8 +34,18 @@ import SplashScreen from './screens/SplashScreen';
 import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
 import { UserProvider } from './hooks/UserContext';
 import PaymentScreen from './screens/payment/PaymentScreen';
+import AppUpdateGate from './components/appUpdate/AppUpdateGate';
 
 const Stack = createNativeStackNavigator();
+const navigationRef = createNavigationContainerRef<ParamListBase>();
+const deferUpdatesOn = new Set([
+  'Splash',
+  'Call',
+  'IncomingCall',
+  'OutgoingCall',
+  'OnlineRoom',
+  'Payment',
+]);
 
 function RootStack() {
   return (
@@ -111,15 +126,27 @@ function RootStack() {
 }
 
 export default function App() {
+  const [activeScreen, setActiveScreen] = React.useState('Splash');
+  const syncActiveScreen = () =>
+    setActiveScreen(navigationRef.getCurrentRoute()?.name ?? 'Splash');
+
   return (
-    <UserProvider>
-      <NavigationContainer>
-        <StatusBar
-          backgroundColor={Colors.background}
-          barStyle="dark-content"
-        />
-        <RootStack />
-      </NavigationContainer>
-    </UserProvider>
+    <SafeAreaProvider>
+      <UserProvider>
+        <NavigationContainer
+          ref={navigationRef}
+          onReady={syncActiveScreen}
+          onStateChange={syncActiveScreen}
+        >
+          <AppUpdateGate enabled={!deferUpdatesOn.has(activeScreen)}>
+            <StatusBar
+              backgroundColor={Colors.background}
+              barStyle="dark-content"
+            />
+            <RootStack />
+          </AppUpdateGate>
+        </NavigationContainer>
+      </UserProvider>
+    </SafeAreaProvider>
   );
 }

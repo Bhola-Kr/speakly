@@ -80,14 +80,10 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           callResolved.current = true;
           clearTimeout(timeout);
 
-          if (title && message) {
-            Alert.alert(title, message, [
-              { text: 'OK', onPress: () => navigation.goBack() },
-            ]);
-            return;
-          }
-
-          navigation.goBack();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Main', params: { screen: 'Home' } }],
+          });
         };
 
         switch (room?.status) {
@@ -124,6 +120,9 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             break;
 
           case 'ended':
+          case 'offline':
+            closeCall();
+            break;
         }
       },
     );

@@ -18,6 +18,7 @@ import Colors from '../../constants/colors';
 import { categories } from '../../constants/dummyData';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
+import { useFirstCallReview } from '../../hooks/useFirstCallReview';
 
 interface Props {
   navigation: any;
@@ -26,6 +27,7 @@ interface Props {
 const keyExtractor = (item: any) => item?.uid;
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
+  useFirstCallReview();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
   const [randomCalling, setRandomCalling] = useState(false);

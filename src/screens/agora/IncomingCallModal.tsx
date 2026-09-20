@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import InCallManager from 'react-native-incall-manager';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../../constants/colors';
 
@@ -33,8 +34,27 @@ const IncomingCallModal = ({
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    InCallManager.startRingtone('_DEFAULT_', 0, 'default', -1);
+
+    return () => InCallManager.stopRingtone();
+  }, [visible]);
+
+  const handleAccept = () => {
+    InCallManager.stopRingtone();
+    onAccept();
+  };
+
+  const handleDecline = () => {
+    InCallManager.stopRingtone();
+    onDecline();
+  };
+
+  useEffect(() => {
     if (visible) {
-      // InCallManager.startRingtone('', 0, 'default', 30);
       const callAnimation = Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -144,7 +164,7 @@ const IncomingCallModal = ({
             <TouchableOpacity
               activeOpacity={0.9}
               style={styles.declineButton}
-              onPress={onDecline}
+              onPress={handleDecline}
             >
               <MaterialCommunityIcons
                 name="phone-hangup"
@@ -153,7 +173,7 @@ const IncomingCallModal = ({
               />
             </TouchableOpacity>
 
-            <TouchableOpacity activeOpacity={0.9} onPress={onAccept}>
+            <TouchableOpacity activeOpacity={0.9} onPress={handleAccept}>
               <LinearGradient
                 colors={Colors.goldGradient}
                 style={styles.acceptButton}

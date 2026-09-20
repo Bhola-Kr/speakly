@@ -146,14 +146,14 @@ export const calculateAge = (birthYear: number | string): string => {
   return age >= 0 ? age.toString() : '';
 };
 
-export const CALL_RATE_PER_MINUTE = 16;
+export const CALL_RATE_PER_MINUTE = 10;
 
 /**
  * Calculates call amount.
- * - Less than or equal to 1 minute = ₹16
- * - 1 min 1 sec = ₹32
- * - 2 min 0 sec = ₹32
- * - 2 min 1 sec = ₹48
+ * - Less than or equal to 1 minute = ₹10
+ * - 1 min 1 sec = ₹20
+ * - 2 min 0 sec = ₹20
+ * - 2 min 1 sec = ₹30
  */
 export const calculateCallAmount = (
   callStartedAt: number,
