@@ -4,6 +4,7 @@ import auth from '@react-native-firebase/auth';
 import { fetchFirebaseToken } from '../api/calls';
 import { Alert } from 'react-native';
 import { CALL_RATE_PER_MINUTE } from '../constants/constants';
+import { unregisterPushNotifications } from '../notifications/pushNotifications';
 
 export type UpdateProfileData = {
   id?: string;
@@ -134,6 +135,7 @@ class AuthData {
   //-----------------------------
 
   logout = async () => {
+    await unregisterPushNotifications();
     await auth().signOut();
 
     await AsyncStorage.removeItem('uid');

@@ -35,6 +35,7 @@ import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
 import { UserProvider } from './hooks/UserContext';
 import PaymentScreen from './screens/payment/PaymentScreen';
 import AppUpdateGate from './components/appUpdate/AppUpdateGate';
+import { startPushNotifications } from './notifications/pushNotifications';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -125,10 +126,15 @@ function RootStack() {
   );
 }
 
-export default function App() {
+export default function App({ isHeadless = false }: { isHeadless?: boolean }) {
+  React.useEffect(() => {
+    if (!isHeadless) return startPushNotifications();
+  }, [isHeadless]);
   const [activeScreen, setActiveScreen] = React.useState('Splash');
   const syncActiveScreen = () =>
     setActiveScreen(navigationRef.getCurrentRoute()?.name ?? 'Splash');
+
+  if (isHeadless) return null;
 
   return (
     <SafeAreaProvider>

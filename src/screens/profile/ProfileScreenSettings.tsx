@@ -28,6 +28,7 @@ import {
 import { formatDate, getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 import RoomService from '../../firebase/RoomService';
+import authData from '../../firebase/authData';
 import { openAppReview } from '../../firebase/appReview';
 
 interface Props {
@@ -90,7 +91,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await auth().signOut();
+              await authData.logout();
 
               // Navigate to Login/Auth screen
               navigation.reset({
