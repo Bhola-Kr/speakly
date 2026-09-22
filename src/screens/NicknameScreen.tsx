@@ -17,6 +17,10 @@ import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
+import {
+  hasValidUsername,
+  MIN_USERNAME_LENGTH,
+} from '../utils/profileValidation';
 
 interface Props {
   navigation: any;
@@ -26,16 +30,32 @@ interface Props {
 const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
   const gender = route.params.gender;
   const [nickname, setNickname] = useState('');
+  const [nicknameTouched, setNicknameTouched] = useState(false);
   const [tamilName, setTamilName] = useState('');
 
   const [loading, setLoading] = useState(false);
 
   const isValid =
-    nickname.trim().length >= 3 &&
+    hasValidUsername(nickname) &&
     (gender !== 'female' || tamilName.trim().length >= 2);
 
   const saveUser = async () => {
-    if (!isValid || loading) {
+    if (loading) {
+      return;
+    }
+
+    setNicknameTouched(true);
+
+    if (!hasValidUsername(nickname)) {
+      Alert.alert(
+        'Username Required',
+        `Enter a username with at least ${MIN_USERNAME_LENGTH} characters to continue.`,
+      );
+      return;
+    }
+
+    if (gender === 'female' && tamilName.trim().length < 2) {
+      Alert.alert('Tamil Name Required', 'Enter your Tamil name to continue.');
       return;
     }
 
@@ -105,15 +125,26 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.inputContainer}>
               <TextInput
                 value={nickname}
-                onChangeText={setNickname}
+                onChangeText={value => {
+                  setNickname(value);
+                  if (!nicknameTouched) setNicknameTouched(true);
+                }}
+                onBlur={() => setNicknameTouched(true)}
                 placeholder="Enter your Nickname"
                 placeholderTextColor={Colors.placeholder}
                 autoCapitalize="words"
                 returnKeyType="done"
                 style={styles.input}
+                maxLength={20}
               />
             </View>
           </LinearGradient>
+
+          {nicknameTouched && !hasValidUsername(nickname) && (
+            <Text style={styles.validationText}>
+              Username must contain at least {MIN_USERNAME_LENGTH} characters.
+            </Text>
+          )}
 
           {gender === 'female' && (
             <>
@@ -220,6 +251,13 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 15,
     fontWeight: '700',
+  },
+
+  validationText: {
+    color: Colors.danger,
+    fontSize: 13,
+    marginHorizontal: 28,
+    marginTop: 8,
   },
 
   tamilNameBorder: {

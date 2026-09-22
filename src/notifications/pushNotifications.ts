@@ -1,7 +1,8 @@
 import { AppState, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
-import database from '@react-native-firebase/database';
+import database, {
+  FirebaseDatabaseTypes,
+} from '@react-native-firebase/database';
 import messaging, {
   FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
@@ -9,29 +10,25 @@ import notifee, {
   AndroidImportance,
   AuthorizationStatus,
 } from '@notifee/react-native';
+import { hasCompletedSignup } from '../utils/profileValidation';
 
 const CHANNEL_ID = 'voicetamil_general';
-const INSTALLATION_KEY = 'pushInstallationId';
-let installationPromise: Promise<string> | undefined;
 let tokenQueue = Promise.resolve();
 let signingOut = false;
+let permissionRequest: Promise<void> | undefined;
 
-function installationId() {
-  if (!installationPromise) {
-    installationPromise = (async () => {
-      const saved = await AsyncStorage.getItem(INSTALLATION_KEY);
-      if (saved) return saved;
-      const id = `${Date.now().toString(36)}_${Math.random()
-        .toString(36)
-        .slice(2)}`;
-      await AsyncStorage.setItem(INSTALLATION_KEY, id);
-      return id;
-    })().catch(error => {
-      installationPromise = undefined;
-      throw error;
-    });
+function ensureNotificationPermissionRequested() {
+  if (!permissionRequest) {
+    permissionRequest = notifee
+      .requestPermission()
+      .then(() => undefined)
+      .catch(error => {
+        permissionRequest = undefined;
+        throw error;
+      });
   }
-  return installationPromise;
+
+  return permissionRequest;
 }
 
 export async function createNotificationChannel() {
@@ -87,15 +84,32 @@ function syncToken(token?: string) {
   tokenQueue = tokenQueue
     .then(async () => {
       if (!uid || signingOut || auth().currentUser?.uid !== uid) return;
+
+      const userSnapshot = await database().ref(`users/${uid}`).once('value');
+      if (!hasCompletedSignup(userSnapshot.val())) return;
+      if (signingOut || auth().currentUser?.uid !== uid) return;
+
+      // Requesting permission can emit an AppState "active" event. Keep this
+      // single-flight so that event cannot recursively start another prompt.
+      await ensureNotificationPermissionRequested();
       const settings = await notifee.getNotificationSettings();
-      const id = await installationId();
-      const ref = database().ref(`users/${uid}/fcmTokens/${id}`);
+      const ref = database().ref(`users/${uid}/fcmTokens`);
       if (settings.authorizationStatus < AuthorizationStatus.AUTHORIZED) {
         await ref.remove();
         return;
       }
       const currentToken = token ?? (await messaging().getToken());
       if (signingOut || auth().currentUser?.uid !== uid) return;
+
+      const savedToken = await ref.once('value');
+      const savedValue = savedToken.val();
+      if (
+        savedValue?.token === currentToken &&
+        savedValue?.platform === Platform.OS
+      ) {
+        return;
+      }
+
       await ref.set({
         token: currentToken,
         platform: Platform.OS,
@@ -114,8 +128,7 @@ export async function unregisterPushNotifications() {
     await tokenQueue;
     const uid = auth().currentUser?.uid;
     if (uid) {
-      const id = await installationId();
-      await database().ref(`users/${uid}/fcmTokens/${id}`).remove();
+      await database().ref(`users/${uid}/fcmTokens`).remove();
     }
     await messaging().deleteToken();
   } finally {
@@ -125,6 +138,7 @@ export async function unregisterPushNotifications() {
 
 export function startPushNotifications() {
   let active = true;
+  let accountReady = false;
   const unsubscribeMessage = messaging().onMessage(message =>
     displayPushNotification(message).catch(error =>
       console.error('Unable to display push:', error),
@@ -133,8 +147,33 @@ export function startPushNotifications() {
   const unsubscribeToken = messaging().onTokenRefresh(token => {
     syncToken(token);
   });
+  let profileRef: FirebaseDatabaseTypes.Reference | undefined;
+  let profileListener:
+    | ((snapshot: FirebaseDatabaseTypes.DataSnapshot) => void)
+    | undefined;
+  const stopProfileListener = () => {
+    if (profileRef && profileListener) {
+      profileRef.off('value', profileListener);
+    }
+    profileRef = undefined;
+    profileListener = undefined;
+  };
   const unsubscribeAuth = auth().onAuthStateChanged(user => {
-    if (user) syncToken();
+    stopProfileListener();
+    accountReady = false;
+    if (!user) return;
+
+    profileRef = database().ref(`users/${user.uid}`);
+    profileListener = snapshot => {
+      const nextAccountReady = hasCompletedSignup(snapshot.val());
+
+      // The listener watches the full user record, including fcmTokens. Only
+      // sync on the transition to a completed account so our own token write
+      // cannot trigger another write indefinitely.
+      if (nextAccountReady && !accountReady) syncToken();
+      accountReady = nextAccountReady;
+    };
+    profileRef.on('value', profileListener);
   });
   const appState = AppState.addEventListener('change', state => {
     if (state === 'active') syncToken();
@@ -142,8 +181,6 @@ export function startPushNotifications() {
 
   (async () => {
     await createNotificationChannel();
-    if (!active) return;
-    await notifee.requestPermission();
     if (active) await syncToken();
   })().catch(error =>
     console.error('Unable to initialize push notifications:', error),
@@ -154,6 +191,7 @@ export function startPushNotifications() {
     unsubscribeMessage();
     unsubscribeToken();
     unsubscribeAuth();
+    stopProfileListener();
     appState.remove();
   };
 }

@@ -3,14 +3,20 @@ import { Alert } from 'react-native';
 
 import { CALL_RATE_PER_MINUTE } from '../constants/constants';
 import { useUser } from './UserContext';
+import { useActiveCall } from './ActiveCallContext';
 
 /**
  * Prevents male users from starting a call when their wallet has no balance.
  */
 export const useCallBalanceGuard = (navigation: any) => {
   const { user } = useUser();
+  const { activeCall, showCall } = useActiveCall();
 
   return useCallback(() => {
+    if (activeCall) {
+      showCall();
+      return false;
+    }
     const isMale = user?.profile?.gender?.toLowerCase() === 'male';
     const balance = Number(user?.wallet?.balance || 0);
 
@@ -31,5 +37,5 @@ export const useCallBalanceGuard = (navigation: any) => {
     );
 
     return false;
-  }, [navigation, user?.profile?.gender, user?.wallet?.balance]);
+  }, [activeCall, showCall, navigation, user?.profile?.gender, user?.wallet?.balance]);
 };

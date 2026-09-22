@@ -14,7 +14,8 @@ class VoiceDetectorPackage : ReactPackage {
     ): List<NativeModule> {
 
         return listOf(
-            VoiceDetectorModule(reactContext)
+            VoiceDetectorModule(reactContext),
+            CallRuntimeModule(reactContext)
         )
     }
 

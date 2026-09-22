@@ -33,9 +33,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [randomCalling, setRandomCalling] = useState(false);
   const [callingUserId, setCallingUserId] = useState<string | null>(null);
   const callInProgressRef = useRef(false);
-  const delayedUsersUpdateRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+
   const canStartCall = useCallBalanceGuard(navigation);
 
   useEffect(() => {
@@ -51,20 +49,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         users.push(child.val());
         return false;
       });
-
-      if (delayedUsersUpdateRef.current) {
-        clearTimeout(delayedUsersUpdateRef.current);
-      }
-
-      delayedUsersUpdateRef.current = setTimeout(() => {
-        setFemaleUsers(users);
-      }, 2000);
+      setFemaleUsers(users);
     });
 
     return () => {
-      if (delayedUsersUpdateRef.current) {
-        clearTimeout(delayedUsersUpdateRef.current);
-      }
       ref.off('value', listener);
     };
   }, []);

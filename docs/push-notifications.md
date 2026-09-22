@@ -12,19 +12,21 @@ User notification settings can silence or block alerts.
 
 ## Device tokens
 
-After login and permission approval, each installation saves:
+After a successful login or completed signup and permission approval, the app
+saves one token record per user:
 
-`users/{uid}/fcmTokens/{installationId}`
+`users/{uid}/fcmTokens`
 
 ```json
 { "token": "FCM_DEVICE_TOKEN", "platform": "android", "updatedAt": 1234567890 }
 ```
 
-Tokens refresh automatically. Logging out removes this installation's record and
-revokes its FCM token. Other devices remain registered. The backend should remove
-invalid/expired tokens reported by FCM. Existing Firebase database rules must
-permit the authenticated user to write their own token records; never expose
-these records publicly. No server credentials belong in the mobile app.
+Tokens refresh automatically by replacing this record, so old tokens and legacy
+installation entries do not accumulate. The most recently registered device is
+the active notification device for the account. Logging out removes the record
+and revokes its FCM token. Existing Firebase database rules must permit the
+authenticated user to write their own token record; never expose it publicly.
+No server credentials belong in the mobile app.
 
 ## Sending
 

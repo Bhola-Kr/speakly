@@ -1,3 +1,4 @@
+import { useActiveCall } from '../hooks/ActiveCallContext';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
@@ -75,6 +76,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const isFocused = useIsFocused();
 
   const { user, updateProfile } = useUser();
+  const { activeCall, showCall } = useActiveCall();
   const tamilName = String(user?.profile?.tamilName || '').trim();
   const englishName = String(user?.profile?.name || '').trim();
   const displayName = tamilName || englishName || 'N/A';
@@ -85,16 +87,20 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const bannerRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    if (!isFocused) {
+    if (!isFocused || activeCall) {
       return;
     }
 
     updateProfile({
       status: 'offline',
     });
-  }, [isFocused, updateProfile]);
+  }, [isFocused, updateProfile, activeCall]);
 
   const goOnLine = async () => {
+    if (activeCall) {
+      showCall();
+      return;
+    }
     if (goingOnline) {
       return;
     }

@@ -71,12 +71,12 @@ export const EditProfileScreen = ({ navigation }: any) => {
   };
 
   const validate = () => {
-    if (!nickname.trim()) {
+    if (gender === 'female' && !nickname.trim()) {
       Alert.alert('Validation', 'Please enter nickname.');
       return false;
     }
 
-    if (nickname.trim().length < 2) {
+    if (gender === 'female' && nickname.trim().length < 2) {
       Alert.alert(
         'Validation',
         'Nickname should contain at least 2 characters.',
@@ -109,8 +109,9 @@ export const EditProfileScreen = ({ navigation }: any) => {
       setLoading(true);
 
       await updateProfile({
-        name: nickname.trim(),
-        ...(gender === 'female' ? { tamilName: tamilName.trim() } : {}),
+        ...(gender === 'female'
+          ? { name: nickname.trim(), tamilName: tamilName.trim() }
+          : {}),
         birthYear,
       });
 
@@ -162,19 +163,19 @@ export const EditProfileScreen = ({ navigation }: any) => {
           <Text style={styles.changePhoto}>Tap to Change Avatar</Text>
         )}
 
-        <Text style={styles.label}>Nickname</Text>
-
-        <TextInput
-          value={nickname}
-          onChangeText={setNickname}
-          placeholder="Nickname"
-          placeholderTextColor={Colors.placeholder}
-          style={styles.input}
-          maxLength={20}
-        />
-
         {gender === 'female' && (
           <>
+            <Text style={styles.label}>Nickname</Text>
+
+            <TextInput
+              value={nickname}
+              onChangeText={setNickname}
+              placeholder="Nickname"
+              placeholderTextColor={Colors.placeholder}
+              style={styles.input}
+              maxLength={20}
+            />
+
             <Text style={styles.label}>Tamil Name</Text>
 
             <TextInput
@@ -222,7 +223,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
             </ScrollView>
           </View>
         </LinearGradient>
-        <View style={{ height: 30 }} />
+        <View style={styles.spacer} />
 
         <GradientButton
           title="Save Changes"
@@ -230,7 +231,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
           onPress={onSave}
         />
 
-        <View style={{ height: 30 }} />
+        <View style={styles.spacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -246,6 +247,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
+  },
+
+  spacer: {
+    height: 30,
   },
 
   avatarContainer: {

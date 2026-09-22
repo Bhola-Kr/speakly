@@ -13,13 +13,14 @@ import auth from '@react-native-firebase/auth';
 import DeviceInfo from 'react-native-device-info';
 import Colors from '../constants/colors';
 import authData from '../firebase/authData';
+import { hasValidUsername } from '../utils/profileValidation';
 
 const SplashScreen = ({ navigation }: any) => {
   const navigateTo = useCallback(
-    (screen: string) => {
+    (screen: string, params?: Record<string, unknown>) => {
       navigation.reset({
         index: 0,
-        routes: [{ name: screen }],
+        routes: [{ name: screen, params }],
       });
     },
     [navigation],
@@ -43,6 +44,19 @@ const SplashScreen = ({ navigation }: any) => {
         return;
       }
 
+      if (!userInfo?.profile?.gender) {
+        navigateTo('Gender', { user: currentUser });
+        return;
+      }
+
+      if (!hasValidUsername(userInfo?.profile?.name)) {
+        navigateTo('Nickname', {
+          user: currentUser,
+          gender: userInfo.profile.gender,
+        });
+        return;
+      }
+
       switch (userInfo?.profile?.gender) {
         case 'male':
           navigateTo('Main');
@@ -55,7 +69,7 @@ const SplashScreen = ({ navigation }: any) => {
           );
           break;
         default:
-          navigateTo('Gender');
+          navigateTo('Gender', { user: currentUser });
       }
     } catch (error) {
       console.error('SplashScreen:', error);

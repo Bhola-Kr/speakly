@@ -20,6 +20,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
+import { hasValidUsername } from '../utils/profileValidation';
 import { useUser } from '../hooks/UserContext';
 import { resendMSGOtp, verifyMSGOtp } from '../api/calls';
 
@@ -125,6 +126,14 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       if (!userInfo?.profile?.gender) {
         navigation.replace('Gender', {
           user: firebaseUser,
+        });
+        return;
+      }
+
+      if (!hasValidUsername(userInfo?.profile?.name)) {
+        navigation.replace('Nickname', {
+          user: firebaseUser,
+          gender: userInfo.profile.gender,
         });
         return;
       }

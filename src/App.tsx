@@ -1,6 +1,12 @@
 import * as React from 'react';
-import { StatusBar } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  StatusBar,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   createNavigationContainerRef,
   NavigationContainer,
@@ -21,6 +27,8 @@ import { EditProfileScreen } from './screens/profile/EditProfileScreen';
 import WalletScreen from './screens/payment/WalletScreen';
 import TransactionScreen from './screens/payment/TransactionScreen';
 import CallScreen from './screens/agora/CallScreen';
+import CallEntryScreen from './screens/agora/CallEntryScreen';
+import { ActiveCallProvider, useActiveCall } from './hooks/ActiveCallContext';
 import IncomingCallScreen from './screens/agora/incomingCall/IncomingCallScreen';
 import { OutgoingCallScreen } from './screens/agora/outgoingCall/OutgoingCallScreen';
 import FemaleHistoryScreen from './screens/FemaleHistoryScreen';
@@ -83,7 +91,7 @@ function RootStack() {
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Transaction" component={TransactionScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
-      <Stack.Screen name="Call" component={CallScreen} />
+      <Stack.Screen name="Call" component={CallEntryScreen} />
       <Stack.Screen name="IncomingCall" component={IncomingCallScreen} />
       <Stack.Screen name="OutgoingCall" component={OutgoingCallScreen} />
       <Stack.Screen name="FemaleHome" component={FemaleHomeScreen} />
@@ -126,33 +134,92 @@ function RootStack() {
   );
 }
 
+function AppNavigator() {
+  const [activeScreen, setActiveScreen] = React.useState('Splash');
+  const { activeCall, visible, showCall, minimizeCall, clearCall } =
+    useActiveCall();
+  const syncActiveScreen = () =>
+    setActiveScreen(navigationRef.getCurrentRoute()?.name ?? 'Splash');
+  const openRecharge = React.useCallback(() => {
+    minimizeCall();
+    if (navigationRef.isReady()) {
+      navigationRef.navigate('Wallet');
+    }
+  }, [minimizeCall]);
+
+  return (
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={syncActiveScreen}
+      onStateChange={syncActiveScreen}
+    >
+      <View style={callStyles.root}>
+        {activeCall && !visible && (
+          <SafeAreaView edges={['top']} style={callStyles.bar}>
+            <TouchableOpacity
+              onPress={showCall}
+              accessibilityRole="button"
+              style={callStyles.returnButton}
+            >
+              <Text style={callStyles.returnText}>
+                Call in progress · Tap to return
+              </Text>
+            </TouchableOpacity>
+          </SafeAreaView>
+        )}
+        <AppUpdateGate
+          enabled={!activeCall && !deferUpdatesOn.has(activeScreen)}
+        >
+          <StatusBar
+            backgroundColor={Colors.background}
+            barStyle="dark-content"
+          />
+          <RootStack />
+        </AppUpdateGate>
+        {activeCall && (
+          <View
+            style={[callStyles.call, !visible && callStyles.hidden]}
+            pointerEvents={visible ? 'auto' : 'none'}
+          >
+            <CallScreen
+              route={activeCall}
+              visible={visible}
+              onMinimize={minimizeCall}
+              onFinished={clearCall}
+              onAddBalance={openRecharge}
+            />
+          </View>
+        )}
+      </View>
+    </NavigationContainer>
+  );
+}
+
 export default function App({ isHeadless = false }: { isHeadless?: boolean }) {
   React.useEffect(() => {
     if (!isHeadless) return startPushNotifications();
   }, [isHeadless]);
-  const [activeScreen, setActiveScreen] = React.useState('Splash');
-  const syncActiveScreen = () =>
-    setActiveScreen(navigationRef.getCurrentRoute()?.name ?? 'Splash');
-
   if (isHeadless) return null;
-
   return (
     <SafeAreaProvider>
       <UserProvider>
-        <NavigationContainer
-          ref={navigationRef}
-          onReady={syncActiveScreen}
-          onStateChange={syncActiveScreen}
-        >
-          <AppUpdateGate enabled={!deferUpdatesOn.has(activeScreen)}>
-            <StatusBar
-              backgroundColor={Colors.background}
-              barStyle="dark-content"
-            />
-            <RootStack />
-          </AppUpdateGate>
-        </NavigationContainer>
+        <ActiveCallProvider>
+          <AppNavigator />
+        </ActiveCallProvider>
       </UserProvider>
     </SafeAreaProvider>
   );
 }
+
+const callStyles = StyleSheet.create({
+  root: { flex: 1 },
+  call: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 10 },
+  hidden: { display: 'none' },
+  bar: { backgroundColor: '#126B42' },
+  returnButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  returnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
+});

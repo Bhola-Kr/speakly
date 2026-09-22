@@ -26,7 +26,7 @@ export const faqs = [
     id: 4,
     question: 'How do I update my profile?',
     answer:
-      'Go to Profile > Edit Profile to update your nickname, avatar, and other profile information.',
+      'Go to Profile > Edit Profile to update the available profile information. Name and avatar changes are available for female profiles only.',
   },
   {
     id: 5,

@@ -9,6 +9,10 @@ import {
   Image,
   Alert,
   StatusBar,
+  AppState,
+  BackHandler,
+  Vibration,
+  useWindowDimensions,
 } from 'react-native';
 
 import {
@@ -17,24 +21,69 @@ import {
   ChannelProfileType,
   ClientRoleType,
   ConnectionStateType,
+  UserOfflineReasonType,
+  LocalAudioStreamReason,
+  LocalAudioStreamState,
 } from 'react-native-agora';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
+import InCallManager from 'react-native-incall-manager';
 
 import styles from './styles';
+import {
+  startCallRuntime,
+  stopCallRuntime,
+  setCallInterval,
+} from '../../utils/callRuntime';
 import Colors from '../../constants/colors';
 import RoomService from '../../firebase/RoomService';
-import { getFemaleAvatar } from '../../constants/constants';
+import {
+  CALL_RATE_PER_MINUTE,
+  getFemaleAvatar,
+} from '../../constants/constants';
+import { useUser } from '../../hooks/UserContext';
 
 type Props = {
-  navigation: any;
-  route: any;
+  route: { params: Record<string, any> };
+  visible: boolean;
+  onMinimize: () => void;
+  onFinished: () => void;
+  onAddBalance: () => void;
 };
 
-const CallScreen = ({ navigation, route }: Props) => {
+const LOW_BALANCE_MINUTES = 3;
+
+const CallScreen = ({
+  route,
+  visible,
+  onMinimize,
+  onFinished,
+  onAddBalance,
+}: Props) => {
+  const { user } = useUser();
+  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
+  const compactLayout = screenHeight < 700 || screenWidth < 360;
+  useEffect(() => {
+    if (!visible) return;
+    InCallManager.setKeepScreenOn(AppState.currentState === 'active');
+    const subscription = AppState.addEventListener('change', state => {
+      InCallManager.setKeepScreenOn(state === 'active');
+    });
+    const back = BackHandler.addEventListener('hardwareBackPress', () => {
+      onMinimize();
+      return true;
+    });
+    return () => {
+      subscription.remove();
+      back.remove();
+      InCallManager.setKeepScreenOn(false);
+    };
+  }, [visible, onMinimize]);
+
   const {
     channelName = 'voice_tamil',
     userName = 'N/A',
@@ -60,10 +109,12 @@ const CallScreen = ({ navigation, route }: Props) => {
 
   const engine = useRef<IRtcEngine | null>(null);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const billingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<(() => void) | null>(null);
+  const billingTimerRef = useRef<(() => void) | null>(null);
   const billingStartingRef = useRef(false);
+  const peerRecoveryRef = useRef<(() => void) | null>(null);
   const callEndedRef = useRef(false);
+  const lowBalanceAlertedRef = useRef(false);
 
   const seconds = useRef(0);
 
@@ -80,6 +131,31 @@ const CallScreen = ({ navigation, route }: Props) => {
   const [timer, setTimer] = useState('00:00');
 
   const [callerBalance, setCallerBalance] = useState<number | null>(null);
+
+  const [showLowBalance, setShowLowBalance] = useState(false);
+
+  const walletBalance = Number(user?.wallet?.balance);
+  const lowBalanceThreshold = CALL_RATE_PER_MINUTE * LOW_BALANCE_MINUTES;
+
+  useEffect(() => {
+    if (gender !== 'male' || !connected || !Number.isFinite(walletBalance)) {
+      return;
+    }
+
+    if (walletBalance > lowBalanceThreshold) {
+      lowBalanceAlertedRef.current = false;
+      setShowLowBalance(false);
+      return;
+    }
+
+    if (walletBalance <= 0 || lowBalanceAlertedRef.current) {
+      return;
+    }
+
+    lowBalanceAlertedRef.current = true;
+    setShowLowBalance(true);
+    Vibration.vibrate([0, 400, 200, 400]);
+  }, [connected, gender, lowBalanceThreshold, walletBalance]);
 
   useEffect(() => {
     if (gender !== 'female' || !maleUid) {
@@ -116,8 +192,9 @@ const CallScreen = ({ navigation, route }: Props) => {
       return;
     }
 
-    timerRef.current = setInterval(() => {
-      seconds.current++;
+    const startedAt = Date.now();
+    timerRef.current = setCallInterval(() => {
+      seconds.current = Math.floor((Date.now() - startedAt) / 1000);
 
       const min = Math.floor(seconds.current / 60);
       const sec = seconds.current % 60;
@@ -130,7 +207,7 @@ const CallScreen = ({ navigation, route }: Props) => {
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
-      clearInterval(timerRef.current);
+      timerRef.current();
       timerRef.current = null;
     }
 
@@ -141,41 +218,41 @@ const CallScreen = ({ navigation, route }: Props) => {
 
   const stopBilling = useCallback(() => {
     if (billingTimerRef.current) {
-      clearInterval(billingTimerRef.current);
+      billingTimerRef.current();
       billingTimerRef.current = null;
     }
   }, []);
 
-  const finishCall = useCallback(async (updateRoom = true) => {
-    if (callEndedRef.current) {
-      return;
-    }
-
-    callEndedRef.current = true;
-    stopBilling();
-    stopTimer();
-
-    const rtcEngine = engine.current;
-    engine.current = null;
-    rtcEngine?.leaveChannel();
-    rtcEngine?.release();
-
-    navigation.reset({
-      index: 0,
-      routes: [{
-        name: gender === 'female' ? 'FemaleBottomTabs' : 'Main',
-        params: { screen: 'Home' },
-      }],
-    });
-
-    if (updateRoom && femaleUid) {
-      try {
-        await RoomService.endCall(femaleUid);
-      } catch (error) {
-        console.error('Unable to update ended call:', error);
+  const finishCall = useCallback(
+    async (updateRoom = true) => {
+      if (callEndedRef.current) {
+        return;
       }
-    }
-  }, [femaleUid, gender, navigation, stopBilling, stopTimer]);
+
+      callEndedRef.current = true;
+      peerRecoveryRef.current?.();
+      peerRecoveryRef.current = null;
+      stopBilling();
+      stopTimer();
+
+      const rtcEngine = engine.current;
+      engine.current = null;
+      rtcEngine?.leaveChannel();
+      rtcEngine?.release();
+      stopCallRuntime();
+
+      onFinished();
+
+      if (updateRoom && femaleUid) {
+        try {
+          await RoomService.endCall(femaleUid);
+        } catch (error) {
+          console.error('Unable to update ended call:', error);
+        }
+      }
+    },
+    [femaleUid, onFinished, stopBilling, stopTimer],
+  );
 
   const endForInsufficientBalance = useCallback(async () => {
     if (callEndedRef.current) {
@@ -215,7 +292,8 @@ const CallScreen = ({ navigation, route }: Props) => {
         return;
       }
 
-      billingTimerRef.current = setInterval(async () => {
+      billingTimerRef.current = setCallInterval(async () => {
+        if (callEndedRef.current || peerRecoveryRef.current) return;
         const nextMinuteCharged = await RoomService.chargeCallMinute(femaleUid);
 
         if (!nextMinuteCharged) {
@@ -237,6 +315,22 @@ const CallScreen = ({ navigation, route }: Props) => {
     if (!permission) {
       Alert.alert('Permission', 'Microphone permission required.');
       await finishCall();
+      return;
+    }
+
+    try {
+      await startCallRuntime();
+    } catch (error) {
+      console.error('Unable to start background call service:', error);
+      Alert.alert(
+        'Unable to start call',
+        'Please reopen VoiceTamil and try again.',
+      );
+      await finishCall();
+      return;
+    }
+    if (callEndedRef.current) {
+      stopCallRuntime();
       return;
     }
 
@@ -263,6 +357,8 @@ const CallScreen = ({ navigation, route }: Props) => {
         if (callEndedRef.current) {
           return;
         }
+        peerRecoveryRef.current?.();
+        peerRecoveryRef.current = null;
         setConnected(true);
 
         setStatus('Connected');
@@ -273,8 +369,34 @@ const CallScreen = ({ navigation, route }: Props) => {
         await startBilling();
       },
 
-      onUserOffline: () => {
-        finishCall();
+      onUserOffline: (_connection, _remoteUid, reason) => {
+        if (reason === UserOfflineReasonType.UserOfflineQuit) {
+          finishCall();
+        } else {
+          setStatus('Waiting for the other user to reconnect...');
+          if (!peerRecoveryRef.current) {
+            peerRecoveryRef.current = setCallInterval(async () => {
+              peerRecoveryRef.current?.();
+              peerRecoveryRef.current = null;
+              await finishCall();
+            }, 120000);
+          }
+        }
+      },
+
+      onLocalAudioStateChanged: (_connection, state, reason) => {
+        if (callEndedRef.current) return;
+        if (
+          reason === LocalAudioStreamReason.LocalAudioStreamReasonInterrupted ||
+          reason === LocalAudioStreamReason.LocalAudioStreamReasonDeviceBusy
+        ) {
+          setStatus('Audio interrupted — call is still connected');
+        } else if (
+          state === LocalAudioStreamState.LocalAudioStreamStateRecording ||
+          state === LocalAudioStreamState.LocalAudioStreamStateEncoding
+        ) {
+          setStatus('Connected');
+        }
       },
 
       onConnectionStateChanged: (_connection, state: ConnectionStateType) => {
@@ -292,6 +414,9 @@ const CallScreen = ({ navigation, route }: Props) => {
             break;
 
           case ConnectionStateType.ConnectionStateDisconnected:
+            if (!callEndedRef.current) setStatus('Reconnecting...');
+            break;
+
           case ConnectionStateType.ConnectionStateFailed:
             finishCall();
             break;
@@ -458,12 +583,18 @@ const CallScreen = ({ navigation, route }: Props) => {
 
   useEffect(() => {
     callEndedRef.current = false;
-    initializeAgora();
+    initializeAgora().catch(async error => {
+      console.error('Unable to initialize call:', error);
+      await finishCall();
+    });
 
     return () => {
       callEndedRef.current = true;
+      peerRecoveryRef.current?.();
+      peerRecoveryRef.current = null;
       stopTimer();
       stopBilling();
+      stopCallRuntime();
 
       if (engine.current) {
         engine.current.leaveChannel();
@@ -471,7 +602,7 @@ const CallScreen = ({ navigation, route }: Props) => {
         engine.current = null;
       }
     };
-  }, [initializeAgora, stopBilling, stopTimer]);
+  }, [finishCall, initializeAgora, stopBilling, stopTimer]);
 
   useEffect(() => {
     if (!femaleUid) {
@@ -481,7 +612,9 @@ const CallScreen = ({ navigation, route }: Props) => {
     return RoomService.listenCallStatus(femaleUid, room => {
       if (
         !room ||
-        ['ended', 'waiting', 'offline', 'rejected', 'men_rejected'].includes(room.status)
+        ['ended', 'waiting', 'offline', 'rejected', 'men_rejected'].includes(
+          room.status,
+        )
       ) {
         finishCall(false);
       }
@@ -493,10 +626,15 @@ const CallScreen = ({ navigation, route }: Props) => {
       colors={[Colors.darkBackground, Colors.darkBackgroundAlt]}
       style={styles.container}
     >
-      <StatusBar backgroundColor={Colors.primary} barStyle={'light-content'} />
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={leaveCall}>
+      {visible && (
+        <StatusBar backgroundColor={Colors.primary} barStyle="light-content" />
+      )}
+      <SafeAreaView style={styles.safeArea}>
+        <View style={[styles.header, compactLayout && styles.headerCompact]}>
+          <TouchableOpacity
+            onPress={onMinimize}
+            accessibilityLabel="Minimize call"
+          >
             <MaterialCommunityIcons
               name="arrow-left"
               size={26}
@@ -504,7 +642,14 @@ const CallScreen = ({ navigation, route }: Props) => {
             />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Encrypted Voice Call</Text>
+          <Text
+            style={[
+              styles.headerTitle,
+              compactLayout && styles.headerTitleCompact,
+            ]}
+          >
+            Encrypted Voice Call
+          </Text>
 
           {connected ? (
             <TouchableOpacity
@@ -524,24 +669,52 @@ const CallScreen = ({ navigation, route }: Props) => {
           )}
         </View>
 
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatarOuter}>
+        <View
+          style={[
+            styles.avatarContainer,
+            compactLayout && styles.avatarContainerCompact,
+          ]}
+        >
+          <View
+            style={[
+              styles.avatarOuter,
+              compactLayout && styles.avatarOuterCompact,
+            ]}
+          >
             <Image
               source={
                 gender === 'male'
                   ? getFemaleAvatar(avatarId)
                   : require('../../assets/man.png')
               }
-              style={styles.avatar}
+              style={[styles.avatar, compactLayout && styles.avatarCompact]}
             />
           </View>
 
-          <Text style={styles.name}>{displayName}</Text>
+          <Text
+            numberOfLines={1}
+            style={[styles.name, compactLayout && styles.nameCompact]}
+          >
+            {displayName}
+          </Text>
 
           {showEnglishName && (
-            <Text style={styles.englishName}>{englishName}</Text>
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.englishName,
+                compactLayout && styles.englishNameCompact,
+              ]}
+            >
+              {englishName}
+            </Text>
           )}
-          <View style={styles.statusContainer}>
+          <View
+            style={[
+              styles.statusContainer,
+              compactLayout && styles.statusContainerCompact,
+            ]}
+          >
             <View
               style={[
                 styles.dot,
@@ -557,7 +730,12 @@ const CallScreen = ({ navigation, route }: Props) => {
           </View>
 
           {gender === 'female' && (
-            <View style={styles.callerBalance}>
+            <View
+              style={[
+                styles.callerBalance,
+                compactLayout && styles.callerBalanceCompact,
+              ]}
+            >
               <MaterialCommunityIcons
                 name="wallet-outline"
                 size={16}
@@ -572,21 +750,93 @@ const CallScreen = ({ navigation, route }: Props) => {
             </View>
           )}
 
-          {gender === 'female' && (
-            <Text style={styles.callDurationLabel}>Current call time</Text>
+          {gender === 'male' && (
+            <View
+              style={[
+                styles.callerBalance,
+                compactLayout && styles.callerBalanceCompact,
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="wallet-outline"
+                size={16}
+                color={Colors.secondary}
+              />
+
+              <Text style={styles.callerBalanceLabel}>Your balance</Text>
+
+              <Text style={styles.callerBalanceValue}>
+                ₹{Number.isFinite(walletBalance) ? walletBalance : '--'}
+              </Text>
+            </View>
           )}
 
-          <Text style={styles.timer}>{timer}</Text>
+          {gender === 'female' && (
+            <Text
+              style={[
+                styles.callDurationLabel,
+                compactLayout && styles.callDurationLabelCompact,
+              ]}
+            >
+              Current call time
+            </Text>
+          )}
+
+          <Text style={[styles.timer, compactLayout && styles.timerCompact]}>
+            {timer}
+          </Text>
         </View>
 
-        <View style={styles.controls}>
-          <View style={styles.row}>
+        {gender === 'male' && showLowBalance && (
+          <View
+            style={[
+              styles.lowBalancePopup,
+              compactLayout && styles.lowBalancePopupCompact,
+            ]}
+            accessibilityRole="alert"
+            accessibilityLiveRegion="assertive"
+          >
+            <Ionicons name="wallet-sharp" size={24} color={Colors.secondary} />
+            <View style={styles.lowBalanceCopy}>
+              <Text style={styles.lowBalanceTitle}>3 minutes or less left</Text>
+              <Text style={styles.lowBalanceMessage}>
+                Add balance to keep this call going.
+              </Text>
+            </View>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Add balance"
+              style={styles.addBalanceButton}
+              onPress={onAddBalance}
+            >
+              <Text style={styles.addBalanceText}>Add</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss low balance alert"
+              style={styles.dismissBalanceButton}
+              onPress={() => setShowLowBalance(false)}
+            >
+              <MaterialCommunityIcons
+                name="close"
+                size={18}
+                color={Colors.darkTextMuted}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View
+          style={[styles.controls, compactLayout && styles.controlsCompact]}
+        >
+          <View style={[styles.row, compactLayout && styles.rowCompact]}>
             {/* Speaker */}
 
             <View style={styles.controlItem}>
               <TouchableOpacity
                 style={[
                   styles.controlButton,
+                  compactLayout && styles.controlButtonCompact,
                   speaker && {
                     backgroundColor: Colors.secondary,
                   },
@@ -596,7 +846,7 @@ const CallScreen = ({ navigation, route }: Props) => {
               >
                 <MaterialCommunityIcons
                   name={speaker ? 'volume-high' : 'volume-off'}
-                  size={30}
+                  size={compactLayout ? 25 : 30}
                   color={speaker ? Colors.darkBackground : Colors.white}
                 />
               </TouchableOpacity>
@@ -610,6 +860,7 @@ const CallScreen = ({ navigation, route }: Props) => {
               <TouchableOpacity
                 style={[
                   styles.controlButton,
+                  compactLayout && styles.controlButtonCompact,
                   muted && {
                     backgroundColor: Colors.secondary,
                   },
@@ -619,7 +870,7 @@ const CallScreen = ({ navigation, route }: Props) => {
               >
                 <MaterialCommunityIcons
                   name={muted ? 'microphone-off' : 'microphone'}
-                  size={30}
+                  size={compactLayout ? 25 : 30}
                   color={muted ? Colors.darkBackground : Colors.white}
                 />
               </TouchableOpacity>
@@ -634,12 +885,15 @@ const CallScreen = ({ navigation, route }: Props) => {
 
           <TouchableOpacity
             activeOpacity={0.9}
-            style={styles.endButton}
+            style={[
+              styles.endButton,
+              compactLayout && styles.endButtonCompact,
+            ]}
             onPress={leaveCall}
           >
             <MaterialCommunityIcons
               name="phone-hangup"
-              size={40}
+              size={compactLayout ? 32 : 40}
               color={Colors.white}
             />
           </TouchableOpacity>

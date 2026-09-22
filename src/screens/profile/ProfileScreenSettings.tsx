@@ -27,6 +27,7 @@ import {
 } from './dummyData';
 import { formatDate, getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
+import { useActiveCall } from '../../hooks/ActiveCallContext';
 import RoomService from '../../firebase/RoomService';
 import authData from '../../firebase/authData';
 import { openAppReview } from '../../firebase/appReview';
@@ -40,6 +41,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const SUPPORT_EMAIL = 'tamizhkuralhelp@gmail.com';
 
   const { user } = useUser();
+  const { activeCall, showCall } = useActiveCall();
   const profile = user?.profile;
   const gender = profile?.gender || 'male';
   const phoneNumber = user?.phone || profile?.phone || 'Not available';
@@ -78,6 +80,11 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
     'https://play.google.com/store/apps/details?id=com.cozyds.voicetamil';
 
   const handleLogout = () => {
+    if (activeCall) {
+      Alert.alert('Call in progress', 'Please end your call before logging out.');
+      showCall();
+      return;
+    }
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',

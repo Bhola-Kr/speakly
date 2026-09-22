@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from './UserContext';
+import { useActiveCall } from './ActiveCallContext';
 import RoomService from '../firebase/RoomService';
 import {
   claimReviewPrompt,
@@ -11,13 +12,14 @@ import {
 
 export function useFirstCallReview() {
   const { user } = useUser();
+  const { activeCall } = useActiveCall();
   const uid = user?.uid;
   const gender = user?.profile?.gender;
 
   useFocusEffect(
     useCallback(() => {
       // Only a Play Store listing is configured for this app.
-      if (Platform.OS !== 'android' || !uid || gender !== 'male') return;
+      if (activeCall || Platform.OS !== 'android' || !uid || gender !== 'male') return;
 
       let active = true;
       let pending = false;
@@ -77,6 +79,6 @@ export function useFirstCallReview() {
         if (timer) clearTimeout(timer);
         unsubscribe();
       };
-    }, [uid, gender]),
+    }, [uid, gender, activeCall]),
   );
 }
