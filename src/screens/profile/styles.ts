@@ -51,6 +51,18 @@ export default StyleSheet.create({
     marginHorizontal: 8,
   },
 
+  walletCoin: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+
+  walletBalanceText: {
+    color: Colors.white,
+    fontWeight: '700',
+    marginHorizontal: 8,
+  },
+
   leftHeader: {
     flexDirection: 'row',
     alignItems: 'center',

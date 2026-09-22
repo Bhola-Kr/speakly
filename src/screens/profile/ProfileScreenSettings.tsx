@@ -45,6 +45,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const profile = user?.profile;
   const gender = profile?.gender || 'male';
   const phoneNumber = user?.phone || profile?.phone || 'Not available';
+  const isAdmin = user?.isAdmin || false;
   const profileName =
     gender === 'female' ? profile?.tamilName || profile?.name : profile?.name;
   const [totalCallDuration, setTotalCallDuration] = useState(0);
@@ -81,7 +82,10 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
 
   const handleLogout = () => {
     if (activeCall) {
-      Alert.alert('Call in progress', 'Please end your call before logging out.');
+      Alert.alert(
+        'Call in progress',
+        'Please end your call before logging out.',
+      );
       showCall();
       return;
     }
@@ -128,7 +132,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
           text: 'Continue',
           style: 'destructive',
           onPress: () => {
-            const user = auth().currentUser;
+            const firebaseUser = auth().currentUser;
 
             const supportEmail = 'tamizhkuralhelp@gmail.com';
 
@@ -138,9 +142,9 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
 
 I would like to permanently delete my account.
 
-User ID: ${user?.uid}
+User ID: ${firebaseUser?.uid}
 
-Registered Mobile: ${user?.phoneNumber ?? 'N/A'}
+Registered Mobile: ${phoneNumber ?? 'N/A'}
 
 Please permanently delete my account and all associated data.
 
@@ -321,20 +325,10 @@ ${PLAY_STORE_URL}`,
             >
               <Image
                 source={require('../../assets/coin.png')}
-                style={{
-                  width: 24,
-                  height: 24,
-                  resizeMode: 'contain',
-                }}
+                style={styles.walletCoin}
               />
 
-              <Text
-                style={{
-                  color: Colors.white,
-                  fontWeight: '700',
-                  marginHorizontal: 8,
-                }}
-              >
+              <Text style={styles.walletBalanceText}>
                 {user?.wallet?.balance || 0}
               </Text>
 
@@ -427,6 +421,16 @@ ${PLAY_STORE_URL}`,
           'Account',
           gender === 'male' ? manAccountMenus : femaleAccountMenus,
         )}
+
+        {isAdmin &&
+          renderSection('Administration', [
+            {
+              id: 'admin-users',
+              title: 'Manage Users',
+              icon: 'account-cog-outline',
+              screen: 'AdminUsers',
+            },
+          ])}
 
         {renderSection('Support', supportMenus)}
 

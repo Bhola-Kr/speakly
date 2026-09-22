@@ -44,6 +44,7 @@ import { UserProvider } from './hooks/UserContext';
 import PaymentScreen from './screens/payment/PaymentScreen';
 import AppUpdateGate from './components/appUpdate/AppUpdateGate';
 import { startPushNotifications } from './notifications/pushNotifications';
+import { AdminUsersScreen } from './screens/admin/AdminUsersScreen';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -79,6 +80,7 @@ function RootStack() {
       <Stack.Screen name="Main" component={BottomTabs} />
       <Stack.Screen name="FemaleBottomTabs" component={FemaleBottomTabs} />
       <Stack.Screen name="ProfileSetting" component={ProfileSettingScreen} />
+      <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
       <Stack.Screen
         options={{
           headerShown: true,
@@ -213,7 +215,14 @@ export default function App({ isHeadless = false }: { isHeadless?: boolean }) {
 
 const callStyles = StyleSheet.create({
   root: { flex: 1 },
-  call: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 10 },
+  call: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 10,
+  },
   hidden: { display: 'none' },
   bar: { backgroundColor: '#126B42' },
   returnButton: {
