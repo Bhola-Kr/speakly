@@ -54,8 +54,9 @@ export interface Room {
   male: UserInfo | null;
   createdAt: number;
   updatedAt: number;
-  callStartedAt?: number;
-  chargedAmount?: number;
+  callStartedAt?: number | null;
+  chargedAmount?: number | null;
+  callSettled?: boolean | null;
 }
 
 class RoomService {
@@ -170,9 +171,36 @@ class RoomService {
     }
     const male = await this.getUser(firebaseUser.uid);
     const roomRef = database().ref(`rooms/${femaleUid}`);
-    const transaction = await roomRef.transaction(room => {
+
+    // Load the server room before starting the transaction. On a male user's
+    // first call attempt, RTDB can otherwise invoke the transaction callback
+    // with a cold-cache null even though the room already exists.
+    const initialRoomSnapshot = await roomRef.once('value');
+    if (!initialRoomSnapshot.exists()) {
+      throw new Error('This user is currently offline.');
+    }
+
+    const initialRoom = initialRoomSnapshot.val() as Room;
+    const callId = database().ref('callHistory').push().key;
+    if (!callId) {
+      throw new Error('Unable to create call.');
+    }
+
+    let transactionInvocationCount = 0;
+
+    const claimRoom = (room: Room | null) => {
+      const isFirstInvocation = transactionInvocationCount === 0;
+      transactionInvocationCount += 1;
+
       if (room == null) {
-        return;
+        // Use the server value only for the transaction's first cold-cache
+        // invocation. A later null means the room was genuinely removed and
+        // must not be recreated from stale data.
+        if (!isFirstInvocation) {
+          return;
+        }
+
+        room = { ...initialRoom };
       }
 
       if (['rejected', 'men_rejected', 'ended'].includes(room.status)) {
@@ -188,10 +216,6 @@ class RoomService {
         return;
       }
       room.status = 'ringing';
-      const callId = database().ref('callHistory').push().key;
-      if (!callId) {
-        throw new Error('Unable to create call.');
-      }
       room.currentCallId = callId;
       room.male = {
         uid: firebaseUser.uid,
@@ -201,7 +225,21 @@ class RoomService {
 
       room.updatedAt = Date.now();
       return room;
-    });
+    };
+
+    let transaction = await roomRef.transaction(claimRoom);
+
+    // Some Android RTDB clients can still abort the first transaction while
+    // returning the now-cached waiting room. Retry that specific false abort
+    // inside this call attempt so the user does not have to tap Call twice.
+    if (
+      !transaction.committed &&
+      (transaction.snapshot.val() as Room | null)?.status === 'waiting'
+    ) {
+      transactionInvocationCount = 0;
+      transaction = await roomRef.transaction(claimRoom);
+    }
+
     if (!transaction.committed) {
       const room = transaction.snapshot.val() as Room | null;
 
