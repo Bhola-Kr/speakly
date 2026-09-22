@@ -18,6 +18,7 @@ import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
 import {
+  hasValidName,
   hasValidUsername,
   MIN_USERNAME_LENGTH,
 } from '../utils/profileValidation';
@@ -37,7 +38,7 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const isValid =
     hasValidUsername(nickname) &&
-    (gender !== 'female' || tamilName.trim().length >= 2);
+    (gender !== 'female' || hasValidName(tamilName, 2));
 
   const saveUser = async () => {
     if (loading) {
@@ -48,14 +49,17 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
 
     if (!hasValidUsername(nickname)) {
       Alert.alert(
-        'Username Required',
-        `Enter a username with at least ${MIN_USERNAME_LENGTH} characters to continue.`,
+        'Invalid Username',
+        `Use at least ${MIN_USERNAME_LENGTH} characters. Names can contain letters, spaces, apostrophes, periods, and hyphens, but not phone numbers.`,
       );
       return;
     }
 
-    if (gender === 'female' && tamilName.trim().length < 2) {
-      Alert.alert('Tamil Name Required', 'Enter your Tamil name to continue.');
+    if (gender === 'female' && !hasValidName(tamilName, 2)) {
+      Alert.alert(
+        'Invalid Tamil Name',
+        'Enter a valid Tamil name without numbers.',
+      );
       return;
     }
 
@@ -89,7 +93,7 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
@@ -142,7 +146,8 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
 
           {nicknameTouched && !hasValidUsername(nickname) && (
             <Text style={styles.validationText}>
-              Username must contain at least {MIN_USERNAME_LENGTH} characters.
+              Use at least {MIN_USERNAME_LENGTH} letters. Phone numbers and
+              numeric characters are not allowed.
             </Text>
           )}
 
@@ -186,6 +191,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+
+  keyboardAvoidingView: {
+    flex: 1,
   },
 
   content: {
