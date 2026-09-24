@@ -243,14 +243,19 @@ export interface RechargePack {
 
 export interface VerifyOrderResponse {
   success: boolean;
-  paid: boolean;
+  paid?: boolean;
   message: string;
   data?: {
     orderId: string;
-    cfOrderId: string;
-    amount: number;
-    currency: string;
+    cfOrderId?: string;
+    amount?: number;
+    currency?: string;
     status: string;
+    cashfreeStatus?: string;
+    coins?: number;
+    coinsAdded?: number;
+    balance?: number;
+    paymentId?: string;
     customerDetails?: any;
   };
 }

@@ -13,12 +13,14 @@ import {
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
+  AppState,
   Linking,
 } from 'react-native';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CFPaymentGatewayService } from 'react-native-cashfree-pg-sdk';
 import { CFEnvironment, CFSession } from 'cashfree-pg-api-contract';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Colors from '../../constants/colors';
 import { createOrder, verifyOrder } from '../../api/calls';
@@ -28,8 +30,9 @@ const PRIVACY_POLICY_URL = 'https://voice-tamil.web.app/privacy-policy.html';
 // Cashfree secrets remain on the server. The server must create the matching
 // production payment_session_id before this checkout can be opened.
 const CASHFREE_ENVIRONMENT = CFEnvironment.PRODUCTION;
-const PAYMENT_VERIFICATION_MAX_ATTEMPTS = 6;
-const PAYMENT_VERIFICATION_RETRY_DELAY_MS = 1500;
+const PAYMENT_VERIFICATION_MAX_ATTEMPTS = 10;
+const PAYMENT_VERIFICATION_RETRY_DELAY_MS = 2000;
+const PENDING_PAYMENT_ORDER_KEY = 'pendingPaymentOrderId';
 
 const wait = (milliseconds: number) =>
   new Promise<void>(resolve => setTimeout(resolve, milliseconds));
@@ -41,12 +44,13 @@ type PaymentNotice = {
 
 const PaymentScreen = ({ navigation, route }: any) => {
   const pack = route?.params?.pack;
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
 
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<PaymentNotice | null>(null);
   const verificationInProgress = useRef(false);
   const paymentVerified = useRef(false);
+  const pendingOrderIdRef = useRef('');
   const amount = Number(pack?.amount || 0);
   const bonus = Number(pack?.bonus || 0);
 
@@ -86,16 +90,49 @@ const PaymentScreen = ({ navigation, route }: any) => {
           attempt < PAYMENT_VERIFICATION_MAX_ATTEMPTS;
           attempt += 1
         ) {
-          const response = await verifyOrder(orderId, customerId);
+          try {
+            const response = await verifyOrder(orderId, customerId);
 
-          if (!response.success) {
-            throw new Error(response.message || 'Unable to verify payment');
-          }
+            if (!response.success) {
+              throw new Error(response.message || 'Unable to verify payment');
+            }
 
-          if (response.paid === true) {
-            paymentVerified.current = true;
-            redirectToHome();
-            return;
+            const verificationStatus = String(
+              response.data?.status || '',
+            ).toUpperCase();
+            const cashfreeStatus = String(
+              response.data?.cashfreeStatus || '',
+            ).toUpperCase();
+            const isPaid =
+              response.paid === true ||
+              verificationStatus === 'SUCCESS' ||
+              verificationStatus === 'PAID' ||
+              cashfreeStatus === 'PAID';
+
+            if (isPaid) {
+              paymentVerified.current = true;
+              pendingOrderIdRef.current = '';
+              await AsyncStorage.removeItem(PENDING_PAYMENT_ORDER_KEY);
+              await refreshUser();
+              redirectToHome();
+              return;
+            }
+
+            if (
+              verificationStatus === 'FAILED' ||
+              verificationStatus === 'EXPIRED' ||
+              verificationStatus === 'TERMINATED'
+            ) {
+              pendingOrderIdRef.current = '';
+              await AsyncStorage.removeItem(PENDING_PAYMENT_ORDER_KEY);
+              throw new Error(
+                response.message || 'Payment was not completed.',
+              );
+            }
+          } catch (error) {
+            if (attempt === PAYMENT_VERIFICATION_MAX_ATTEMPTS - 1) {
+              throw error;
+            }
           }
 
           if (attempt < PAYMENT_VERIFICATION_MAX_ATTEMPTS - 1) {
@@ -119,26 +156,64 @@ const PaymentScreen = ({ navigation, route }: any) => {
         verificationInProgress.current = false;
       }
     },
-    [customerId, redirectToHome],
+    [customerId, redirectToHome, refreshUser],
   );
 
   useEffect(() => {
     CFPaymentGatewayService.setCallback({
       onVerify: (orderId: string) => {
+        pendingOrderIdRef.current = orderId;
         handlePaymentVerification(orderId);
       },
 
       onError: (error: any) => {
-        setLoading(false);
-        setNotice({
-          type: 'error',
-          message: error?.message || 'Payment was not completed.',
-        });
+        const pendingOrderId = pendingOrderIdRef.current;
+
+        if (pendingOrderId) {
+          handlePaymentVerification(pendingOrderId);
+        } else {
+          setLoading(false);
+          setNotice({
+            type: 'error',
+            message: error?.message || 'Payment was not completed.',
+          });
+        }
       },
     });
 
     return () => CFPaymentGatewayService.removeCallback();
   }, [handlePaymentVerification]);
+
+  useEffect(() => {
+    if (!customerId || paymentVerified.current) {
+      return;
+    }
+
+    const verifyPendingPayment = async () => {
+      const pendingOrderId = await AsyncStorage.getItem(
+        PENDING_PAYMENT_ORDER_KEY,
+      );
+
+      if (pendingOrderId) {
+        pendingOrderIdRef.current = pendingOrderId;
+        handlePaymentVerification(pendingOrderId);
+      }
+    };
+
+    verifyPendingPayment().catch(error =>
+      console.error('Unable to restore pending payment:', error),
+    );
+
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        verifyPendingPayment().catch(error =>
+          console.error('Unable to resume payment verification:', error),
+        );
+      }
+    });
+
+    return () => subscription.remove();
+  }, [customerId, handlePaymentVerification]);
 
   const handlePayNow = async () => {
     try {
@@ -197,6 +272,9 @@ const PaymentScreen = ({ navigation, route }: any) => {
       if (!paymentSessionId) {
         throw new Error('Payment session was not returned by server');
       }
+
+      pendingOrderIdRef.current = orderId;
+      await AsyncStorage.setItem(PENDING_PAYMENT_ORDER_KEY, orderId);
 
       const session = new CFSession(
         paymentSessionId,

@@ -68,6 +68,57 @@ export default StyleSheet.create({
     maxWidth: width - 48,
   },
 
+  notesButton: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: Colors.secondary,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  notesButtonText: {
+    color: Colors.secondary,
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 6,
+  },
+
+  savedNoteCard: {
+    width: width - 48,
+    maxWidth: 420,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: Colors.darkSurfaceCard,
+    borderWidth: 1,
+    borderColor: Colors.overlayGold18,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  savedNoteCopy: {
+    flex: 1,
+    marginLeft: 9,
+  },
+
+  savedNoteTitle: {
+    color: Colors.white,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  savedNoteDetails: {
+    color: Colors.darkTextMuted,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+
   city: {
     color: Colors.darkTextMuted,
     marginTop: 8,
@@ -337,5 +388,113 @@ export default StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginTop: 10,
+  },
+
+  notesModalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  notesBackdrop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+
+  notesSheet: {
+    maxHeight: '88%',
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 28,
+  },
+
+  notesHandle: {
+    width: 72,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.secondary,
+    alignSelf: 'center',
+    marginBottom: 24,
+  },
+
+  notesTitle: {
+    color: Colors.text,
+    fontSize: 27,
+    fontWeight: '800',
+  },
+
+  notesDescription: {
+    color: Colors.gray74,
+    fontSize: 16,
+    lineHeight: 23,
+    marginTop: 8,
+    marginBottom: 24,
+  },
+
+  notesFieldLabel: {
+    color: Colors.text,
+    backgroundColor: Colors.background,
+    fontSize: 14,
+    fontWeight: '700',
+    alignSelf: 'flex-start',
+    marginLeft: 20,
+    marginBottom: -9,
+    paddingHorizontal: 8,
+    zIndex: 1,
+  },
+
+  quickNoteInput: {
+    height: 58,
+    borderWidth: 1,
+    borderColor: Colors.gray136,
+    borderRadius: 29,
+    color: Colors.text,
+    fontSize: 16,
+    paddingHorizontal: 20,
+  },
+
+  noteDetailsInput: {
+    height: 150,
+    borderWidth: 1,
+    borderColor: Colors.gray136,
+    borderRadius: 28,
+    color: Colors.text,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+
+  notesCount: {
+    color: Colors.gray74,
+    fontSize: 14,
+    textAlign: 'right',
+    marginTop: 7,
+    marginBottom: 22,
+    marginRight: 8,
+  },
+
+  saveNoteButton: {
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  saveNoteButtonDisabled: {
+    backgroundColor: Colors.disabled,
+  },
+
+  saveNoteButtonText: {
+    color: Colors.white,
+    fontSize: 17,
+    fontWeight: '800',
   },
 });

@@ -424,8 +424,7 @@ class RoomService {
       return false;
     }
 
-    let charged = false;
-    await database()
+    const walletTransaction = await database()
       .ref(`users/${firebaseUser.uid}/wallet/balance`)
       .transaction(balance => {
         const currentBalance = Number(balance || 0);
@@ -434,13 +433,17 @@ class RoomService {
           return;
         }
 
-        charged = true;
         return currentBalance - CALL_RATE_PER_MINUTE;
       });
 
-    if (!charged) {
+    if (!walletTransaction.committed) {
       return false;
     }
+
+    const remainingBalance = Math.max(
+      0,
+      Number(walletTransaction.snapshot.val() || 0),
+    );
 
     const billingUpdate = await roomRef.transaction(currentRoom => {
       if (
@@ -466,7 +469,9 @@ class RoomService {
       return false;
     }
 
-    return true;
+    // A successful charge can consume the final available coins. Returning
+    // false here tells the call client to disconnect immediately at zero.
+    return remainingBalance > 0;
   }
 
   async endCall(femaleUid: string) {

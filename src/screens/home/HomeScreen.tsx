@@ -16,6 +16,7 @@ import UserCard from './UserCard';
 
 import Colors from '../../constants/colors';
 import { categories } from '../../constants/dummyData';
+import { calculateAge } from '../../constants/constants';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
 import { useFirstCallReview } from '../../hooks/useFirstCallReview';
@@ -32,6 +33,17 @@ interface Props {
 }
 
 const keyExtractor = (item: any) => item?.uid;
+
+const hasCompleteFemaleProfile = (item: any) => {
+  const profile = item?.profile;
+  const hasName = Boolean(
+    String(profile?.tamilName || '').trim() ||
+      String(profile?.name || '').trim(),
+  );
+  const hasAge = Boolean(calculateAge(profile?.birthYear));
+
+  return hasName && hasAge;
+};
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   useFirstCallReview();
@@ -106,7 +118,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       const users: any[] = [];
 
       snapshot.forEach(child => {
-        users.push(child.val());
+        const femaleUser = child.val();
+
+        if (hasCompleteFemaleProfile(femaleUser)) {
+          users.push(femaleUser);
+        }
         return false;
       });
       setFemaleUsers(users);

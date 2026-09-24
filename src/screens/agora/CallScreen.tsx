@@ -11,6 +11,11 @@ import {
   StatusBar,
   AppState,
   BackHandler,
+  KeyboardAvoidingView,
+  Modal,
+  ScrollView,
+  TextInput,
+  TouchableWithoutFeedback,
   Vibration,
   useWindowDimensions,
 } from 'react-native';
@@ -56,6 +61,19 @@ type Props = {
 };
 
 const LOW_BALANCE_MINUTES = 3;
+const QUICK_NOTE_LIMIT = 30;
+const NOTE_DETAILS_LIMIT = 300;
+
+type MaleUserNote = {
+  quickNote: string;
+  details: string;
+  updatedAt?: number;
+};
+
+const EMPTY_NOTE: MaleUserNote = {
+  quickNote: '',
+  details: '',
+};
 
 const CallScreen = ({
   route,
@@ -112,6 +130,7 @@ const CallScreen = ({
   const timerRef = useRef<(() => void) | null>(null);
   const billingTimerRef = useRef<(() => void) | null>(null);
   const billingStartingRef = useRef(false);
+  const billingChargeInProgressRef = useRef(false);
   const peerRecoveryRef = useRef<(() => void) | null>(null);
   const callEndedRef = useRef(false);
   const lowBalanceAlertedRef = useRef(false);
@@ -133,6 +152,16 @@ const CallScreen = ({
   const [callerBalance, setCallerBalance] = useState<number | null>(null);
 
   const [showLowBalance, setShowLowBalance] = useState(false);
+
+  const [maleUserNote, setMaleUserNote] = useState<MaleUserNote>(EMPTY_NOTE);
+
+  const [quickNote, setQuickNote] = useState('');
+
+  const [noteDetails, setNoteDetails] = useState('');
+
+  const [showNotes, setShowNotes] = useState(false);
+
+  const [savingNote, setSavingNote] = useState(false);
 
   const walletBalance = Number(user?.wallet?.balance);
   const lowBalanceThreshold = CALL_RATE_PER_MINUTE * LOW_BALANCE_MINUTES;
@@ -174,6 +203,66 @@ const CallScreen = ({
       balanceRef.off('value', listener);
     };
   }, [gender, maleUid]);
+
+  useEffect(() => {
+    const currentFemaleUid = auth().currentUser?.uid;
+
+    if (gender !== 'female' || !currentFemaleUid || !maleUid) {
+      setMaleUserNote(EMPTY_NOTE);
+      return;
+    }
+
+    setMaleUserNote(EMPTY_NOTE);
+    const noteRef = database().ref(
+      `userNotes/${currentFemaleUid}/${maleUid}`,
+    );
+    const listener = noteRef.on('value', snapshot => {
+      const savedNote = snapshot.val();
+
+      setMaleUserNote({
+        quickNote: String(savedNote?.quickNote || ''),
+        details: String(savedNote?.details || ''),
+        updatedAt: Number(savedNote?.updatedAt) || undefined,
+      });
+    });
+
+    return () => noteRef.off('value', listener);
+  }, [gender, maleUid]);
+
+  const openNotes = useCallback(() => {
+    setQuickNote(maleUserNote.quickNote);
+    setNoteDetails(maleUserNote.details);
+    setShowNotes(true);
+  }, [maleUserNote]);
+
+  const saveNote = useCallback(async () => {
+    const currentFemaleUid = auth().currentUser?.uid;
+    const trimmedQuickNote = quickNote.trim();
+    const trimmedDetails = noteDetails.trim();
+
+    if (!currentFemaleUid || !maleUid || savingNote) {
+      return;
+    }
+
+    if (!trimmedQuickNote && !trimmedDetails) {
+      Alert.alert('Add a Note', 'Enter a quick note or more details first.');
+      return;
+    }
+
+    try {
+      setSavingNote(true);
+      await database().ref(`userNotes/${currentFemaleUid}/${maleUid}`).set({
+        quickNote: trimmedQuickNote,
+        details: trimmedDetails,
+        updatedAt: Date.now(),
+      });
+      setShowNotes(false);
+    } catch {
+      Alert.alert('Unable to Save Note', 'Please try again.');
+    } finally {
+      setSavingNote(false);
+    }
+  }, [maleUid, noteDetails, quickNote, savingNote]);
 
   const requestPermission = useCallback(async () => {
     if (Platform.OS !== 'android') {
@@ -268,6 +357,31 @@ const CallScreen = ({
     await ending;
   }, [finishCall]);
 
+  useEffect(() => {
+    if (
+      gender !== 'male' ||
+      !connected ||
+      !Number.isFinite(walletBalance) ||
+      walletBalance > 0 ||
+      billingChargeInProgressRef.current ||
+      callEndedRef.current
+    ) {
+      return;
+    }
+
+    endForInsufficientBalance();
+  }, [connected, endForInsufficientBalance, gender, walletBalance]);
+
+  const chargeNextMinute = useCallback(async () => {
+    billingChargeInProgressRef.current = true;
+
+    try {
+      return await RoomService.chargeCallMinute(femaleUid);
+    } finally {
+      billingChargeInProgressRef.current = false;
+    }
+  }, [femaleUid]);
+
   const startBilling = useCallback(async () => {
     if (
       gender !== 'male' ||
@@ -281,7 +395,7 @@ const CallScreen = ({
     billingStartingRef.current = true;
 
     try {
-      const firstMinuteCharged = await RoomService.chargeCallMinute(femaleUid);
+      const firstMinuteCharged = await chargeNextMinute();
 
       if (callEndedRef.current) {
         return;
@@ -294,7 +408,7 @@ const CallScreen = ({
 
       billingTimerRef.current = setCallInterval(async () => {
         if (callEndedRef.current || peerRecoveryRef.current) return;
-        const nextMinuteCharged = await RoomService.chargeCallMinute(femaleUid);
+        const nextMinuteCharged = await chargeNextMinute();
 
         if (!nextMinuteCharged) {
           await endForInsufficientBalance();
@@ -303,7 +417,7 @@ const CallScreen = ({
     } finally {
       billingStartingRef.current = false;
     }
-  }, [endForInsufficientBalance, femaleUid, gender]);
+  }, [chargeNextMinute, endForInsufficientBalance, gender]);
 
   const initializeAgora = useCallback(async () => {
     const permission = await requestPermission();
@@ -709,6 +823,58 @@ const CallScreen = ({
               {englishName}
             </Text>
           )}
+
+          {gender === 'female' && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={
+                maleUserNote.quickNote || maleUserNote.details
+                  ? 'Edit notes about caller'
+                  : 'Add notes about caller'
+              }
+              activeOpacity={0.8}
+              style={styles.notesButton}
+              onPress={openNotes}
+            >
+              <MaterialCommunityIcons
+                name="pencil-outline"
+                size={16}
+                color={Colors.secondary}
+              />
+              <Text style={styles.notesButtonText}>
+                {maleUserNote.quickNote || maleUserNote.details
+                  ? 'Edit Notes'
+                  : 'Add Notes'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {gender === 'female' &&
+            Boolean(maleUserNote.quickNote || maleUserNote.details) && (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.savedNoteCard}
+                onPress={openNotes}
+              >
+                <MaterialCommunityIcons
+                  name="note-text-outline"
+                  size={18}
+                  color={Colors.secondary}
+                />
+                <View style={styles.savedNoteCopy}>
+                  {Boolean(maleUserNote.quickNote) && (
+                    <Text numberOfLines={1} style={styles.savedNoteTitle}>
+                      {maleUserNote.quickNote}
+                    </Text>
+                  )}
+                  {Boolean(maleUserNote.details) && (
+                    <Text numberOfLines={2} style={styles.savedNoteDetails}>
+                      {maleUserNote.details}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )}
           <View
             style={[
               styles.statusContainer,
@@ -901,6 +1067,84 @@ const CallScreen = ({
           <Text style={styles.endText}>End Call</Text>
         </View>
       </SafeAreaView>
+
+      <Modal
+        animationType="slide"
+        transparent
+        visible={showNotes}
+        onRequestClose={() => setShowNotes(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.notesModalRoot}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowNotes(false)}>
+            <View style={styles.notesBackdrop} />
+          </TouchableWithoutFeedback>
+
+          <View style={styles.notesSheet}>
+            <View style={styles.notesHandle} />
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.notesTitle}>Remember {displayName}</Text>
+              <Text style={styles.notesDescription}>
+                Save a few details about this user. These notes will be shown
+                the next time they call you.
+              </Text>
+
+              <Text style={styles.notesFieldLabel}>Quick Note</Text>
+              <TextInput
+                autoFocus
+                maxLength={QUICK_NOTE_LIMIT}
+                placeholder="Eg. Cricket fan"
+                placeholderTextColor={Colors.gray143}
+                style={styles.quickNoteInput}
+                value={quickNote}
+                onChangeText={setQuickNote}
+              />
+              <Text style={styles.notesCount}>
+                {quickNote.length}/{QUICK_NOTE_LIMIT}
+              </Text>
+
+              <Text style={styles.notesFieldLabel}>More Details</Text>
+              <TextInput
+                maxLength={NOTE_DETAILS_LIMIT}
+                multiline
+                placeholder="Eg. Likes cricket. Lives in Chennai. Usually calls at night."
+                placeholderTextColor={Colors.gray143}
+                style={styles.noteDetailsInput}
+                textAlignVertical="top"
+                value={noteDetails}
+                onChangeText={setNoteDetails}
+              />
+              <Text style={styles.notesCount}>
+                {noteDetails.length}/{NOTE_DETAILS_LIMIT}
+              </Text>
+
+              <TouchableOpacity
+                accessibilityRole="button"
+                activeOpacity={0.85}
+                disabled={
+                  savingNote || (!quickNote.trim() && !noteDetails.trim())
+                }
+                style={[
+                  styles.saveNoteButton,
+                  (savingNote ||
+                    (!quickNote.trim() && !noteDetails.trim())) &&
+                    styles.saveNoteButtonDisabled,
+                ]}
+                onPress={saveNote}
+              >
+                <Text style={styles.saveNoteButtonText}>
+                  {savingNote ? 'Saving...' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </LinearGradient>
   );
 };
