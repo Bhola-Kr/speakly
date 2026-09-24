@@ -1,4 +1,5 @@
-import { AppState, Platform } from 'react-native';
+import { AppState, DeviceEventEmitter, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import database, {
   FirebaseDatabaseTypes,
@@ -9,10 +10,15 @@ import messaging, {
 import notifee, {
   AndroidImportance,
   AuthorizationStatus,
+  EventType,
+  Event,
 } from '@notifee/react-native';
 import { hasCompletedSignup } from '../utils/profileValidation';
 
 const CHANNEL_ID = 'voicetamil_general';
+const SILENT_CALL_CHANNEL_ID = 'voicetamil_incoming_silent';
+const PENDING_ACCEPTED_CALL_KEY = 'pendingAcceptedNotificationCall';
+export const ACCEPTED_CALL_EVENT = 'VoiceTamilAcceptedNotificationCall';
 let tokenQueue = Promise.resolve();
 let signingOut = false;
 let permissionRequest: Promise<void> | undefined;
@@ -38,6 +44,18 @@ export async function createNotificationChannel() {
     importance: AndroidImportance.HIGH,
     sound: 'default',
   });
+}
+
+async function configureIncomingCallActions() {
+  await notifee.setNotificationCategories([
+    {
+      id: 'incoming-call',
+      actions: [
+        { id: 'reject-call', title: 'Reject', destructive: true },
+        { id: 'accept-call', title: 'Accept', foreground: true },
+      ],
+    },
+  ]);
 }
 
 export async function displayPushNotification(
@@ -68,6 +86,134 @@ export async function displayPushNotification(
       },
     },
   });
+}
+
+export async function displayIncomingCallNotification(
+  callId: string,
+  callerName: string,
+  femaleUid: string,
+) {
+  await configureIncomingCallActions();
+  const channelId = await notifee.createChannel({
+    id: SILENT_CALL_CHANNEL_ID,
+    name: 'Incoming call alerts',
+    importance: AndroidImportance.HIGH,
+    vibration: true,
+  });
+  await notifee.displayNotification({
+    id: `incoming-call-${callId}`,
+    title: 'Incoming Voice Call',
+    body: `${callerName || 'Someone'} is calling you`,
+    data: { type: 'incoming_call', callId, femaleUid },
+    android: {
+      channelId,
+      smallIcon: 'ic_notification',
+      pressAction: { id: 'default' },
+      importance: AndroidImportance.HIGH,
+      actions: [
+        {
+          title: 'Reject',
+          icon: 'ic_call_reject',
+          pressAction: { id: 'reject-call' },
+        },
+        {
+          title: 'Accept',
+          icon: 'ic_call_accept',
+          pressAction: { id: 'accept-call', launchActivity: 'default' },
+        },
+      ],
+    },
+    ios: {
+      categoryId: 'incoming-call',
+      foregroundPresentationOptions: {
+        banner: true,
+        list: true,
+        sound: false,
+        badge: false,
+      },
+    },
+  });
+}
+
+export const cancelIncomingCallNotification = (callId: string) =>
+  notifee.cancelNotification(`incoming-call-${callId}`);
+
+export async function handleNotificationEvent(event: Event) {
+  if (event.type !== EventType.ACTION_PRESS) return;
+  const action = event.detail.pressAction?.id;
+  if (action !== 'accept-call' && action !== 'reject-call') return;
+
+  const notification = event.detail.notification;
+  const femaleUid = String(notification?.data?.femaleUid || '');
+  const callId = String(notification?.data?.callId || '');
+  const currentUid = auth().currentUser?.uid;
+  if (!femaleUid || !callId || currentUid !== femaleUid) return;
+
+  const roomRef = database().ref(`rooms/${femaleUid}`);
+  const transaction = await roomRef.transaction(room => {
+    if (
+      !room ||
+      room.status !== 'ringing' ||
+      room.currentCallId !== callId
+    ) {
+      return;
+    }
+    return {
+      ...room,
+      status: action === 'accept-call' ? 'accepted' : 'rejected',
+      updatedAt: Date.now(),
+    };
+  });
+
+  if (transaction.committed) {
+    if (action === 'accept-call') {
+      await database()
+        .ref(`users/${femaleUid}/profile/status`)
+        .set('busy');
+      await AsyncStorage.setItem(
+        PENDING_ACCEPTED_CALL_KEY,
+        JSON.stringify({ femaleUid, callId }),
+      );
+      DeviceEventEmitter.emit(ACCEPTED_CALL_EVENT);
+    } else {
+      await database()
+        .ref(`users/${femaleUid}/profile/status`)
+        .set('online');
+      await new Promise<void>(resolve => setTimeout(resolve, 1000));
+      await roomRef.transaction(room => {
+        if (
+          !room ||
+          room.status !== 'rejected' ||
+          room.currentCallId !== callId
+        ) {
+          return;
+        }
+        return {
+          ...room,
+          status: 'waiting',
+          currentCallId: '',
+          male: null,
+          updatedAt: Date.now(),
+        };
+      });
+    }
+  }
+
+  if (notification?.id) await notifee.cancelNotification(notification.id);
+}
+
+export async function consumePendingAcceptedCall() {
+  const saved = await AsyncStorage.getItem(PENDING_ACCEPTED_CALL_KEY);
+  if (!saved) return null;
+  await AsyncStorage.removeItem(PENDING_ACCEPTED_CALL_KEY);
+  try {
+    const value = JSON.parse(saved);
+    return value?.femaleUid && value?.callId
+      ? { femaleUid: String(value.femaleUid), callId: String(value.callId) }
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function handleBackgroundMessage(
@@ -144,6 +290,11 @@ export function startPushNotifications() {
       console.error('Unable to display push:', error),
     ),
   );
+  const unsubscribeNotificationEvents = notifee.onForegroundEvent(event => {
+    handleNotificationEvent(event).catch(error =>
+      console.error('Unable to handle notification action:', error),
+    );
+  });
   const unsubscribeToken = messaging().onTokenRefresh(token => {
     syncToken(token);
   });
@@ -181,6 +332,7 @@ export function startPushNotifications() {
 
   (async () => {
     await createNotificationChannel();
+    await configureIncomingCallActions();
     if (active) await syncToken();
   })().catch(error =>
     console.error('Unable to initialize push notifications:', error),
@@ -189,6 +341,7 @@ export function startPushNotifications() {
   return () => {
     active = false;
     unsubscribeMessage();
+    unsubscribeNotificationEvents();
     unsubscribeToken();
     unsubscribeAuth();
     stopProfileListener();

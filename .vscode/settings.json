@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["buildscript"]
+  "cSpell.words": ["buildscript"],
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

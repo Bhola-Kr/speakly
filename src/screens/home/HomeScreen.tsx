@@ -19,6 +19,13 @@ import { categories } from '../../constants/dummyData';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
 import { useFirstCallReview } from '../../hooks/useFirstCallReview';
+import { useUser } from '../../hooks/UserContext';
+import SignupOfferModal from './SignupOfferModal';
+import {
+  claimSignupOffer,
+  listenSignupOffer,
+  SignupOfferConfig,
+} from '../../firebase/signupOffer';
 
 interface Props {
   navigation: any;
@@ -28,13 +35,66 @@ const keyExtractor = (item: any) => item?.uid;
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   useFirstCallReview();
+  const { user } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
   const [randomCalling, setRandomCalling] = useState(false);
   const [callingUserId, setCallingUserId] = useState<string | null>(null);
+  const [offer, setOffer] = useState<SignupOfferConfig>({
+    active: false,
+    amount: 0,
+  });
+  const [offerDismissed, setOfferDismissed] = useState(false);
+  const [claimingOffer, setClaimingOffer] = useState(false);
+  const claimingOfferRef = useRef(false);
   const callInProgressRef = useRef(false);
 
   const canStartCall = useCallBalanceGuard(navigation);
+
+  useEffect(
+    () =>
+      listenSignupOffer(nextOffer => {
+        setOffer(current => {
+          if (
+            current.active !== nextOffer.active ||
+            current.amount !== nextOffer.amount
+          ) {
+            setOfferDismissed(false);
+          }
+          return nextOffer;
+        });
+      }),
+    [],
+  );
+
+  const offerClaimed = Boolean(user?.offers?.signupOffer?.claimedAt);
+  const showOffer =
+    user?.profile?.gender === 'male' &&
+    offer.active &&
+    offer.amount > 0 &&
+    !offerClaimed &&
+    !offerDismissed;
+
+  const claimOffer = useCallback(async () => {
+    if (claimingOfferRef.current) return;
+    claimingOfferRef.current = true;
+    try {
+      setClaimingOffer(true);
+      const creditedAmount = await claimSignupOffer();
+      Alert.alert(
+        'Offer Claimed',
+        `${creditedAmount} coins were added to your wallet.`,
+      );
+    } catch (error: any) {
+      Alert.alert(
+        'Unable to Claim Offer',
+        error?.message || 'Please try again in a moment.',
+      );
+    } finally {
+      claimingOfferRef.current = false;
+      setClaimingOffer(false);
+    }
+  }, []);
 
   useEffect(() => {
     const ref = database()
@@ -178,6 +238,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={listHeader}
         renderItem={renderItem}
+      />
+
+      <SignupOfferModal
+        visible={showOffer}
+        amount={offer.amount}
+        claiming={claimingOffer}
+        onClaim={claimOffer}
+        onDismiss={() => setOfferDismissed(true)}
       />
     </SafeAreaView>
   );

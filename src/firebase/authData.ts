@@ -5,6 +5,7 @@ import { fetchFirebaseToken } from '../api/calls';
 import { Alert } from 'react-native';
 import { CALL_RATE_PER_MINUTE } from '../constants/constants';
 import { unregisterPushNotifications } from '../notifications/pushNotifications';
+import RoomService from './RoomService';
 
 export type UpdateProfileData = {
   id?: string;
@@ -135,6 +136,13 @@ class AuthData {
   //-----------------------------
 
   logout = async () => {
+    const currentUser = auth().currentUser;
+    if (currentUser) {
+      const user = await this.getUser(currentUser.uid);
+      if (user?.profile?.gender === 'female') {
+        await RoomService.goOffline();
+      }
+    }
     await unregisterPushNotifications();
     await auth().signOut();
 

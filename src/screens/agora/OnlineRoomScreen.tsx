@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Alert,
   AppState,
-  AppStateStatus,
 } from 'react-native';
 
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
@@ -37,7 +36,6 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   const [incomingRoom, setIncomingRoom] = useState<Room | null>(null);
   const isFocused = useIsFocused();
   const pulse = useRef(new Animated.Value(0)).current;
-  const appState = useRef(AppState.currentState);
   const isJoiningCall = useRef(false);
   const myUid = authData.getCurrentUser()?.uid || 'unknown';
 
@@ -47,26 +45,14 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
   const seconds = useRef(0);
 
-  const markOffline = useCallback(async () => {
-    try {
-      await RoomService.goOffline();
-    } catch (error) {
-      console.error('Unable to go offline:', error);
-    }
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       InCallManager.setKeepScreenOn(true);
 
       return () => {
         InCallManager.setKeepScreenOn(false);
-
-        if (!isJoiningCall.current) {
-          markOffline();
-        }
       };
-    }, [markOffline]),
+    }, []),
   );
 
   React.useEffect(() => {
@@ -96,32 +82,16 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       }
     });
 
-    const subscription = AppState.addEventListener(
-      'change',
-      async (nextState: AppStateStatus) => {
-        const previousState = appState.current;
-        appState.current = nextState;
-
-        if (nextState === 'active' && previousState !== 'active' && isFocused) {
-          try {
-            InCallManager.setKeepScreenOn(true);
-            await RoomService.goOnline();
-          } catch (error) {
-            console.error('Unable to restore online status:', error);
-          }
-        } else if (previousState === 'active' && nextState !== 'active') {
-          setShowIncoming(false);
-          InCallManager.setKeepScreenOn(false);
-          await markOffline();
-        }
-      },
-    );
+    const subscription = AppState.addEventListener('change', nextState => {
+      if (!isFocused || isJoiningCall.current) return;
+      InCallManager.setKeepScreenOn(nextState === 'active');
+    });
 
     return () => {
       subscription.remove();
       unsubscribe();
     };
-  }, [isFocused, markOffline, myUid]);
+  }, [isFocused, myUid]);
 
   useEffect(() => {
     const pulseAnimation = Animated.loop(

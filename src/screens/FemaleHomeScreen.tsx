@@ -1,5 +1,5 @@
 import { useActiveCall } from '../hooks/ActiveCallContext';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -17,7 +17,6 @@ import {
 
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useIsFocused } from '@react-navigation/native';
 
 import Colors from '../constants/colors';
 import { useUser } from '../hooks/UserContext';
@@ -73,9 +72,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [page, setPage] = useState(0);
   const [goingOnline, setGoingOnline] = useState(false);
 
-  const isFocused = useIsFocused();
-
-  const { user, updateProfile } = useUser();
+  const { user } = useUser();
   const { activeCall, showCall } = useActiveCall();
   const tamilName = String(user?.profile?.tamilName || '').trim();
   const englishName = String(user?.profile?.name || '').trim();
@@ -85,16 +82,6 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const bannerRef = useRef<FlatList>(null);
-
-  useEffect(() => {
-    if (!isFocused || activeCall) {
-      return;
-    }
-
-    updateProfile({
-      status: 'offline',
-    });
-  }, [isFocused, updateProfile, activeCall]);
 
   const goOnLine = async () => {
     if (activeCall) {

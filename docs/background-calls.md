@@ -55,3 +55,23 @@ is blocked while one is active, and logout requires ending the current call.
 App-update and review prompts are deferred while the call exists. Verify a
 recharge while talking, minimize/restore repeatedly, and have the peer hang up
 during payment.
+
+## Female availability
+
+After a female host chooses Go Online, availability is independent of the Online
+Room screen. Navigating elsewhere, locking the screen, or switching apps does
+not write an offline status. Firebase `onDisconnect` operations mark both the
+profile and room offline when the device actually loses its Realtime Database
+connection. The app remembers the host's choice and restores the waiting room
+after connectivity returns. Go Offline and logout explicitly clear that choice.
+
+An app-level room listener displays incoming calls over other screens and posts
+a silent notification when the app process is running in the background. On
+Android the notification includes Accept and Reject actions with call icons;
+iOS exposes matching notification-category actions. Reject updates Firebase in
+the background. Accept updates Firebase, opens the app, and continues into the
+call screen. Reliable
+delivery after the operating system terminates or force-stops the process still
+requires a trusted backend/Cloud Function to send an FCM notification when a
+room changes to `ringing`; mobile client code cannot guarantee execution after
+process termination.

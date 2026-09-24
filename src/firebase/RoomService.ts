@@ -5,6 +5,9 @@ import {
   CALL_RATE_PER_MINUTE,
 } from '../constants/constants';
 import { fetchAgoraToken } from '../api/calls';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const FEMALE_AVAILABILITY_KEY = 'femaleAvailabilityEnabled';
 
 export type RoomStatus =
   | 'offline'
@@ -80,6 +83,29 @@ class RoomService {
     return snapshot.val();
   }
 
+  private async armOfflineOnDisconnect(uid: string) {
+    const timestamp = Date.now();
+    await Promise.all([
+      database().ref(`rooms/${uid}`).onDisconnect().update({
+        status: 'offline',
+        male: null,
+        currentCallId: '',
+        updatedAt: timestamp,
+      }),
+      database()
+        .ref(`users/${uid}/profile/status`)
+        .onDisconnect()
+        .set('offline'),
+    ]);
+  }
+
+  private async cancelOfflineOnDisconnect(uid: string) {
+    await Promise.all([
+      database().ref(`rooms/${uid}`).onDisconnect().cancel(),
+      database().ref(`users/${uid}/profile/status`).onDisconnect().cancel(),
+    ]);
+  }
+
   private scheduleRoomReset(femaleUid: string, terminalStatus: RoomStatus) {
     setTimeout(() => {
       database()
@@ -129,16 +155,26 @@ class RoomService {
       },
     };
 
+    await this.armOfflineOnDisconnect(firebaseUser.uid);
+
     const updates: Record<string, any> = {
       [`rooms/${firebaseUser.uid}`]: room,
       [`users/${firebaseUser.uid}/profile/status`]: 'online',
     };
 
-    await database().ref().update(updates);
+    try {
+      await database().ref().update(updates);
+      await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'true');
+    } catch (error) {
+      await this.cancelOfflineOnDisconnect(firebaseUser.uid);
+      throw error;
+    }
   }
 
   async goOffline() {
     const firebaseUser = this.getCurrentUser();
+
+    await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'false');
 
     const updates: Record<string, any> = {
       [`rooms/${firebaseUser.uid}/status`]: 'offline',
@@ -149,6 +185,41 @@ class RoomService {
     };
 
     await database().ref().update(updates);
+    await this.cancelOfflineOnDisconnect(firebaseUser.uid);
+  }
+
+  async restoreFemaleAvailability() {
+    const firebaseUser = this.getCurrentUser();
+    const enabled =
+      (await AsyncStorage.getItem(FEMALE_AVAILABILITY_KEY)) === 'true';
+    if (!enabled) return false;
+
+    const [userSnapshot, roomSnapshot] = await Promise.all([
+      database().ref(`users/${firebaseUser.uid}`).once('value'),
+      database().ref(`rooms/${firebaseUser.uid}`).once('value'),
+    ]);
+    const user = userSnapshot.val();
+    if (user?.profile?.gender !== 'female') return false;
+
+    const room = roomSnapshot.val() as Room | null;
+    if (
+      room &&
+      ['waiting', 'ringing', 'accepted', 'active'].includes(room.status)
+    ) {
+      await this.armOfflineOnDisconnect(firebaseUser.uid);
+      if (
+        room.status === 'waiting' &&
+        user?.profile?.status !== 'online'
+      ) {
+        await database()
+          .ref(`users/${firebaseUser.uid}/profile/status`)
+          .set('online');
+      }
+      return true;
+    }
+
+    await this.goOnline();
+    return true;
   }
 
   async isBlocked(firstUid: string, secondUid: string) {
@@ -431,13 +502,15 @@ class RoomService {
 
     // Wait a moment so both users receive "ended"
     setTimeout(async () => {
-      await roomRef.update({
-        status: 'waiting',
-        currentCallId: '',
-        male: null,
-        callSettled: null,
-        chargedAmount: null,
-        updatedAt: Date.now(),
+      const updatedAt = Date.now();
+      await database().ref().update({
+        [`rooms/${femaleUid}/status`]: 'waiting',
+        [`rooms/${femaleUid}/currentCallId`]: '',
+        [`rooms/${femaleUid}/male`]: null,
+        [`rooms/${femaleUid}/callSettled`]: null,
+        [`rooms/${femaleUid}/chargedAmount`]: null,
+        [`rooms/${femaleUid}/updatedAt`]: updatedAt,
+        [`users/${femaleUid}/profile/status`]: 'online',
       });
     }, 1000);
   }

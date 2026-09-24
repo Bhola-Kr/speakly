@@ -1,5 +1,8 @@
 import * as React from 'react';
 import {
+  Alert,
+  AppState,
+  DeviceEventEmitter,
   StatusBar,
   View,
   Text,
@@ -40,11 +43,20 @@ import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
 import FAQScreen from './screens/FAQScreen';
 import SplashScreen from './screens/SplashScreen';
 import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
-import { UserProvider } from './hooks/UserContext';
+import { UserProvider, useUser } from './hooks/UserContext';
 import PaymentScreen from './screens/payment/PaymentScreen';
 import AppUpdateGate from './components/appUpdate/AppUpdateGate';
-import { startPushNotifications } from './notifications/pushNotifications';
+import {
+  ACCEPTED_CALL_EVENT,
+  cancelIncomingCallNotification,
+  consumePendingAcceptedCall,
+  displayIncomingCallNotification,
+  startPushNotifications,
+} from './notifications/pushNotifications';
 import { AdminUsersScreen } from './screens/admin/AdminUsersScreen';
+import IncomingCallModal from './screens/agora/IncomingCallModal';
+import RoomService, { Room } from './firebase/RoomService';
+import database from '@react-native-firebase/database';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -138,8 +150,14 @@ function RootStack() {
 
 function AppNavigator() {
   const [activeScreen, setActiveScreen] = React.useState('Splash');
+  const [incomingRoom, setIncomingRoom] = React.useState<Room | null>(null);
+  const incomingNotificationRef = React.useRef('');
+  const restoringPresenceRef = React.useRef(false);
+  const { user } = useUser();
   const { activeCall, visible, showCall, minimizeCall, clearCall } =
     useActiveCall();
+  const femaleUid =
+    user?.profile?.gender === 'female' ? String(user?.uid || '') : '';
   const syncActiveScreen = () =>
     setActiveScreen(navigationRef.getCurrentRoute()?.name ?? 'Splash');
   const openRecharge = React.useCallback(() => {
@@ -148,6 +166,131 @@ function AppNavigator() {
       navigationRef.navigate('Wallet');
     }
   }, [minimizeCall]);
+
+  React.useEffect(() => {
+    if (!femaleUid) return;
+    const connectedRef = database().ref('.info/connected');
+    const listener = connectedRef.on('value', snapshot => {
+      if (snapshot.val() !== true || restoringPresenceRef.current) return;
+      restoringPresenceRef.current = true;
+      RoomService.restoreFemaleAvailability()
+        .catch(error =>
+          console.warn('Unable to restore female availability:', error),
+        )
+        .finally(() => {
+          restoringPresenceRef.current = false;
+        });
+    });
+    return () => connectedRef.off('value', listener);
+  }, [femaleUid]);
+
+  React.useEffect(() => {
+    if (!femaleUid) {
+      setIncomingRoom(null);
+      return;
+    }
+    return RoomService.listenCallStatus(femaleUid, room => {
+      if (room?.status === 'ringing' && room.male && !activeCall) {
+        setIncomingRoom(room);
+        if (
+          AppState.currentState !== 'active' &&
+          incomingNotificationRef.current !== room.currentCallId
+        ) {
+          incomingNotificationRef.current = room.currentCallId;
+          displayIncomingCallNotification(
+            room.currentCallId,
+            room.male.name,
+            femaleUid,
+          ).catch(error =>
+            console.warn('Unable to show incoming call notification:', error),
+          );
+        }
+      } else {
+        setIncomingRoom(null);
+        if (room?.status !== 'ringing') incomingNotificationRef.current = '';
+      }
+    });
+  }, [activeCall, femaleUid]);
+
+  const acceptIncomingCall = React.useCallback(async () => {
+    if (!incomingRoom || !femaleUid) return;
+    try {
+      await RoomService.acceptCall(femaleUid);
+      const room = incomingRoom;
+      await cancelIncomingCallNotification(room.currentCallId);
+      setIncomingRoom(null);
+      if (navigationRef.isReady()) {
+        navigationRef.navigate('Call', {
+          gender: 'female',
+          userName: room.male?.name,
+          avatarId: room.male?.avatarId,
+          maleUid: room.male?.uid,
+          femaleUid,
+          uid: room.roomId,
+          agora: room.agora,
+        });
+      }
+    } catch {
+      Alert.alert('Unable to Join Call', 'Please try again.');
+    }
+  }, [femaleUid, incomingRoom]);
+
+  const declineIncomingCall = React.useCallback(async () => {
+    if (!femaleUid) return;
+    try {
+      if (incomingRoom?.currentCallId) {
+        await cancelIncomingCallNotification(incomingRoom.currentCallId);
+      }
+      setIncomingRoom(null);
+      await RoomService.rejectCall(femaleUid);
+    } catch {
+      Alert.alert('Unable to Decline Call', 'Please try again.');
+    }
+  }, [femaleUid, incomingRoom?.currentCallId]);
+
+  const openAcceptedNotificationCall = React.useCallback(async () => {
+    if (!femaleUid || activeCall || !navigationRef.isReady()) return;
+    const pending = await consumePendingAcceptedCall();
+    if (!pending || pending.femaleUid !== femaleUid) return;
+    const snapshot = await database()
+      .ref(`rooms/${femaleUid}`)
+      .once('value');
+    const room = snapshot.val() as Room | null;
+    if (
+      !room ||
+      room.status !== 'accepted' ||
+      room.currentCallId !== pending.callId
+    ) {
+      return;
+    }
+    navigationRef.navigate('Call', {
+      gender: 'female',
+      userName: room.male?.name,
+      avatarId: room.male?.avatarId,
+      maleUid: room.male?.uid,
+      femaleUid,
+      uid: room.roomId,
+      agora: room.agora,
+    });
+  }, [activeCall, femaleUid]);
+
+  React.useEffect(() => {
+    const eventSubscription = DeviceEventEmitter.addListener(
+      ACCEPTED_CALL_EVENT,
+      openAcceptedNotificationCall,
+    );
+    const appStateSubscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        setTimeout(() => openAcceptedNotificationCall(), 300);
+      }
+    });
+    const initialTimer = setTimeout(() => openAcceptedNotificationCall(), 500);
+    return () => {
+      eventSubscription.remove();
+      appStateSubscription.remove();
+      clearTimeout(initialTimer);
+    };
+  }, [openAcceptedNotificationCall]);
 
   return (
     <NavigationContainer
@@ -178,6 +321,15 @@ function AppNavigator() {
           />
           <RootStack />
         </AppUpdateGate>
+        <IncomingCallModal
+          visible={Boolean(
+            incomingRoom && activeScreen !== 'OnlineRoom' && !activeCall,
+          )}
+          onAccept={acceptIncomingCall}
+          onDecline={declineIncomingCall}
+          userName={incomingRoom?.male?.name || 'N/A'}
+          avatar=""
+        />
         {activeCall && (
           <View
             style={[callStyles.call, !visible && callStyles.hidden]}
