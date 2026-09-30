@@ -209,6 +209,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             >
               Privacy Policy
             </Text>
+            {". The app's services, products, and overall functionality are"}
+            {' managed and run by COZYDS LLP.'}
           </Text>
 
           <Text style={styles.safeText}>

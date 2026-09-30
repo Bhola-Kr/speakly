@@ -23,7 +23,8 @@ const TermsAndConditionsScreen = () => {
 
         <Text style={styles.intro}>
           By creating an account or using VoiceTamil, you agree to these Terms &
-          Conditions.
+          Conditions. The app's services, products, and whole functionality are
+          managed and run by COZYDS LLP.
         </Text>
 
         <Section title="1. Eligibility">

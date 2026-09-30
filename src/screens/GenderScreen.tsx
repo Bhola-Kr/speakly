@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -80,35 +81,37 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
 
-      <View style={styles.header}>
-        <Text style={styles.smallTitle}>Your</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.smallTitle}>Your</Text>
 
-        <Text style={styles.title}>Gender</Text>
-      </View>
+          <Text style={styles.title}>Gender</Text>
+        </View>
 
-      {renderCard('male', require('../assets/man.png'), 'Male')}
+        {renderCard('male', require('../assets/man.png'), 'Male')}
 
-      <View style={{ height: 18 }} />
+        <View style={{ height: 18 }} />
 
-      {renderCard(
-        'female',
-        require('../assets/woman.png'),
-        'Female',
-        '(Audio verification needed)',
-      )}
+        {renderCard(
+          'female',
+          require('../assets/woman.png'),
+          'Female',
+          '(Audio verification needed)',
+        )}
 
-      <View style={{ flex: 1 }} />
+        <Text style={styles.note}>Gender cannot be changed later.</Text>
 
-      <Text style={styles.note}>Gender cannot be changed later.</Text>
-
-      <GradientButton
-        style={{
-          marginBottom: 25,
-        }}
-        title={loading ? 'Please wait...' : 'Proceed'}
-        disabled={loading}
-        onPress={updateGender}
-      />
+        <GradientButton
+          style={styles.actionButton}
+          title={loading ? 'Please wait...' : 'Proceed'}
+          disabled={loading}
+          onPress={updateGender}
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -119,7 +122,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.white,
+  },
+
+  scrollContent: {
     paddingHorizontal: 26,
+    paddingTop: 10,
+    paddingBottom: 28,
   },
 
   header: {
@@ -209,10 +217,16 @@ const styles = StyleSheet.create({
   },
 
   note: {
+    marginTop: 18,
     marginBottom: 18,
     textAlign: 'center',
     color: Colors.gray90,
     fontSize: 15,
     fontWeight: '400',
+  },
+
+  actionButton: {
+    marginBottom: 0,
+    marginTop: 0,
   },
 });

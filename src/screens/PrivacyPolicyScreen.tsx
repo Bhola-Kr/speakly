@@ -22,9 +22,10 @@ const PrivacyPolicyScreen = () => {
         <Text style={styles.updated}>Last Updated: July 2026</Text>
 
         <Text style={styles.intro}>
-          Welcome to VoiceTamil. Your privacy is important to us. This Privacy
-          Policy explains how we collect, use, protect, and manage your
-          information while you use our application.
+          Welcome to VoiceTamil. The app's services, products, and overall
+          functionality are managed and run by COZYDS LLP. This Privacy Policy
+          explains how we collect, use, protect, and manage your information
+          while you use our application.
         </Text>
 
         <Section title="1. Information We Collect">

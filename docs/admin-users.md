@@ -4,10 +4,17 @@ Set `ADMIN_PHONE_NUMBER` in `src/config/admin.ts` using the Firebase Auth phone
 format (for example, `+919876543210`). When that account opens Profile, an
 Administration section exposes the user-management screen.
 
-The screen searches `users` by UID, phone, English name, or Tamil name. User
-records are edited as JSON so fields remain dynamic as the database schema
-changes. Invalid JSON, arrays, empty values, oversized records, missing IDs,
-and Firebase failures are handled without replacing the existing record.
+The screen loads users in cursor-based pages as the administrator scrolls; it
+does not show Previous/Next page controls. Search checks the complete `users`
+collection by UID, phone, English name, or Tamil name, rather than only the
+records already loaded on screen. Because Realtime Database does not provide a
+multi-field substring query, a search reads the collection and filters it on
+the client. For a very large user collection this should be replaced by a
+server-maintained search index.
+
+Tapping any result opens an edit modal. Only the explicitly supported profile,
+verification, and wallet fields are updated, so unrelated record data is not
+replaced. Invalid field values, missing IDs, and Firebase failures are handled.
 Deletion requires confirmation and removes the user's Realtime Database user,
 room, and owned call-history nodes. It does not delete the Firebase
 Authentication account; that requires Firebase Admin SDK on a trusted backend.
