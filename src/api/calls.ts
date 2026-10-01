@@ -124,6 +124,17 @@ export const verifyOrder = async (orderId: string, customerId: string) => {
   return Api.verifyOrder(orderId, customerId);
 };
 
+export const sendChatNotification = (payload: {
+  type: 'chat_message';
+  recipientUid: string;
+  senderUid: string;
+  senderName: string;
+  conversationId: string;
+  messageId: string;
+  messageType: 'text' | 'voice';
+  preview: string;
+}) => Api.sendChatNotification(payload);
+
 // ============================================
 // AGORA TOKEN
 // ============================================

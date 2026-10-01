@@ -15,6 +15,9 @@ server-maintained search index.
 Tapping any result opens an edit modal. Only the explicitly supported profile,
 verification, and wallet fields are updated, so unrelated record data is not
 replaced. Invalid field values, missing IDs, and Firebase failures are handled.
+Administrators can also enable the Chat Host switch for female accounts. Only
+female users with the root-level `isChatHost` value set to `true` appear in the
+male Chat tab.
 Deletion requires confirmation and removes the user's Realtime Database user,
 room, and owned call-history nodes. It does not delete the Firebase
 Authentication account; that requires Firebase Admin SDK on a trusted backend.

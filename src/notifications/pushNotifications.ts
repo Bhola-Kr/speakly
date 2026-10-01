@@ -18,10 +18,16 @@ import { hasCompletedSignup } from '../utils/profileValidation';
 const CHANNEL_ID = 'voicetamil_general';
 const SILENT_CALL_CHANNEL_ID = 'voicetamil_incoming_silent';
 const PENDING_ACCEPTED_CALL_KEY = 'pendingAcceptedNotificationCall';
+const PENDING_CHAT_KEY = 'pendingChatNotification';
 export const ACCEPTED_CALL_EVENT = 'VoiceTamilAcceptedNotificationCall';
+export const CHAT_NOTIFICATION_OPEN_EVENT = 'VoiceTamilOpenChatNotification';
 let tokenQueue = Promise.resolve();
 let signingOut = false;
 let permissionRequest: Promise<void> | undefined;
+
+const isChatNotificationData = (data?: Record<string, unknown>) =>
+  data?.type === 'chat_message' ||
+  (Boolean(data?.conversationId) && Boolean(data?.messageId));
 
 function ensureNotificationPermissionRequested() {
   if (!permissionRequest) {
@@ -61,7 +67,11 @@ async function configureIncomingCallActions() {
 export async function displayPushNotification(
   message: FirebaseMessagingTypes.RemoteMessage,
 ) {
-  const title = message.notification?.title ?? message.data?.title;
+  const isChatMessage = isChatNotificationData(message.data);
+  const senderName = message.data?.senderName;
+  const title = isChatMessage && typeof senderName === 'string'
+    ? senderName
+    : message.notification?.title ?? message.data?.title;
   const body = message.notification?.body ?? message.data?.body;
   if (typeof title !== 'string' && typeof body !== 'string') return;
 
@@ -70,6 +80,7 @@ export async function displayPushNotification(
     id: message.messageId,
     title: typeof title === 'string' ? title : 'VoiceTamil',
     body: typeof body === 'string' ? body : undefined,
+    data: message.data,
     android: {
       channelId,
       smallIcon: 'ic_notification',
@@ -139,11 +150,20 @@ export const cancelIncomingCallNotification = (callId: string) =>
   notifee.cancelNotification(`incoming-call-${callId}`);
 
 export async function handleNotificationEvent(event: Event) {
+  const notification = event.detail.notification;
+  if (
+    (event.type === EventType.PRESS || event.type === EventType.ACTION_PRESS) &&
+    isChatNotificationData(notification?.data)
+  ) {
+    await queueChatNotificationOpen(notification?.data);
+    if (notification?.id) await notifee.cancelNotification(notification.id);
+    return;
+  }
+
   if (event.type !== EventType.ACTION_PRESS) return;
   const action = event.detail.pressAction?.id;
   if (action !== 'accept-call' && action !== 'reject-call') return;
 
-  const notification = event.detail.notification;
   const femaleUid = String(notification?.data?.femaleUid || '');
   const callId = String(notification?.data?.callId || '');
   const currentUid = auth().currentUser?.uid;
@@ -200,6 +220,35 @@ export async function handleNotificationEvent(event: Event) {
   }
 
   if (notification?.id) await notifee.cancelNotification(notification.id);
+}
+
+async function queueChatNotificationOpen(data?: Record<string, unknown>) {
+  const senderUid = String(data?.senderUid || '');
+  const conversationId = String(data?.conversationId || '');
+  if (!senderUid && !conversationId) return;
+  const pending = {
+    senderUid,
+    conversationId,
+  };
+  await AsyncStorage.setItem(PENDING_CHAT_KEY, JSON.stringify(pending));
+  DeviceEventEmitter.emit(CHAT_NOTIFICATION_OPEN_EVENT, pending);
+}
+
+export async function consumePendingChatNotification() {
+  const saved = await AsyncStorage.getItem(PENDING_CHAT_KEY);
+  if (!saved) return null;
+  await AsyncStorage.removeItem(PENDING_CHAT_KEY);
+  try {
+    const value = JSON.parse(saved);
+    return value?.senderUid || value?.conversationId
+      ? {
+        senderUid: String(value.senderUid || ''),
+        conversationId: String(value.conversationId || ''),
+      }
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function consumePendingAcceptedCall() {
@@ -290,6 +339,15 @@ export function startPushNotifications() {
       console.error('Unable to display push:', error),
     ),
   );
+  const unsubscribeNotificationOpened = messaging().onNotificationOpenedApp(
+    message => {
+      if (isChatNotificationData(message.data)) {
+        queueChatNotificationOpen(message.data).catch(error =>
+          console.error('Unable to open chat notification:', error),
+        );
+      }
+    },
+  );
   const unsubscribeNotificationEvents = notifee.onForegroundEvent(event => {
     handleNotificationEvent(event).catch(error =>
       console.error('Unable to handle notification action:', error),
@@ -333,6 +391,10 @@ export function startPushNotifications() {
   (async () => {
     await createNotificationChannel();
     await configureIncomingCallActions();
+    const initialNotification = await messaging().getInitialNotification();
+    if (isChatNotificationData(initialNotification?.data)) {
+      await queueChatNotificationOpen(initialNotification?.data);
+    }
     if (active) await syncToken();
   })().catch(error =>
     console.error('Unable to initialize push notifications:', error),
@@ -341,6 +403,7 @@ export function startPushNotifications() {
   return () => {
     active = false;
     unsubscribeMessage();
+    unsubscribeNotificationOpened();
     unsubscribeNotificationEvents();
     unsubscribeToken();
     unsubscribeAuth();

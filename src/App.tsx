@@ -3,6 +3,7 @@ import {
   Alert,
   AppState,
   DeviceEventEmitter,
+  Platform,
   StatusBar,
   View,
   Text,
@@ -48,8 +49,10 @@ import PaymentScreen from './screens/payment/PaymentScreen';
 import AppUpdateGate from './components/appUpdate/AppUpdateGate';
 import {
   ACCEPTED_CALL_EVENT,
+  CHAT_NOTIFICATION_OPEN_EVENT,
   cancelIncomingCallNotification,
   consumePendingAcceptedCall,
+  consumePendingChatNotification,
   displayIncomingCallNotification,
   startPushNotifications,
 } from './notifications/pushNotifications';
@@ -57,6 +60,8 @@ import { AdminUsersScreen } from './screens/admin/AdminUsersScreen';
 import IncomingCallModal from './screens/agora/IncomingCallModal';
 import RoomService, { Room } from './firebase/RoomService';
 import database from '@react-native-firebase/database';
+import ChatConversationScreen from './screens/chat/ChatConversationScreen';
+import ChatTheme from './screens/chat/chatTheme';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -68,6 +73,19 @@ const deferUpdatesOn = new Set([
   'OnlineRoom',
   'Payment',
 ]);
+
+const getStatusBarAppearance = (screen: string) => {
+  if (screen === 'Chat' || screen === 'ChatConversation') {
+    return { backgroundColor: ChatTheme.heroStart, barStyle: 'light-content' as const };
+  }
+  if (screen === 'IncomingCall' || screen === 'OutgoingCall') {
+    return { backgroundColor: Colors.navy, barStyle: 'light-content' as const };
+  }
+  if (screen === 'Splash' || screen === 'Call' || screen === 'OnlineRoom') {
+    return { backgroundColor: Colors.primary, barStyle: 'light-content' as const };
+  }
+  return { backgroundColor: Colors.background, barStyle: 'dark-content' as const };
+};
 
 function RootStack() {
   return (
@@ -93,6 +111,10 @@ function RootStack() {
       <Stack.Screen name="FemaleBottomTabs" component={FemaleBottomTabs} />
       <Stack.Screen name="ProfileSetting" component={ProfileSettingScreen} />
       <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+      <Stack.Screen
+        name="ChatConversation"
+        component={ChatConversationScreen}
+      />
       <Stack.Screen
         options={{
           headerShown: true,
@@ -156,10 +178,29 @@ function AppNavigator() {
   const { user } = useUser();
   const { activeCall, visible, showCall, minimizeCall, clearCall } =
     useActiveCall();
+  const statusBarAppearance = React.useMemo(
+    () => getStatusBarAppearance(activeScreen),
+    [activeScreen],
+  );
   const femaleUid =
     user?.profile?.gender === 'female' ? String(user?.uid || '') : '';
   const syncActiveScreen = () =>
     setActiveScreen(navigationRef.getCurrentRoute()?.name ?? 'Splash');
+
+  const applyStatusBarAppearance = React.useCallback(() => {
+    StatusBar.setBarStyle(statusBarAppearance.barStyle, true);
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor(statusBarAppearance.backgroundColor, true);
+    }
+  }, [statusBarAppearance]);
+
+  React.useEffect(() => {
+    applyStatusBarAppearance();
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') applyStatusBarAppearance();
+    });
+    return () => subscription.remove();
+  }, [applyStatusBarAppearance]);
   const openRecharge = React.useCallback(() => {
     minimizeCall();
     if (navigationRef.isReady()) {
@@ -274,6 +315,22 @@ function AppNavigator() {
     });
   }, [activeCall, femaleUid]);
 
+  const openChatNotification = React.useCallback(async () => {
+    if (
+      !user?.uid ||
+      !navigationRef.isReady() ||
+      ['Splash', 'Login', 'Otp', 'Gender', 'Nickname', 'BirthYear', 'Avatar'].includes(activeScreen)
+    ) {
+      return;
+    }
+    const pending = await consumePendingChatNotification();
+    if (!pending) return;
+    const rootRoute = user?.profile?.gender === 'female'
+      ? 'FemaleBottomTabs'
+      : 'Main';
+    navigationRef.navigate(rootRoute, { screen: 'Chat' });
+  }, [activeScreen, user?.profile?.gender, user?.uid]);
+
   React.useEffect(() => {
     const eventSubscription = DeviceEventEmitter.addListener(
       ACCEPTED_CALL_EVENT,
@@ -291,6 +348,24 @@ function AppNavigator() {
       clearTimeout(initialTimer);
     };
   }, [openAcceptedNotificationCall]);
+
+  React.useEffect(() => {
+    const eventSubscription = DeviceEventEmitter.addListener(
+      CHAT_NOTIFICATION_OPEN_EVENT,
+      openChatNotification,
+    );
+    const appStateSubscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        setTimeout(() => openChatNotification(), 350);
+      }
+    });
+    const initialTimer = setTimeout(() => openChatNotification(), 800);
+    return () => {
+      eventSubscription.remove();
+      appStateSubscription.remove();
+      clearTimeout(initialTimer);
+    };
+  }, [openChatNotification]);
 
   return (
     <NavigationContainer
@@ -316,8 +391,8 @@ function AppNavigator() {
           enabled={!activeCall && !deferUpdatesOn.has(activeScreen)}
         >
           <StatusBar
-            backgroundColor={Colors.background}
-            barStyle="dark-content"
+            backgroundColor={statusBarAppearance.backgroundColor}
+            barStyle={statusBarAppearance.barStyle}
           />
           <RootStack />
         </AppUpdateGate>

@@ -6,11 +6,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import FemaleHomeScreen from './FemaleHomeScreen';
 import FemaleHistoryScreen from './FemaleHistoryScreen';
+import ChatHostInboxScreen from './chat/ChatHostInboxScreen';
+import { useUser } from '../hooks/UserContext';
 
 const Tab = createBottomTabNavigator();
 
 const FemaleBottomTabs = () => {
   const insets = useSafeAreaInsets();
+  const { user } = useUser();
 
   return (
     <Tab.Navigator
@@ -77,6 +80,24 @@ const FemaleBottomTabs = () => {
           ),
         }}
       />
+
+      {user?.isChatHost === true && (
+        <Tab.Screen
+          name="Chat"
+          component={ChatHostInboxScreen}
+          options={{
+            tabBarItemStyle:
+              user?.isChatHost === true ? undefined : { display: 'none' },
+            tabBarIcon: ({ focused }) => (
+              <Ionicons
+                name={focused ? 'chatbubble' : 'chatbubble-outline'}
+                size={22}
+                color={focused ? Colors.secondary : Colors.gray143}
+              />
+            ),
+          }}
+        />
+      )}
 
       <Tab.Screen
         name="History"

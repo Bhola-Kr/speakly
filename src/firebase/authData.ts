@@ -80,6 +80,7 @@ class AuthData {
     await database()
       .ref(`users/${uid}`)
       .transaction(currentUser => {
+        const isNewAccount = !currentUser;
         const existing = currentUser || {};
         const profile = existing.profile || {};
 
@@ -89,6 +90,7 @@ class AuthData {
           phone: existing.phone || phone,
           createdAt: existing.createdAt || now,
           lastSeen: now,
+          isChatHost: existing.isChatHost === true,
           profile: {
             avatarId: 1,
             maritalStatus: 'Single',
@@ -114,6 +116,18 @@ class AuthData {
           wallet: {
             balance: 0,
             ...(existing.wallet || {}),
+          },
+          offers: {
+            ...(existing.offers || {}),
+            ...(isNewAccount && gender === 'male'
+              ? {
+                chatSignupFreeMessages: {
+                  total: 3,
+                  remaining: 3,
+                  grantedAt: now,
+                },
+              }
+              : {}),
           },
           settings: {
             notification: true,

@@ -5,6 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import HomeScreen from './home/HomeScreen';
 import ManHistoryScreen from './recentScreen/ManHistoryScreen';
+import ChatHostsScreen from './chat/ChatHostsScreen';
 import Colors from '../constants/colors';
 
 const Tab = createBottomTabNavigator();
@@ -71,6 +72,20 @@ const BottomTabs = () => {
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
+              size={22}
+              color={focused ? Colors.secondary : Colors.gray143}
+            />
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="Chat"
+        component={ChatHostsScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name={focused ? 'chatbubble' : 'chatbubble-outline'}
               size={22}
               color={focused ? Colors.secondary : Colors.gray143}
             />
