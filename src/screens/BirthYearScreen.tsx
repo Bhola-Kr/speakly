@@ -19,11 +19,12 @@ import authData from '../firebase/authData';
 
 interface Props {
   navigation: any;
+  route: any;
 }
 
 const ITEM_HEIGHT = 40;
 
-const BirthYearScreen: React.FC<Props> = ({ navigation }) => {
+const BirthYearScreen: React.FC<Props> = ({ navigation, route }) => {
   const years = useMemo(() => {
     return Array.from({ length: 77 }, (_, i) => 2026 - i);
   }, []);
@@ -71,7 +72,7 @@ const BirthYearScreen: React.FC<Props> = ({ navigation }) => {
         birthYear,
       });
 
-      navigation.navigate('Avatar');
+      navigation.navigate('Avatar', { gender: route?.params?.gender });
     } catch (error: any) {
       console.error('updateBirthYear:', error);
 

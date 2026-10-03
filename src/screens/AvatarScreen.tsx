@@ -13,7 +13,7 @@ import {
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
-import { Avatar, femaleAvatars } from '../constants/constants';
+import { Avatar, femaleAvatars, maleAvatars } from '../constants/constants';
 import { useUser } from '../hooks/UserContext';
 
 interface Props {
@@ -24,7 +24,11 @@ interface Props {
 const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
   const isEditMode = route?.params?.isEditMode;
   const { user, updateProfile } = useUser();
-  const selectedAvatarId = user?.profile?.avatarId || 1;
+  const gender = String(
+    route?.params?.gender || user?.profile?.gender || 'male',
+  ).toLowerCase();
+  const avatars = gender === 'female' ? femaleAvatars : maleAvatars;
+  const selectedAvatarId = Number(user?.profile?.avatarId) || 1;
 
   const [selectedAvatar, setSelectedAvatar] = useState<number | null>(
     selectedAvatarId,
@@ -78,7 +82,7 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* Grid */}
 
       <FlatList
-        data={femaleAvatars}
+        data={avatars}
         renderItem={renderAvatar}
         keyExtractor={item => item.id.toString()}
         numColumns={2}
@@ -88,10 +92,7 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
       />
 
       <GradientButton
-        style={{
-          marginBottom: 25,
-          marginTop: 10,
-        }}
+        style={styles.actionButton}
         title={loading ? 'Please wait...' : isEditMode ? 'Save' : 'Proceed'}
         disabled={!selectedAvatar || loading}
         onPress={async () => {
@@ -107,6 +108,11 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
             });
             if (isEditMode) {
               navigation.goBack();
+            } else if (gender === 'male') {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Main' }],
+              });
             } else {
               navigation.navigate('AudioVerification', {
                 avatarId: selectedAvatar,
@@ -172,6 +178,11 @@ const styles = StyleSheet.create({
 
   list: {
     paddingBottom: 15,
+  },
+
+  actionButton: {
+    marginBottom: 25,
+    marginTop: 10,
   },
 
   row: {

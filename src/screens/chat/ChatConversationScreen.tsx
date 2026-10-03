@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Image,
@@ -125,13 +124,30 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
       openWalletAlert();
       return;
     }
+
+    const pendingMessageId = `pending-${user?.uid}-${Date.now()}`;
+    const pendingMessage: ChatMessage = {
+      id: pendingMessageId,
+      senderId: String(user?.uid || ''),
+      receiverId: peerUid,
+      type: 'text',
+      text: message,
+      createdAt: Date.now(),
+    };
+
+    setText('');
+    setMessages(currentMessages => [...currentMessages, pendingMessage]);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    ChatService.setTyping(peerUid, false).catch(() => undefined);
+
     try {
       setSending(true);
       await ChatService.sendText(peerUid, message);
-      setText('');
-      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-      ChatService.setTyping(peerUid, false).catch(() => undefined);
     } catch (error: any) {
+      setMessages(currentMessages =>
+        currentMessages.filter(item => item.id !== pendingMessageId),
+      );
+      setText(currentText => currentText || message);
       if (error?.code === 'chat/insufficient-balance') openWalletAlert();
       else Alert.alert('Message Not Sent', error?.message || 'Please try again.');
     } finally {
@@ -158,7 +174,11 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
       />
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // Android's adjustResize already keeps this view above the IME. Applying
+        // the "height" behavior as well double-counts the keyboard on some
+        // devices (notably keyboards with a suggestion/toolbar row), which can
+        // leave the composer underneath the keyboard.
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
         <LinearGradient colors={[ChatTheme.heroStart, ChatTheme.heroMiddle, ChatTheme.heroEnd]} locations={[0, 0.72, 1]} style={styles.header}>
@@ -304,12 +324,12 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
               maxLength={1000}
             />
             <TouchableOpacity
-              style={[styles.sendButton, (!text.trim() || sending) && styles.sendDisabled]}
+              style={[styles.sendButton, !text.trim() && styles.sendDisabled]}
               onPress={sendText}
               disabled={!text.trim() || sending}
               accessibilityLabel={isMale ? `Send message for ${CHAT_TEXT_PRICE} coin` : 'Send message'}
             >
-              {sending ? <ActivityIndicator size="small" color={Colors.black} /> : <Ionicons name="send" size={20} color={Colors.black} />}
+              <Ionicons name="send" size={20} color={Colors.black} />
             </TouchableOpacity>
             </View>
           </View>

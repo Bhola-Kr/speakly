@@ -26,7 +26,7 @@ export const faqs = [
     id: 4,
     question: 'How do I update my profile?',
     answer:
-      'Go to Profile > Edit Profile to update the available profile information. Name and avatar changes are available for female profiles only.',
+      'Go to Profile > Edit Profile to update your available profile information and avatar.',
   },
   {
     id: 5,
@@ -89,6 +89,25 @@ export const femaleAvatars: Avatar[] = [
   { id: 20, image: require('../assets/avatars/avatar20.png') },
 ];
 
+export const maleAvatars: Avatar[] = [
+  { id: 1, image: require('../assets/manAvatars/avatar1.jpeg') },
+  { id: 2, image: require('../assets/manAvatars/avatar2.jpeg') },
+  { id: 3, image: require('../assets/manAvatars/avatar3.jpeg') },
+  { id: 4, image: require('../assets/manAvatars/avatar4.jpeg') },
+  { id: 5, image: require('../assets/manAvatars/avatar5.jpeg') },
+  { id: 6, image: require('../assets/manAvatars/avatar6.jpeg') },
+  { id: 7, image: require('../assets/manAvatars/avatar7.jpeg') },
+  { id: 8, image: require('../assets/manAvatars/avatar8.jpeg') },
+  { id: 9, image: require('../assets/manAvatars/avatar9.jpeg') },
+  { id: 10, image: require('../assets/manAvatars/avatar10.jpeg') },
+  { id: 11, image: require('../assets/manAvatars/avatar11.jpeg') },
+  { id: 12, image: require('../assets/manAvatars/avatar12.jpeg') },
+  { id: 13, image: require('../assets/manAvatars/avatar13.jpeg') },
+  { id: 14, image: require('../assets/manAvatars/avatar14.jpeg') },
+  { id: 15, image: require('../assets/manAvatars/avatar15.jpeg') },
+  { id: 16, image: require('../assets/manAvatars/avatar16.jpeg') },
+];
+
 export const getFemaleAvatar = (avatarId: number | string | undefined) => {
   return (
     femaleAvatars.find(avatar => avatar.id === Number(avatarId))?.image ??
@@ -96,13 +115,20 @@ export const getFemaleAvatar = (avatarId: number | string | undefined) => {
   );
 };
 
+export const getMaleAvatar = (avatarId: number | string | undefined) => {
+  return (
+    maleAvatars.find(avatar => avatar.id === Number(avatarId))?.image ??
+    maleAvatars[0].image
+  );
+};
+
 export const getUserAvatar = (user: any) => {
   try {
-    if (user?.profile?.gender === 'female') {
+    if (String(user?.profile?.gender).toLowerCase() === 'female') {
       return getFemaleAvatar(user?.profile?.avatarId);
     }
 
-    return require('../assets/man.png');
+    return getMaleAvatar(user?.profile?.avatarId);
   } catch {
     return require('../assets/man.png');
   }

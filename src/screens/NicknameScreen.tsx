@@ -71,14 +71,7 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
         ...(gender === 'female' ? { tamilName: tamilName.trim() } : {}),
       });
 
-      if (gender === 'male') {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Main' }], // Home Screen
-        });
-      } else {
-        navigation.navigate('BirthYear');
-      }
+      navigation.navigate('BirthYear', { gender });
     } catch (e: any) {
       console.log('Create User Error:', e);
 

@@ -39,6 +39,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [isOtpFocused, setIsOtpFocused] = useState(false);
   const otpInputRef = useRef<TextInput>(null);
+  const autoSubmittedOtpRef = useRef('');
   const cursorOpacity = useRef(new Animated.Value(1)).current;
 
   const isValid = otp.length === 4;
@@ -89,11 +90,22 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   }, [cursorOpacity, isOtpFocused, isValid]);
 
   const handleOtpChange = (value: string) => {
-    setOtp(value.replace(/\D/g, '').slice(0, 4));
+    const nextOtp = value.replace(/\D/g, '').slice(0, 4);
+    setOtp(nextOtp);
+
+    if (nextOtp.length < 4) {
+      autoSubmittedOtpRef.current = '';
+      return;
+    }
+
+    if (autoSubmittedOtpRef.current !== nextOtp) {
+      autoSubmittedOtpRef.current = nextOtp;
+      requestAnimationFrame(() => verifyOtp(nextOtp));
+    }
   };
 
-  const verifyOtp = async () => {
-    if (!isValid || loading) {
+  const verifyOtp = async (otpToVerify: string = otp) => {
+    if (otpToVerify.length !== 4 || loading) {
       return;
     }
 
@@ -101,7 +113,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       setLoading(true);
 
       // Verify OTP through your backend
-      const response = await verifyMSGOtp(phoneNumber, otp, requestId);
+      const response = await verifyMSGOtp(phoneNumber, otpToVerify, requestId);
 
       if (!response?.success || !response?.uid) {
         throw new Error(response?.message || 'Failed to authenticate user.');
@@ -194,6 +206,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       }
 
       setOtp('');
+      autoSubmittedOtpRef.current = '';
       setTimer(30);
       requestAnimationFrame(() => otpInputRef.current?.focus());
 
@@ -211,10 +224,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingBottom: 100,
-        }}
+        contentContainerStyle={styles.scrollContent}
       >
         <StatusBar
           backgroundColor={Colors.background}
@@ -222,7 +232,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
         />
 
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
+          style={styles.keyboardAvoidingView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <TouchableOpacity
@@ -273,9 +283,12 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
                 inputMode="numeric"
                 maxLength={4}
                 textContentType="oneTimeCode"
-                autoComplete="sms-otp"
+                autoComplete={
+                  Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'
+                }
+                importantForAutofill="yes"
                 editable={!loading}
-                onSubmitEditing={verifyOtp}
+                onSubmitEditing={() => verifyOtp()}
                 onFocus={() => setIsOtpFocused(true)}
                 onBlur={() => setIsOtpFocused(false)}
                 style={styles.hiddenInput}
@@ -311,7 +324,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
           <GradientButton
             title={loading ? 'Verifying...' : 'Verify & Continue'}
             disabled={!isValid || loading}
-            onPress={verifyOtp}
+            onPress={() => verifyOtp()}
           />
 
           <View style={styles.timerContainer}>
@@ -342,6 +355,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
+  },
+
+  keyboardAvoidingView: {
+    flex: 1,
   },
 
   backButton: {

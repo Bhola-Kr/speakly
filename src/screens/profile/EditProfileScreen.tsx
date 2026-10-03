@@ -138,30 +138,26 @@ export const EditProfileScreen = ({ navigation }: any) => {
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.avatarContainer}
-          disabled={gender === 'male'}
           onPress={() =>
             navigation.navigate('Avatar', {
               isEditMode: true,
+              gender,
               selectedAvatar: profile?.avatarId,
             })
           }
         >
           <Image source={getUserAvatar(user)} style={styles.avatar} />
 
-          {gender === 'female' && (
-            <View style={styles.cameraView}>
-              <MaterialCommunityIcons
-                name="camera"
-                size={18}
-                color={Colors.black}
-              />
-            </View>
-          )}
+          <View style={styles.cameraView}>
+            <MaterialCommunityIcons
+              name="camera"
+              size={18}
+              color={Colors.black}
+            />
+          </View>
         </TouchableOpacity>
 
-        {gender === 'female' && (
-          <Text style={styles.changePhoto}>Tap to Change Avatar</Text>
-        )}
+        <Text style={styles.changePhoto}>Tap to Change Avatar</Text>
 
         {gender === 'female' && (
           <>
