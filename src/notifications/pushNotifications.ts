@@ -9,16 +9,20 @@ import messaging, {
 } from '@react-native-firebase/messaging';
 import notifee, {
   AndroidImportance,
+  AndroidCategory,
   AuthorizationStatus,
   EventType,
   Event,
+  TriggerType,
+  TimestampTrigger,
 } from '@notifee/react-native';
 import { hasCompletedSignup } from '../utils/profileValidation';
 
 const CHANNEL_ID = 'voicetamil_general';
-const SILENT_CALL_CHANNEL_ID = 'voicetamil_incoming_silent';
+const INCOMING_CALL_CHANNEL_ID = 'voicetamil_incoming_calls_v2';
 const PENDING_ACCEPTED_CALL_KEY = 'pendingAcceptedNotificationCall';
 const PENDING_CHAT_KEY = 'pendingChatNotification';
+const MISSED_CALL_DELAY_MS = 30_000;
 export const ACCEPTED_CALL_EVENT = 'VoiceTamilAcceptedNotificationCall';
 export const CHAT_NOTIFICATION_OPEN_EVENT = 'VoiceTamilOpenChatNotification';
 let tokenQueue = Promise.resolve();
@@ -67,6 +71,18 @@ async function configureIncomingCallActions() {
 export async function displayPushNotification(
   message: FirebaseMessagingTypes.RemoteMessage,
 ) {
+  if (message.data?.type === 'incoming_call') {
+    const callId = String(message.data?.callId || '');
+    const femaleUid = String(message.data?.femaleUid || '');
+    if (callId && femaleUid) {
+      await displayIncomingCallNotification(
+        callId,
+        String(message.data?.callerName || 'Someone'),
+        femaleUid,
+      );
+    }
+    return;
+  }
   const isChatMessage = isChatNotificationData(message.data);
   const senderName = message.data?.senderName;
   const title = isChatMessage && typeof senderName === 'string'
@@ -106,10 +122,11 @@ export async function displayIncomingCallNotification(
 ) {
   await configureIncomingCallActions();
   const channelId = await notifee.createChannel({
-    id: SILENT_CALL_CHANNEL_ID,
+    id: INCOMING_CALL_CHANNEL_ID,
     name: 'Incoming call alerts',
     importance: AndroidImportance.HIGH,
     vibration: true,
+    sound: 'default',
   });
   await notifee.displayNotification({
     id: `incoming-call-${callId}`,
@@ -121,6 +138,9 @@ export async function displayIncomingCallNotification(
       smallIcon: 'ic_notification',
       pressAction: { id: 'default' },
       importance: AndroidImportance.HIGH,
+      category: AndroidCategory.CALL,
+      sound: 'default',
+      loopSound: true,
       actions: [
         {
           title: 'Reject',
@@ -136,18 +156,47 @@ export async function displayIncomingCallNotification(
     },
     ios: {
       categoryId: 'incoming-call',
+      sound: 'default',
       foregroundPresentationOptions: {
         banner: true,
         list: true,
-        sound: false,
+        sound: true,
         badge: false,
       },
     },
   });
+
+  const missedCallTrigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: Date.now() + MISSED_CALL_DELAY_MS,
+  };
+  await notifee.createTriggerNotification(
+    {
+      id: `incoming-call-${callId}`,
+      title: 'Missed Voice Call',
+      body: `You missed a call from ${callerName || 'Someone'}`,
+      data: { type: 'missed_call', callId, femaleUid },
+      android: {
+        channelId,
+        smallIcon: 'ic_notification',
+        pressAction: { id: 'default' },
+        category: AndroidCategory.CALL,
+        sound: 'default',
+      },
+      ios: {
+        sound: 'default',
+      },
+    },
+    missedCallTrigger,
+  );
 }
 
-export const cancelIncomingCallNotification = (callId: string) =>
-  notifee.cancelNotification(`incoming-call-${callId}`);
+export const cancelIncomingCallNotification = async (callId: string) => {
+  await Promise.all([
+    notifee.cancelNotification(`incoming-call-${callId}`),
+    notifee.cancelTriggerNotification(`incoming-call-${callId}`),
+  ]);
+};
 
 export async function handleNotificationEvent(event: Event) {
   const notification = event.detail.notification;
@@ -219,7 +268,7 @@ export async function handleNotificationEvent(event: Event) {
     }
   }
 
-  if (notification?.id) await notifee.cancelNotification(notification.id);
+  await cancelIncomingCallNotification(callId);
 }
 
 async function queueChatNotificationOpen(data?: Record<string, unknown>) {

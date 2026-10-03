@@ -241,7 +241,15 @@ function AppNavigator() {
         }
       } else {
         setIncomingRoom(null);
-        if (room?.status !== 'ringing') incomingNotificationRef.current = '';
+        if (room?.status !== 'ringing') {
+          const resolvedCallId = incomingNotificationRef.current;
+          incomingNotificationRef.current = '';
+          if (resolvedCallId) {
+            cancelIncomingCallNotification(resolvedCallId).catch(error =>
+              console.warn('Unable to clear incoming call notification:', error),
+            );
+          }
+        }
       }
     });
   }, [activeCall, femaleUid]);

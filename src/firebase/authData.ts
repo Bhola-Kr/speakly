@@ -131,6 +131,9 @@ class AuthData {
           },
           settings: {
             notification: true,
+            ...(isNewAccount && gender === 'female'
+              ? { voiceCallsEnabled: false }
+              : {}),
             ...(existing.settings || {}),
           },
         };

@@ -135,6 +135,18 @@ class Api {
       payload,
     );
   }
+
+  sendIncomingCallNotification(payload: {
+    recipientUid: string;
+    femaleUid: string;
+    callId: string;
+    callerName: string;
+  }) {
+    return this.post<{ success: boolean; delivered?: boolean }>(
+      '/sendCallNotification',
+      { type: 'incoming_call', ...payload },
+    );
+  }
 }
 
 // ============================================

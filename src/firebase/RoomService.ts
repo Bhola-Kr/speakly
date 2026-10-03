@@ -4,7 +4,7 @@ import {
   calculateCallAmount,
   CALL_RATE_PER_MINUTE,
 } from '../constants/constants';
-import { fetchAgoraToken } from '../api/calls';
+import { fetchAgoraToken, sendIncomingCallPush } from '../api/calls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FEMALE_AVAILABILITY_KEY = 'femaleAvailabilityEnabled';
@@ -84,19 +84,9 @@ class RoomService {
   }
 
   private async armOfflineOnDisconnect(uid: string) {
-    const timestamp = Date.now();
-    await Promise.all([
-      database().ref(`rooms/${uid}`).onDisconnect().update({
-        status: 'offline',
-        male: null,
-        currentCallId: '',
-        updatedAt: timestamp,
-      }),
-      database()
-        .ref(`users/${uid}/profile/status`)
-        .onDisconnect()
-        .set('offline'),
-    ]);
+    // Availability is an account preference, not a socket-presence signal.
+    // Cancel legacy handlers so locking/closing the app does not hide females.
+    await this.cancelOfflineOnDisconnect(uid);
   }
 
   private async cancelOfflineOnDisconnect(uid: string) {
@@ -160,6 +150,7 @@ class RoomService {
     const updates: Record<string, any> = {
       [`rooms/${firebaseUser.uid}`]: room,
       [`users/${firebaseUser.uid}/profile/status`]: 'online',
+      [`users/${firebaseUser.uid}/settings/voiceCallsEnabled`]: true,
     };
 
     try {
@@ -182,6 +173,7 @@ class RoomService {
       [`rooms/${firebaseUser.uid}/currentCallId`]: '',
       [`rooms/${firebaseUser.uid}/updatedAt`]: Date.now(),
       [`users/${firebaseUser.uid}/profile/status`]: 'offline',
+      [`users/${firebaseUser.uid}/settings/voiceCallsEnabled`]: false,
     };
 
     await database().ref().update(updates);
@@ -190,16 +182,15 @@ class RoomService {
 
   async restoreFemaleAvailability() {
     const firebaseUser = this.getCurrentUser();
-    const enabled =
-      (await AsyncStorage.getItem(FEMALE_AVAILABILITY_KEY)) === 'true';
-    if (!enabled) return false;
-
     const [userSnapshot, roomSnapshot] = await Promise.all([
       database().ref(`users/${firebaseUser.uid}`).once('value'),
       database().ref(`rooms/${firebaseUser.uid}`).once('value'),
     ]);
     const user = userSnapshot.val();
     if (user?.profile?.gender !== 'female') return false;
+    // Only the explicit Go Online action enables persistent availability.
+    // Back navigation, app backgrounding and reconnects never disable it.
+    if (user?.settings?.voiceCallsEnabled !== true) return false;
 
     const room = roomSnapshot.val() as Room | null;
     if (
@@ -241,6 +232,7 @@ class RoomService {
       throw new Error('You are blocked by this user.');
     }
     const male = await this.getUser(firebaseUser.uid);
+    const agoraRes = await fetchAgoraToken();
     const roomRef = database().ref(`rooms/${femaleUid}`);
 
     // Load the server room before starting the transaction. On a male user's
@@ -293,6 +285,10 @@ class RoomService {
         name: male.profile.name,
         avatarId: male.profile.avatarId,
       };
+      room.agora = {
+        male: agoraRes.male,
+        female: agoraRes.female,
+      };
 
       room.updatedAt = Date.now();
       return room;
@@ -327,7 +323,16 @@ class RoomService {
       );
     }
 
-    return transaction.snapshot.val();
+    const claimedRoom = transaction.snapshot.val() as Room;
+    sendIncomingCallPush({
+      recipientUid: femaleUid,
+      femaleUid,
+      callId,
+      callerName: String(male?.profile?.name || 'Someone'),
+    }).catch(error =>
+      console.warn('Unable to send incoming call push:', error),
+    );
+    return claimedRoom;
   }
 
   listenIncomingCall(femaleUid: string, callback: (room: Room) => void) {
@@ -391,13 +396,12 @@ class RoomService {
       return {
         ...room,
         status: 'men_rejected',
-        male: null,
-        currentCallId: '',
         updatedAt: Date.now(),
       };
     });
 
     if (transaction.committed) {
+      await this.saveCallHistory(transaction.snapshot.val() as Room);
       this.scheduleRoomReset(femaleUid, 'men_rejected');
     }
   }

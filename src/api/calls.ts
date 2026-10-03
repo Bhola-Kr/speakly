@@ -135,6 +135,13 @@ export const sendChatNotification = (payload: {
   preview: string;
 }) => Api.sendChatNotification(payload);
 
+export const sendIncomingCallPush = (payload: {
+  recipientUid: string;
+  femaleUid: string;
+  callId: string;
+  callerName: string;
+}) => Api.sendIncomingCallNotification(payload);
+
 // ============================================
 // AGORA TOKEN
 // ============================================
