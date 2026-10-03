@@ -6,13 +6,14 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -149,8 +150,17 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <StatusBar
+        backgroundColor={ChatTheme.heroStart}
+        barStyle="light-content"
+        translucent={false}
+      />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
         <LinearGradient colors={[ChatTheme.heroStart, ChatTheme.heroMiddle, ChatTheme.heroEnd]} locations={[0, 0.72, 1]} style={styles.header}>
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
             <Ionicons name="arrow-back" size={25} color={Colors.white} />
@@ -205,6 +215,7 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
             contentContainerStyle={styles.messages}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
             ListHeaderComponent={messages.length ? (
               <View style={styles.dayDivider}>
@@ -258,13 +269,13 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
                 <Text style={styles.emptyGreeting}>Say hello to {peerName}</Text>
                 <Text style={styles.emptyText}>{isMale ? freeMessagesRemaining > 0 ? `You have ${freeMessagesRemaining} free message${freeMessagesRemaining === 1 ? '' : 's'} ready. No coins will be deducted.` : `Each text costs ${CHAT_TEXT_PRICE} coin and each voice message costs ${CHAT_VOICE_PRICE} coins.` : 'As a female, your text and voice replies are free.'}</Text>
                 <View style={styles.suggestionRow}>
-                  <TouchableOpacity style={styles.suggestion} onPress={() => updateMessageText('Hi! How are you?')}>
+                  <TouchableOpacity style={styles.suggestion} onPress={() => updateMessageText('hii! எப்டி இருக்கீங்க')}>
                     <Ionicons name="hand-left-outline" size={15} color={Colors.coinHighlight} />
-                    <Text style={styles.suggestionText}>Hi! How are you?</Text>
+                    <Text style={styles.suggestionText}>hii! எப்டி இருக்கீங்க</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.suggestion} onPress={() => updateMessageText('Can we chat?')}>
+                  <TouchableOpacity style={styles.suggestion} onPress={() => updateMessageText('பேசலாமா?')}>
                     <Ionicons name="chatbubble-ellipses-outline" size={15} color={Colors.coinHighlight} />
-                    <Text style={styles.suggestionText}>Can we chat?</Text>
+                    <Text style={styles.suggestionText}>பேசலாமா?</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -289,6 +300,7 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
               placeholderTextColor={Colors.placeholder}
               style={styles.input}
               multiline
+              textAlignVertical="center"
               maxLength={1000}
             />
             <TouchableOpacity
@@ -308,6 +320,7 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: ChatTheme.heroStart },
   container: { flex: 1, backgroundColor: ChatTheme.background },
   header: { minHeight: 84, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 10, paddingBottom: 13 },
   iconButton: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: ChatTheme.heroPanel, borderWidth: 1, borderColor: ChatTheme.heroPanelBorder, marginRight: 5 },

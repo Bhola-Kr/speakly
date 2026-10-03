@@ -32,7 +32,6 @@ import {
 } from 'react-native-agora';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
@@ -57,10 +56,10 @@ type Props = {
   visible: boolean;
   onMinimize: () => void;
   onFinished: () => void;
-  onAddBalance: () => void;
 };
 
 const LOW_BALANCE_MINUTES = 3;
+const BILLING_INTERVAL_MS = 60 * 1000;
 const QUICK_NOTE_LIMIT = 30;
 const NOTE_DETAILS_LIMIT = 300;
 
@@ -80,7 +79,6 @@ const CallScreen = ({
   visible,
   onMinimize,
   onFinished,
-  onAddBalance,
 }: Props) => {
   const { user } = useUser();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
@@ -133,7 +131,8 @@ const CallScreen = ({
   const billingChargeInProgressRef = useRef(false);
   const peerRecoveryRef = useRef<(() => void) | null>(null);
   const callEndedRef = useRef(false);
-  const lowBalanceAlertedRef = useRef(false);
+  const countdownAlertedRef = useRef(false);
+  const countdownDeadlineRef = useRef<number | null>(null);
 
   const seconds = useRef(0);
 
@@ -141,17 +140,19 @@ const CallScreen = ({
 
   const [connected, setConnected] = useState(false);
 
+  const [billingStarted, setBillingStarted] = useState(false);
+
   const [muted, setMuted] = useState(false);
 
   const [speaker, setSpeaker] = useState(true);
 
   const [safetyActionLoading, setSafetyActionLoading] = useState(false);
 
-  const [timer, setTimer] = useState('00:00');
-
   const [callerBalance, setCallerBalance] = useState<number | null>(null);
 
-  const [showLowBalance, setShowLowBalance] = useState(false);
+  const [remainingCallTime, setRemainingCallTime] = useState<string | null>(
+    null,
+  );
 
   const [maleUserNote, setMaleUserNote] = useState<MaleUserNote>(EMPTY_NOTE);
 
@@ -164,27 +165,53 @@ const CallScreen = ({
   const [savingNote, setSavingNote] = useState(false);
 
   const walletBalance = Number(user?.wallet?.balance);
-  const lowBalanceThreshold = CALL_RATE_PER_MINUTE * LOW_BALANCE_MINUTES;
+  const countdownBalance = gender === 'male' ? walletBalance : callerBalance;
 
   useEffect(() => {
-    if (gender !== 'male' || !connected || !Number.isFinite(walletBalance)) {
+    if (
+      !connected ||
+      !billingStarted ||
+      countdownBalance === null ||
+      !Number.isFinite(countdownBalance)
+    ) {
       return;
     }
 
-    if (walletBalance > lowBalanceThreshold) {
-      lowBalanceAlertedRef.current = false;
-      setShowLowBalance(false);
+    // The current minute is already paid. Two further payable minutes means
+    // the call has three minutes remaining, including the current minute.
+    const countdownThreshold =
+      CALL_RATE_PER_MINUTE * (LOW_BALANCE_MINUTES - 1);
+    if (countdownBalance > countdownThreshold) {
       return;
     }
 
-    if (walletBalance <= 0 || lowBalanceAlertedRef.current) {
-      return;
+    countdownDeadlineRef.current =
+      Date.now() +
+      BILLING_INTERVAL_MS *
+        (Math.floor(Math.max(0, countdownBalance) / CALL_RATE_PER_MINUTE) + 1);
+
+    if (!countdownAlertedRef.current) {
+      countdownAlertedRef.current = true;
+      Vibration.vibrate([0, 400, 200, 400]);
     }
 
-    lowBalanceAlertedRef.current = true;
-    setShowLowBalance(true);
-    Vibration.vibrate([0, 400, 200, 400]);
-  }, [connected, gender, lowBalanceThreshold, walletBalance]);
+    const updateCountdown = () => {
+      const remainingSeconds = Math.max(
+        0,
+        Math.ceil(
+          ((countdownDeadlineRef.current ?? Date.now()) - Date.now()) / 1000,
+        ),
+      );
+      const min = Math.floor(remainingSeconds / 60);
+      const sec = remainingSeconds % 60;
+      setRemainingCallTime(
+        `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`,
+      );
+    };
+
+    updateCountdown();
+    return setCallInterval(updateCountdown, 1000);
+  }, [billingStarted, connected, countdownBalance]);
 
   useEffect(() => {
     if (gender !== 'female' || !maleUid) {
@@ -285,12 +312,6 @@ const CallScreen = ({
     timerRef.current = setCallInterval(() => {
       seconds.current = Math.floor((Date.now() - startedAt) / 1000);
 
-      const min = Math.floor(seconds.current / 60);
-      const sec = seconds.current % 60;
-
-      setTimer(
-        `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`,
-      );
     }, 1000);
   }, []);
 
@@ -302,7 +323,6 @@ const CallScreen = ({
 
     seconds.current = 0;
 
-    setTimer('00:00');
   }, []);
 
   const stopBilling = useCallback(() => {
@@ -357,21 +377,6 @@ const CallScreen = ({
     await ending;
   }, [finishCall]);
 
-  useEffect(() => {
-    if (
-      gender !== 'male' ||
-      !connected ||
-      !Number.isFinite(walletBalance) ||
-      walletBalance > 0 ||
-      billingChargeInProgressRef.current ||
-      callEndedRef.current
-    ) {
-      return;
-    }
-
-    endForInsufficientBalance();
-  }, [connected, endForInsufficientBalance, gender, walletBalance]);
-
   const chargeNextMinute = useCallback(async () => {
     billingChargeInProgressRef.current = true;
 
@@ -406,6 +411,7 @@ const CallScreen = ({
         return;
       }
 
+      setBillingStarted(true);
       billingTimerRef.current = setCallInterval(async () => {
         if (callEndedRef.current || peerRecoveryRef.current) return;
         const nextMinuteCharged = await chargeNextMinute();
@@ -725,6 +731,14 @@ const CallScreen = ({
 
     return RoomService.listenCallStatus(femaleUid, room => {
       if (
+        gender === 'female' &&
+        room?.status === 'active' &&
+        Number(room.chargedAmount || 0) >= CALL_RATE_PER_MINUTE
+      ) {
+        setBillingStarted(true);
+      }
+
+      if (
         !room ||
         ['ended', 'waiting', 'offline', 'rejected', 'men_rejected'].includes(
           room.status,
@@ -733,7 +747,7 @@ const CallScreen = ({
         finishCall(false);
       }
     });
-  }, [femaleUid, finishCall]);
+  }, [femaleUid, finishCall, gender]);
 
   return (
     <LinearGradient
@@ -895,102 +909,23 @@ const CallScreen = ({
             <Text style={styles.status}>{status}</Text>
           </View>
 
-          {gender === 'female' && (
-            <View
-              style={[
-                styles.callerBalance,
-                compactLayout && styles.callerBalanceCompact,
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="wallet-outline"
-                size={16}
-                color={Colors.secondary}
-              />
-
-              <Text style={styles.callerBalanceLabel}>Caller balance</Text>
-
-              <Text style={styles.callerBalanceValue}>
-                ₹{callerBalance ?? '--'}
-              </Text>
-            </View>
-          )}
-
-          {gender === 'male' && (
-            <View
-              style={[
-                styles.callerBalance,
-                compactLayout && styles.callerBalanceCompact,
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="wallet-outline"
-                size={16}
-                color={Colors.secondary}
-              />
-
-              <Text style={styles.callerBalanceLabel}>Your balance</Text>
-
-              <Text style={styles.callerBalanceValue}>
-                ₹{Number.isFinite(walletBalance) ? walletBalance : '--'}
-              </Text>
-            </View>
-          )}
-
-          {gender === 'female' && (
+          {remainingCallTime && (
             <Text
               style={[
                 styles.callDurationLabel,
                 compactLayout && styles.callDurationLabelCompact,
               ]}
             >
-              Current call time
+              Call ends in
             </Text>
           )}
 
-          <Text style={[styles.timer, compactLayout && styles.timerCompact]}>
-            {timer}
-          </Text>
+          {remainingCallTime && (
+            <Text style={[styles.timer, compactLayout && styles.timerCompact]}>
+              {remainingCallTime}
+            </Text>
+          )}
         </View>
-
-        {gender === 'male' && showLowBalance && (
-          <View
-            style={[
-              styles.lowBalancePopup,
-              compactLayout && styles.lowBalancePopupCompact,
-            ]}
-            accessibilityRole="alert"
-            accessibilityLiveRegion="assertive"
-          >
-            <Ionicons name="wallet-sharp" size={24} color={Colors.secondary} />
-            <View style={styles.lowBalanceCopy}>
-              <Text style={styles.lowBalanceTitle}>3 minutes or less left</Text>
-              <Text style={styles.lowBalanceMessage}>
-                Add balance to keep this call going.
-              </Text>
-            </View>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Add balance"
-              style={styles.addBalanceButton}
-              onPress={onAddBalance}
-            >
-              <Text style={styles.addBalanceText}>Add</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Dismiss low balance alert"
-              style={styles.dismissBalanceButton}
-              onPress={() => setShowLowBalance(false)}
-            >
-              <MaterialCommunityIcons
-                name="close"
-                size={18}
-                color={Colors.darkTextMuted}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
 
         <View
           style={[styles.controls, compactLayout && styles.controlsCompact]}

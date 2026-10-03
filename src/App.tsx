@@ -201,13 +201,6 @@ function AppNavigator() {
     });
     return () => subscription.remove();
   }, [applyStatusBarAppearance]);
-  const openRecharge = React.useCallback(() => {
-    minimizeCall();
-    if (navigationRef.isReady()) {
-      navigationRef.navigate('Wallet');
-    }
-  }, [minimizeCall]);
-
   React.useEffect(() => {
     if (!femaleUid) return;
     const connectedRef = database().ref('.info/connected');
@@ -415,7 +408,6 @@ function AppNavigator() {
               visible={visible}
               onMinimize={minimizeCall}
               onFinished={clearCall}
-              onAddBalance={openRecharge}
             />
           </View>
         )}

@@ -440,11 +440,6 @@ class RoomService {
       return false;
     }
 
-    const remainingBalance = Math.max(
-      0,
-      Number(walletTransaction.snapshot.val() || 0),
-    );
-
     const billingUpdate = await roomRef.transaction(currentRoom => {
       if (
         !currentRoom ||
@@ -469,9 +464,9 @@ class RoomService {
       return false;
     }
 
-    // A successful charge can consume the final available coins. Returning
-    // false here tells the call client to disconnect immediately at zero.
-    return remainingBalance > 0;
+    // A successful charge pays for the upcoming minute, even when it consumes
+    // the final balance. The next charge attempt will end the call.
+    return true;
   }
 
   async endCall(femaleUid: string) {

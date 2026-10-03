@@ -3,12 +3,13 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import database from '@react-native-firebase/database';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -52,8 +53,14 @@ const ChatHostInboxScreen = ({ navigation }: any) => {
   }, [user?.isChatHost, user?.uid]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={[ChatTheme.heroStart, ChatTheme.heroMiddle, ChatTheme.heroEnd]} locations={[0, 0.68, 1]} style={styles.header}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <StatusBar
+        backgroundColor={ChatTheme.heroStart}
+        barStyle="light-content"
+        translucent={false}
+      />
+      <View style={styles.container}>
+        <LinearGradient colors={[ChatTheme.heroStart, ChatTheme.heroMiddle, ChatTheme.heroEnd]} locations={[0, 0.68, 1]} style={styles.header}>
         <View>
           <Text style={styles.eyebrow}>FEMALE CHAT</Text>
           <Text style={styles.title}>Messages</Text>
@@ -63,11 +70,11 @@ const ChatHostInboxScreen = ({ navigation }: any) => {
           <Ionicons name="chatbubble-ellipses" size={18} color={ChatTheme.goldLight} />
           <Text style={styles.freeText}>FREE</Text>
         </View>
-      </LinearGradient>
-      {loading ? (
-        <ActivityIndicator style={styles.loader} color={ChatTheme.goldDeep} size="large" />
-      ) : (
-        <FlatList
+        </LinearGradient>
+        {loading ? (
+          <ActivityIndicator style={styles.loader} color={ChatTheme.goldDeep} size="large" />
+        ) : (
+          <FlatList
           data={items}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
@@ -104,13 +111,15 @@ const ChatHostInboxScreen = ({ navigation }: any) => {
               <Text style={styles.emptyText}>New member messages will appear here.</Text>
             </View>
           }
-        />
-      )}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: ChatTheme.heroStart },
   container: { flex: 1, backgroundColor: ChatTheme.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 22, paddingBottom: 24, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 5, shadowColor: Colors.black, shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
   eyebrow: { color: ChatTheme.goldLight, fontSize: 9, fontWeight: '900', letterSpacing: 1.5 }, title: { color: Colors.white, fontSize: 24, fontWeight: '800', marginTop: 3 }, subtitle: { color: Colors.darkTextMuted, fontSize: 11, marginTop: 3 },

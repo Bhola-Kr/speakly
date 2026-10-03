@@ -5,9 +5,9 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Alert, StyleSheet } from 'react-native';
+import { Alert, FlatList, StatusBar, StyleSheet, Text } from 'react-native';
 import database from '@react-native-firebase/database';
-import { SafeAreaView, FlatList, StatusBar, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from './Header';
 import Banner from './Banner';
@@ -241,8 +241,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <StatusBar
+        backgroundColor={Colors.background}
+        barStyle="dark-content"
+        translucent={false}
+      />
 
       <FlatList
         contentContainerStyle={styles.listContent}
