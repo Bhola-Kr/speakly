@@ -69,9 +69,11 @@ const PrivacyPolicyScreen = () => {
         </Section>
 
         <Section title="8. Account Deletion">
-          You may request account deletion through the application. Once
-          verified, your personal information will be permanently removed unless
-          retention is required by applicable law.
+          You may request account deletion through the application. A pending
+          request is recorded without immediately deleting your data and is
+          reviewed within 15 days. You may contact support during this period.
+          Once processed, your personal information will be permanently removed
+          unless retention is required by applicable law.
         </Section>
 
         <Section title="9. Children's Privacy">

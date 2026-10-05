@@ -11,7 +11,11 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
-import { calculateAge, getFemaleAvatar } from '../../constants/constants';
+import {
+  calculateAge,
+  CALL_RATE_PER_MINUTE,
+  getFemaleAvatar,
+} from '../../constants/constants';
 
 interface Props {
   item: any;
@@ -136,7 +140,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
           />
 
           <View style={{ marginLeft: 6 }}>
-            <Text style={styles.price}>{item?.profile?.price}</Text>
+            <Text style={styles.price}>{CALL_RATE_PER_MINUTE}</Text>
 
             <Text style={styles.perMinute}>Coins / min</Text>
           </View>

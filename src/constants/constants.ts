@@ -44,7 +44,7 @@ export const faqs = [
     id: 7,
     question: 'How do I delete my account?',
     answer:
-      'Go to Profile > Delete Account. You will be asked to confirm your request before contacting our support team for permanent account deletion.',
+      'Go to Profile > Delete Account. Your request will be recorded and reviewed within 15 days. Your data is not deleted immediately, and you can contact support during the review period.',
   },
   {
     id: 8,
@@ -172,14 +172,14 @@ export const calculateAge = (birthYear: number | string): string => {
   return age >= 0 ? age.toString() : '';
 };
 
-export const CALL_RATE_PER_MINUTE = 10;
+export const CALL_RATE_PER_MINUTE = 9;
 
 /**
  * Calculates call amount.
- * - Less than or equal to 1 minute = ₹10
- * - 1 min 1 sec = ₹20
- * - 2 min 0 sec = ₹20
- * - 2 min 1 sec = ₹30
+ * - Less than or equal to 1 minute = ₹9
+ * - 1 min 1 sec = ₹18
+ * - 2 min 0 sec = ₹18
+ * - 2 min 1 sec = ₹27
  */
 export const calculateCallAmount = (
   callStartedAt: number,

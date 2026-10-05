@@ -122,7 +122,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
-      'Deleting your account is permanent and cannot be undone.\n\nAll your profile information, wallet history, call history, and other associated data will be permanently removed.\n\nDo you want to continue?',
+      'Your account will be marked for deletion. Your data will not be deleted immediately and the request will be reviewed within 15 days.\n\nYou can contact the admin during this period. Do you want to continue?',
       [
         {
           text: 'Cancel',
@@ -131,34 +131,19 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
         {
           text: 'Continue',
           style: 'destructive',
-          onPress: () => {
-            const firebaseUser = auth().currentUser;
-
-            const supportEmail = 'tamizhkuralhelp@gmail.com';
-
-            const subject = encodeURIComponent('Delete Account Request');
-
-            const body = encodeURIComponent(`Hello Support Team,
-
-I would like to permanently delete my account.
-
-User ID: ${firebaseUser?.uid}
-
-Registered Mobile: ${phoneNumber ?? 'N/A'}
-
-Please permanently delete my account and all associated data.
-
-Thank you.
-`);
-
-            Linking.openURL(
-              `mailto:${supportEmail}?subject=${subject}&body=${body}`,
-            ).catch(() => {
+          onPress: async () => {
+            try {
+              await authData.requestAccountDeletion();
               Alert.alert(
-                'Email App Not Found',
-                'No email application is installed on this device.',
+                'Deletion Request Submitted',
+                'Your account is under deletion review and is scheduled to be deleted within 15 days. Your current data has not been deleted. Contact the admin if you need help or want to discuss this request.',
               );
-            });
+            } catch (error: any) {
+              Alert.alert(
+                'Unable to Submit Request',
+                error?.message || 'Please try again.',
+              );
+            }
           },
         },
       ],

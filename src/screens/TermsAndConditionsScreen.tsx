@@ -83,8 +83,8 @@ const TermsAndConditionsScreen = () => {
 
         <Section title="11. Account Deletion">
           Users may request permanent account deletion through the application.
-          Personal data will be removed in accordance with applicable laws and
-          our Privacy Policy.
+          Requests may remain pending for up to 15 days before personal data is
+          removed in accordance with applicable laws and our Privacy Policy.
         </Section>
 
         <Section title="12. Changes to Terms">

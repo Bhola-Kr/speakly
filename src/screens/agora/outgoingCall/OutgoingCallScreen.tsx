@@ -72,7 +72,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       femaleUid,
 
       room => {
-        const closeCall = (title?: string, message?: string) => {
+        const closeCall = (_title?: string, _message?: string) => {
           if (callResolved.current) {
             return;
           }

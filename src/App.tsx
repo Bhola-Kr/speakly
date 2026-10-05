@@ -9,6 +9,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Linking,
+  Modal,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -176,8 +178,37 @@ function AppNavigator() {
   const incomingNotificationRef = React.useRef('');
   const restoringPresenceRef = React.useRef(false);
   const { user } = useUser();
+  const [deletionNoticeDismissed, setDeletionNoticeDismissed] =
+    React.useState(false);
   const { activeCall, visible, showCall, minimizeCall, clearCall } =
     useActiveCall();
+  const deletionRequest = user?.accountDeletion;
+  const deletionRequested = deletionRequest?.status === true;
+  const deletionDate = Number(deletionRequest?.scheduledDeletionAt || 0);
+
+  React.useEffect(() => {
+    setDeletionNoticeDismissed(false);
+  }, [user?.uid, deletionRequest?.requestedAt]);
+
+  const contactDeletionAdmin = React.useCallback(() => {
+    const subject = encodeURIComponent('Account Deletion Support');
+    const body = encodeURIComponent(`Hello VoiceTamil Support Team,
+
+I need help with my pending account deletion request.
+
+User ID: ${user?.uid || 'N/A'}
+Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
+
+Thank you.`);
+    Linking.openURL(
+      `mailto:tamizhkuralhelp@gmail.com?subject=${subject}&body=${body}`,
+    ).catch(() => {
+      Alert.alert(
+        'Contact Admin',
+        'Please email tamizhkuralhelp@gmail.com for assistance.',
+      );
+    });
+  }, [user?.phone, user?.profile?.phone, user?.uid]);
   const statusBarAppearance = React.useMemo(
     () => getStatusBarAppearance(activeScreen),
     [activeScreen],
@@ -406,6 +437,46 @@ function AppNavigator() {
           userName={incomingRoom?.male?.name || 'N/A'}
           avatar=""
         />
+        <Modal
+          visible={deletionRequested && !deletionNoticeDismissed}
+          transparent
+          animationType="fade"
+          statusBarTranslucent
+          onRequestClose={() => setDeletionNoticeDismissed(true)}
+        >
+          <View style={callStyles.deletionOverlay}>
+            <View style={callStyles.deletionCard}>
+              <Text style={callStyles.deletionTitle}>
+                Account Under Deletion
+              </Text>
+              <Text style={callStyles.deletionText}>
+                Your deletion request has been received. Your account data is
+                still retained and will be reviewed for deletion within 15 days.
+                {deletionDate
+                  ? `\n\nScheduled by: ${new Date(
+                      deletionDate,
+                    ).toLocaleDateString('en-IN')}`
+                  : ''}
+              </Text>
+              <TouchableOpacity
+                style={callStyles.deletionPrimaryButton}
+                onPress={contactDeletionAdmin}
+              >
+                <Text style={callStyles.deletionPrimaryText}>
+                  Contact Admin
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={callStyles.deletionSecondaryButton}
+                onPress={() => setDeletionNoticeDismissed(true)}
+              >
+                <Text style={callStyles.deletionSecondaryText}>
+                  I Understand
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
         {activeCall && (
           <View
             style={[callStyles.call, !visible && callStyles.hidden]}
@@ -458,4 +529,52 @@ const callStyles = StyleSheet.create({
     alignItems: 'center',
   },
   returnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
+  deletionOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.62)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  deletionCard: {
+    borderRadius: 24,
+    backgroundColor: Colors.white,
+    padding: 24,
+  },
+  deletionTitle: {
+    color: Colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  deletionText: {
+    color: Colors.subText,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 22,
+  },
+  deletionPrimaryButton: {
+    minHeight: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+  },
+  deletionPrimaryText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  deletionSecondaryButton: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  deletionSecondaryText: {
+    color: Colors.subText,
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });

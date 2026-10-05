@@ -132,9 +132,10 @@ const CallScreen = ({
   const peerRecoveryRef = useRef<(() => void) | null>(null);
   const callEndedRef = useRef(false);
   const countdownAlertedRef = useRef(false);
-  const countdownDeadlineRef = useRef<number | null>(null);
 
   const seconds = useRef(0);
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const [status, setStatus] = useState('Connecting...');
 
@@ -149,10 +150,6 @@ const CallScreen = ({
   const [safetyActionLoading, setSafetyActionLoading] = useState(false);
 
   const [callerBalance, setCallerBalance] = useState<number | null>(null);
-
-  const [remainingCallTime, setRemainingCallTime] = useState<string | null>(
-    null,
-  );
 
   const [maleUserNote, setMaleUserNote] = useState<MaleUserNote>(EMPTY_NOTE);
 
@@ -182,35 +179,14 @@ const CallScreen = ({
     const countdownThreshold =
       CALL_RATE_PER_MINUTE * (LOW_BALANCE_MINUTES - 1);
     if (countdownBalance > countdownThreshold) {
+      countdownAlertedRef.current = false;
       return;
     }
-
-    countdownDeadlineRef.current =
-      Date.now() +
-      BILLING_INTERVAL_MS *
-        (Math.floor(Math.max(0, countdownBalance) / CALL_RATE_PER_MINUTE) + 1);
 
     if (!countdownAlertedRef.current) {
       countdownAlertedRef.current = true;
       Vibration.vibrate([0, 400, 200, 400]);
     }
-
-    const updateCountdown = () => {
-      const remainingSeconds = Math.max(
-        0,
-        Math.ceil(
-          ((countdownDeadlineRef.current ?? Date.now()) - Date.now()) / 1000,
-        ),
-      );
-      const min = Math.floor(remainingSeconds / 60);
-      const sec = remainingSeconds % 60;
-      setRemainingCallTime(
-        `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`,
-      );
-    };
-
-    updateCountdown();
-    return setCallInterval(updateCountdown, 1000);
   }, [billingStarted, connected, countdownBalance]);
 
   useEffect(() => {
@@ -309,9 +285,11 @@ const CallScreen = ({
     }
 
     const startedAt = Date.now();
+    seconds.current = 0;
+    setElapsedSeconds(0);
     timerRef.current = setCallInterval(() => {
       seconds.current = Math.floor((Date.now() - startedAt) / 1000);
-
+      setElapsedSeconds(seconds.current);
     }, 1000);
   }, []);
 
@@ -322,8 +300,39 @@ const CallScreen = ({
     }
 
     seconds.current = 0;
-
+    setElapsedSeconds(0);
   }, []);
+
+  const formatCallTime = (totalSeconds: number) => {
+    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const secs = safeSeconds % 60;
+
+    return hours > 0
+      ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(
+          2,
+          '0',
+        )}:${String(secs).padStart(2, '0')}`
+      : `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const paidMinuteSecondsRemaining =
+    BILLING_INTERVAL_MS / 1000 -
+    (elapsedSeconds % (BILLING_INTERVAL_MS / 1000));
+  const callerWalletSeconds =
+    callerBalance === null
+      ? 0
+      : Math.floor(Math.max(0, callerBalance) / CALL_RATE_PER_MINUTE) *
+        (BILLING_INTERVAL_MS / 1000);
+  const femaleRemainingSeconds = billingStarted
+    ? callerWalletSeconds + paidMinuteSecondsRemaining
+    : 0;
+  const displayedCallTime =
+    gender === 'female' ? femaleRemainingSeconds : elapsedSeconds;
+  const callTimerReady =
+    connected &&
+    (gender === 'male' || (billingStarted && callerBalance !== null));
 
   const stopBilling = useCallback(() => {
     if (billingTimerRef.current) {
@@ -909,20 +918,20 @@ const CallScreen = ({
             <Text style={styles.status}>{status}</Text>
           </View>
 
-          {remainingCallTime && (
+          {callTimerReady && (
             <Text
               style={[
                 styles.callDurationLabel,
                 compactLayout && styles.callDurationLabelCompact,
               ]}
             >
-              Call ends in
+              {gender === 'female' ? 'Call time remaining' : 'Call duration'}
             </Text>
           )}
 
-          {remainingCallTime && (
+          {callTimerReady && (
             <Text style={[styles.timer, compactLayout && styles.timerCompact]}>
-              {remainingCallTime}
+              {formatCallTime(displayedCallTime)}
             </Text>
           )}
         </View>

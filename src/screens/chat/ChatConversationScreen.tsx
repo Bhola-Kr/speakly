@@ -3,6 +3,7 @@ import {
   Alert,
   FlatList,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -10,6 +11,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -45,8 +47,43 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
   const [sending, setSending] = useState(false);
   const [peerState, setPeerState] = useState<ChatPresenceState>('offline');
   const [peerLastSeen, setPeerLastSeen] = useState(0);
+  const [androidKeyboardFrame, setAndroidKeyboardFrame] = useState<{
+    height: number;
+    screenY: number;
+  } | null>(null);
+  const { height: windowHeight } = useWindowDimensions();
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const androidKeyboardOverlap =
+    Platform.OS === 'android' && androidKeyboardFrame
+      ? Math.max(
+          0,
+          Math.min(
+            androidKeyboardFrame.height,
+            windowHeight - androidKeyboardFrame.screenY,
+          ),
+        )
+      : 0;
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const showSubscription = Keyboard.addListener('keyboardDidShow', event => {
+      setAndroidKeyboardFrame({
+        height: event.endCoordinates.height,
+        screenY: event.endCoordinates.screenY,
+      });
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setAndroidKeyboardFrame(null);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!peerUid) return;
@@ -173,11 +210,16 @@ const ChatConversationScreen = ({ navigation, route }: any) => {
         translucent={false}
       />
       <KeyboardAvoidingView
-        style={styles.container}
+        style={[
+          styles.container,
+          androidKeyboardOverlap > 0 && {
+            paddingBottom: androidKeyboardOverlap,
+          },
+        ]}
         // Android's adjustResize already keeps this view above the IME. Applying
-        // the "height" behavior as well double-counts the keyboard on some
-        // devices (notably keyboards with a suggestion/toolbar row), which can
-        // leave the composer underneath the keyboard.
+        // a fixed behavior as well double-counts the keyboard on some devices.
+        // The adaptive padding above only covers an overlap left by devices
+        // where adjustResize is ignored (notably some edge-to-edge Androids).
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >

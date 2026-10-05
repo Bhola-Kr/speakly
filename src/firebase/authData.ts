@@ -23,6 +23,8 @@ export type VerificationData = {
   voiceVerified?: boolean;
 };
 
+const ACCOUNT_DELETION_DELAY_MS = 15 * 24 * 60 * 60 * 1000;
+
 class AuthData {
   confirmation: any = null;
 
@@ -182,6 +184,30 @@ class AuthData {
 
   updateUser = async (uid: string, data: any) => {
     await database().ref(`users/${uid}`).update(data);
+  };
+
+  requestAccountDeletion = async () => {
+    const user = this.getCurrentUser();
+
+    if (!user) {
+      throw new Error('No authenticated user found.');
+    }
+
+    const requestedAt = Date.now();
+    const scheduledDeletionAt = requestedAt + ACCOUNT_DELETION_DELAY_MS;
+
+    await database()
+      .ref(`users/${user.uid}/accountDeletion`)
+      .transaction(currentRequest => ({
+        ...(currentRequest || {}),
+        status: true,
+        requestedAt: currentRequest?.requestedAt || requestedAt,
+        scheduledDeletionAt:
+          currentRequest?.scheduledDeletionAt || scheduledDeletionAt,
+        updatedAt: requestedAt,
+      }));
+
+    return { requestedAt, scheduledDeletionAt };
   };
 
   updateVerification = async (verificationData: VerificationData) => {
