@@ -16,15 +16,19 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import Colors from '../constants/colors';
+import { getMaleAvatar } from '../constants/constants';
 import RoomService, { CallHistory } from '../firebase/RoomService';
+import { useUser } from '../hooks/UserContext';
 
 interface Props {
   navigation: any;
 }
 
 const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
+  const { user } = useUser();
   const [menuVisible, setMenuVisible] = useState(false);
   const [history, setHistory] = useState<CallHistory[]>([]);
+  const canInitiateChat = user?.isChatHost === true;
 
   useEffect(() => {
     const unsubscribe = RoomService.listenCallHistory(setHistory);
@@ -70,6 +74,25 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
     return `${min}m ${sec}s`;
   };
 
+  const openChat = (call: CallHistory) => {
+    if (!call.maleInfo?.uid) {
+      Alert.alert('Unable to Open Chat', 'This member is no longer available.');
+      return;
+    }
+
+    navigation.navigate('ChatConversation', {
+      host: {
+        uid: call.maleInfo.uid,
+        profile: {
+          name: call.maleInfo.name,
+          tamilName: call.maleInfo.tamilName,
+          avatarId: call.maleInfo.avatarId,
+          gender: 'male',
+        },
+      },
+    });
+  };
+
   const renderItem = ({ item }: any) => {
     if (item.type === 'header') {
       return (
@@ -94,8 +117,11 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
       item.status === 'Completed' ? Colors.success : Colors.danger;
 
     return (
-      <TouchableOpacity activeOpacity={0.9} style={styles.card}>
-        <Image source={require('../assets/man.png')} style={styles.avatar} />
+      <View style={styles.card}>
+        <Image
+          source={getMaleAvatar(item.maleInfo?.avatarId)}
+          style={styles.avatar}
+        />
 
         <View style={styles.info}>
           <Text style={styles.name}>{item.maleInfo.name}</Text>
@@ -107,11 +133,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        <View
-          style={{
-            alignItems: 'flex-end',
-          }}
-        >
+        <View style={styles.cardActions}>
           <View
             style={{
               backgroundColor: `${statusColor}20`,
@@ -131,34 +153,34 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
 
-          <View
-            style={{
-              marginTop: 10,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}
-          >
-            <Image
-              source={require('../assets/coin.png')}
-              style={{
-                width: 18,
-                height: 18,
-                marginRight: 4,
-              }}
-            />
+          <View style={styles.cardActionRow}>
+            <View style={styles.amountRow}>
+              <Image
+                source={require('../assets/coin.png')}
+                style={styles.coin}
+              />
 
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: '700',
-                color: Colors.secondary,
-              }}
-            >
-              {item.amount}
-            </Text>
+              <Text style={styles.amount}>{item.amount}</Text>
+            </View>
+
+            {canInitiateChat ? (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={`Chat with ${item.maleInfo?.name || 'member'}`}
+                onPress={() => openChat(item)}
+                style={styles.chatButton}
+              >
+                <Ionicons
+                  name="chatbubble-ellipses"
+                  size={18}
+                  color={Colors.white}
+                />
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -407,6 +429,51 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 16,
     marginRight: 12,
+  },
+
+  cardActions: {
+    alignItems: 'flex-end',
+  },
+
+  cardActionRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  coin: {
+    width: 18,
+    height: 18,
+    marginRight: 4,
+  },
+
+  amount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.secondary,
+  },
+
+  chatButton: {
+    width: 36,
+    height: 36,
+    marginLeft: 10,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    elevation: 3,
+    shadowColor: Colors.black,
+    shadowOpacity: 0.14,
+    shadowRadius: 5,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
   },
 
   name: {
