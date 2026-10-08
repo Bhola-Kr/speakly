@@ -43,11 +43,11 @@ import FemaleBottomTabs from './screens/FemaleBottomTabs';
 import ManHistoryScreen from './screens/recentScreen/ManHistoryScreen';
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import TermsAndConditionsScreen from './screens/TermsAndConditionsScreen';
+import AboutScreen from './screens/AboutScreen';
 import FAQScreen from './screens/FAQScreen';
 import SplashScreen from './screens/SplashScreen';
 import OnlineRoomScreen from './screens/agora/OnlineRoomScreen';
 import { UserProvider, useUser } from './hooks/UserContext';
-import PaymentScreen from './screens/payment/PaymentScreen';
 import AppUpdateGate from './components/appUpdate/AppUpdateGate';
 import {
   ACCEPTED_CALL_EVENT,
@@ -73,7 +73,6 @@ const deferUpdatesOn = new Set([
   'IncomingCall',
   'OutgoingCall',
   'OnlineRoom',
-  'Payment',
 ]);
 
 const getStatusBarAppearance = (screen: string) => {
@@ -120,6 +119,15 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
+          title: 'About Voice Tamil',
+          headerStyle: { backgroundColor: Colors.background },
+        }}
+        name="About"
+        component={AboutScreen}
+      />
+      <Stack.Screen
+        options={{
+          headerShown: true,
           title: 'Edit Profile',
           headerStyle: { backgroundColor: Colors.background },
         }}
@@ -128,7 +136,6 @@ function RootStack() {
       />
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Transaction" component={TransactionScreen} />
-      <Stack.Screen name="Payment" component={PaymentScreen} />
       <Stack.Screen name="Call" component={CallEntryScreen} />
       <Stack.Screen name="IncomingCall" component={IncomingCallScreen} />
       <Stack.Screen name="OutgoingCall" component={OutgoingCallScreen} />
@@ -147,6 +154,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
+          title: 'Terms & Conditions',
           headerStyle: { backgroundColor: Colors.background },
         }}
         name="TermsAndConditions"
@@ -155,6 +163,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
+          title: 'Privacy Policy',
           headerStyle: { backgroundColor: Colors.background },
         }}
         name="PrivacyPolicy"
@@ -201,11 +210,11 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
 
 Thank you.`);
     Linking.openURL(
-      `mailto:tamizhkuralhelp@gmail.com?subject=${subject}&body=${body}`,
+      `mailto:support@voicetamil.app?subject=${subject}&body=${body}`,
     ).catch(() => {
       Alert.alert(
         'Contact Admin',
-        'Please email tamizhkuralhelp@gmail.com for assistance.',
+        'Please email support@voicetamil.app for assistance.',
       );
     });
   }, [user?.phone, user?.profile?.phone, user?.uid]);

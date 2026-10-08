@@ -1,4 +1,4 @@
-import Api, { CreateOrderResponse } from '../api/api';
+import Api from '../api/api';
 
 // ============================================
 // TYPES
@@ -97,31 +97,6 @@ export const verifyMSGOtp = async (
     console.log('verifyOtp Error:', error);
     throw error;
   }
-};
-
-export const createOrder = async (
-  packId: string,
-  customerId: string,
-  customerPhone: string,
-  customerName: string,
-): Promise<CreateOrderResponse> => {
-  try {
-    const response = await Api.createOrder(
-      packId,
-      customerId,
-      customerPhone,
-      customerName,
-    );
-    console.log('response', response);
-    return response;
-  } catch (error) {
-    console.log('createOrder Error:', error);
-    throw error;
-  }
-};
-
-export const verifyOrder = async (orderId: string, customerId: string) => {
-  return Api.verifyOrder(orderId, customerId);
 };
 
 export const sendChatNotification = (payload: {

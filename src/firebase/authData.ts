@@ -96,7 +96,7 @@ class AuthData {
           profile: {
             avatarId: 1,
             maritalStatus: 'Single',
-            category: 'Relationship',
+            category: 'General',
             rating: 4.9,
             status: 'offline',
             name: '',

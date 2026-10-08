@@ -9,6 +9,7 @@ import {
   StatusBar,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -77,9 +78,10 @@ const WalletScreen = ({ navigation }: any) => {
   }, [selectedPack]);
 
   const onRecharge = () => {
-    if (selectedPack) {
-      navigation.navigate('Payment', { pack: selectedPack });
-    }
+    Alert.alert(
+      'Payments Temporarily Unavailable',
+      'Wallet recharges are temporarily unavailable. Please try again later.',
+    );
   };
 
   return (
@@ -245,7 +247,7 @@ const WalletScreen = ({ navigation }: any) => {
           </View>
 
           <GradientButton
-            title={`Continue ₹${selectedPack.amount}`}
+            title="Payments Temporarily Unavailable"
             onPress={onRecharge}
             style={{ marginTop: 12 }}
           />

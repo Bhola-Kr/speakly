@@ -72,6 +72,12 @@ export const securityMenus = [
 
 export const supportMenus = [
   {
+    id: 7,
+    title: 'About Voice Tamil',
+    icon: 'information-outline',
+    screen: 'About',
+  },
+  {
     id: 1,
     title: 'Rate App',
     icon: 'star-outline',

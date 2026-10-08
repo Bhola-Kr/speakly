@@ -38,7 +38,7 @@ interface Props {
 }
 
 const ProfileSettingScreen = ({ navigation }: Props) => {
-  const SUPPORT_EMAIL = 'tamizhkuralhelp@gmail.com';
+  const SUPPORT_EMAIL = 'support@voicetamil.app';
 
   const { user } = useUser();
   const { activeCall, showCall } = useActiveCall();
