@@ -28,7 +28,6 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useUser();
   const [menuVisible, setMenuVisible] = useState(false);
   const [history, setHistory] = useState<CallHistory[]>([]);
-  const canInitiateChat = user?.isChatHost === true;
 
   useEffect(() => {
     const unsubscribe = RoomService.listenCallHistory(setHistory);
@@ -72,25 +71,6 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
     const sec = totalSeconds % 60;
 
     return `${min}m ${sec}s`;
-  };
-
-  const openChat = (call: CallHistory) => {
-    if (!call.maleInfo?.uid) {
-      Alert.alert('Unable to Open Chat', 'This member is no longer available.');
-      return;
-    }
-
-    navigation.navigate('ChatConversation', {
-      host: {
-        uid: call.maleInfo.uid,
-        profile: {
-          name: call.maleInfo.name,
-          tamilName: call.maleInfo.tamilName,
-          avatarId: call.maleInfo.avatarId,
-          gender: 'male',
-        },
-      },
-    });
   };
 
   const renderItem = ({ item }: any) => {
@@ -153,31 +133,13 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
 
-          <View style={styles.cardActionRow}>
-            <View style={styles.amountRow}>
-              <Image
-                source={require('../assets/coin.png')}
-                style={styles.coin}
-              />
+          <View style={styles.amountRow}>
+            <Image
+              source={require('../assets/coin.png')}
+              style={styles.coin}
+            />
 
-              <Text style={styles.amount}>{item.amount}</Text>
-            </View>
-
-            {canInitiateChat ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel={`Chat with ${item.maleInfo?.name || 'member'}`}
-                onPress={() => openChat(item)}
-                style={styles.chatButton}
-              >
-                <Ionicons
-                  name="chatbubble-ellipses"
-                  size={18}
-                  color={Colors.white}
-                />
-              </TouchableOpacity>
-            ) : null}
+            <Text style={styles.amount}>{item.amount}</Text>
           </View>
         </View>
       </View>
@@ -435,13 +397,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
 
-  cardActionRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
   amountRow: {
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -456,24 +413,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: Colors.secondary,
-  },
-
-  chatButton: {
-    width: 36,
-    height: 36,
-    marginLeft: 10,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary,
-    elevation: 3,
-    shadowColor: Colors.black,
-    shadowOpacity: 0.14,
-    shadowRadius: 5,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
   },
 
   name: {

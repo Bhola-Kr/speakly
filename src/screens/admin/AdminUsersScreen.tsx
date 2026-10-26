@@ -13,7 +13,6 @@ type UserRecord = Record<string, any> & { uid?: string };
 type EditableUserFields = {
   gender: string; name: string; tamilName: string; voiceVerified: boolean;
   birthYear: string; status: string; avatarId: string; balance: string;
-  isChatHost: boolean;
 };
 
 const PAGE_SIZE = 25;
@@ -145,7 +144,6 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         : 'offline',
       avatarId: String(item.profile?.avatarId ?? ''),
       balance: String(item.wallet?.balance ?? ''),
-      isChatHost: item.isChatHost === true,
     });
     setError('');
   };
@@ -169,7 +167,6 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       },
       verification: { ...(user.verification || {}), voiceVerified: fields.voiceVerified },
       wallet: { ...(user.wallet || {}), balance: Number(fields.balance) || 0 },
-      isChatHost: fields.isChatHost,
     });
     setUsers(previous => previous.map(update));
     setSearchResults(previous => previous.map(update));
@@ -200,7 +197,6 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         [`users/${selectedUid}/profile/status`]: editingUser.status.trim(),
         [`users/${selectedUid}/verification/voiceVerified`]: editingUser.voiceVerified,
         [`users/${selectedUid}/wallet/balance`]: balance,
-        [`users/${selectedUid}/isChatHost`]: editingUser.isChatHost,
       });
       updateLocalUser(selectedUid, normalized);
       setEditingUser(normalized);
@@ -324,8 +320,6 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               </View>
               <Text style={styles.sectionTitle}>Verification</Text>
               <View style={styles.switchRow}><View style={styles.switchCopy}><Text style={styles.switchTitle}>Voice Verified</Text><Text style={styles.switchHelp}>Mark this user's voice verification status.</Text></View><Switch value={editingUser.voiceVerified} onValueChange={value => updateField('voiceVerified', value)} trackColor={{ false: Colors.border, true: Colors.primary }} /></View>
-              <Text style={styles.sectionTitle}>Chat</Text>
-              <View style={styles.switchRow}><View style={styles.switchCopy}><Text style={styles.switchTitle}>Chat Female</Text><Text style={styles.switchHelp}>Show this female user in the male chat tab.</Text></View><Switch value={editingUser.isChatHost} onValueChange={value => updateField('isChatHost', value)} trackColor={{ false: Colors.border, true: Colors.primary }} /></View>
               <Text style={styles.sectionTitle}>Wallet</Text>
               <Text style={styles.label}>Balance</Text><TextInput value={editingUser.balance} onChangeText={value => updateField('balance', value.replace(/[^0-9.-]/g, ''))} style={styles.input} placeholder="0" placeholderTextColor={Colors.placeholder} keyboardType="decimal-pad" />
               <TouchableOpacity disabled={saving} style={[styles.primaryButton, saving && styles.buttonDisabled]} onPress={saveUser}>{saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.primaryButtonText}>Save Changes</Text>}</TouchableOpacity>

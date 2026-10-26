@@ -51,10 +51,8 @@ import { UserProvider, useUser } from './hooks/UserContext';
 import AppUpdateGate from './components/appUpdate/AppUpdateGate';
 import {
   ACCEPTED_CALL_EVENT,
-  CHAT_NOTIFICATION_OPEN_EVENT,
   cancelIncomingCallNotification,
   consumePendingAcceptedCall,
-  consumePendingChatNotification,
   displayIncomingCallNotification,
   startPushNotifications,
 } from './notifications/pushNotifications';
@@ -62,8 +60,6 @@ import { AdminUsersScreen } from './screens/admin/AdminUsersScreen';
 import IncomingCallModal from './screens/agora/IncomingCallModal';
 import RoomService, { Room } from './firebase/RoomService';
 import database from '@react-native-firebase/database';
-import ChatConversationScreen from './screens/chat/ChatConversationScreen';
-import ChatTheme from './screens/chat/chatTheme';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -76,9 +72,6 @@ const deferUpdatesOn = new Set([
 ]);
 
 const getStatusBarAppearance = (screen: string) => {
-  if (screen === 'Chat' || screen === 'ChatConversation') {
-    return { backgroundColor: ChatTheme.heroStart, barStyle: 'light-content' as const };
-  }
   if (screen === 'IncomingCall' || screen === 'OutgoingCall') {
     return { backgroundColor: Colors.navy, barStyle: 'light-content' as const };
   }
@@ -112,10 +105,6 @@ function RootStack() {
       <Stack.Screen name="FemaleBottomTabs" component={FemaleBottomTabs} />
       <Stack.Screen name="ProfileSetting" component={ProfileSettingScreen} />
       <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
-      <Stack.Screen
-        name="ChatConversation"
-        component={ChatConversationScreen}
-      />
       <Stack.Screen
         options={{
           headerShown: true,
@@ -356,22 +345,6 @@ Thank you.`);
     });
   }, [activeCall, femaleUid]);
 
-  const openChatNotification = React.useCallback(async () => {
-    if (
-      !user?.uid ||
-      !navigationRef.isReady() ||
-      ['Splash', 'Login', 'Otp', 'Gender', 'Nickname', 'BirthYear', 'Avatar'].includes(activeScreen)
-    ) {
-      return;
-    }
-    const pending = await consumePendingChatNotification();
-    if (!pending) return;
-    const rootRoute = user?.profile?.gender === 'female'
-      ? 'FemaleBottomTabs'
-      : 'Main';
-    navigationRef.navigate(rootRoute, { screen: 'Chat' });
-  }, [activeScreen, user?.profile?.gender, user?.uid]);
-
   React.useEffect(() => {
     const eventSubscription = DeviceEventEmitter.addListener(
       ACCEPTED_CALL_EVENT,
@@ -389,24 +362,6 @@ Thank you.`);
       clearTimeout(initialTimer);
     };
   }, [openAcceptedNotificationCall]);
-
-  React.useEffect(() => {
-    const eventSubscription = DeviceEventEmitter.addListener(
-      CHAT_NOTIFICATION_OPEN_EVENT,
-      openChatNotification,
-    );
-    const appStateSubscription = AppState.addEventListener('change', state => {
-      if (state === 'active') {
-        setTimeout(() => openChatNotification(), 350);
-      }
-    });
-    const initialTimer = setTimeout(() => openChatNotification(), 800);
-    return () => {
-      eventSubscription.remove();
-      appStateSubscription.remove();
-      clearTimeout(initialTimer);
-    };
-  }, [openChatNotification]);
 
   return (
     <NavigationContainer

@@ -99,17 +99,6 @@ export const verifyMSGOtp = async (
   }
 };
 
-export const sendChatNotification = (payload: {
-  type: 'chat_message';
-  recipientUid: string;
-  senderUid: string;
-  senderName: string;
-  conversationId: string;
-  messageId: string;
-  messageType: 'text' | 'voice';
-  preview: string;
-}) => Api.sendChatNotification(payload);
-
 export const sendIncomingCallPush = (payload: {
   recipientUid: string;
   femaleUid: string;

@@ -99,22 +99,6 @@ class Api {
     return this.get<RechargePack[]>('/rechargePacks');
   }
 
-  sendChatNotification(payload: {
-    type: 'chat_message';
-    recipientUid: string;
-    senderUid: string;
-    senderName: string;
-    conversationId: string;
-    messageId: string;
-    messageType: 'text' | 'voice';
-    preview: string;
-  }) {
-    return this.post<{ success: boolean; delivered?: boolean }>(
-      '/sendChatNotification',
-      payload,
-    );
-  }
-
   sendIncomingCallNotification(payload: {
     recipientUid: string;
     femaleUid: string;
