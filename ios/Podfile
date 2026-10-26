@@ -16,7 +16,7 @@ end
 
 $RNFirebaseAsStaticFramework = true
 
-target 'VoiceTamil' do
+target 'Speakly' do
   use_frameworks! :linkage => :static
   config = use_native_modules!
 

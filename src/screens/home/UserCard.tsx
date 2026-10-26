@@ -50,7 +50,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
     calculateAge(item?.profile?.birthYear)
       ? `${calculateAge(item?.profile?.birthYear)} yrs`
       : '',
-    item?.profile?.maritalStatus,
+    item?.profile?.practiceLanguage || 'Language expert',
   ]
     .filter(Boolean)
     .join(' • ');
@@ -142,7 +142,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
           <View style={{ marginLeft: 6 }}>
             <Text style={styles.price}>{CALL_RATE_PER_MINUTE}</Text>
 
-            <Text style={styles.perMinute}>Coins / min</Text>
+            <Text style={styles.perMinute}>₹ / min</Text>
           </View>
         </LinearGradient>
 
@@ -159,10 +159,10 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
               <MaterialCommunityIcons
                 name="phone"
                 size={16}
-                color={Colors.secondary}
+                color={Colors.white}
               />
 
-              <Text style={styles.callText}>Call</Text>
+              <Text style={styles.callText}>Practice</Text>
             </>
           )}
         </TouchableOpacity>
@@ -179,10 +179,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
 
     padding: 12,
 
-    shadowColor: Colors.black,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.07,
     shadowRadius: 8,
     shadowOffset: {
@@ -207,7 +209,7 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: Colors.secondary,
+    borderColor: Colors.border,
   },
 
   onlineDotOuter: {
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
   callButton: {
     height: 40,
     paddingHorizontal: 18,
-    borderRadius: 20,
+    borderRadius: 12,
 
     backgroundColor: Colors.primary,
 
@@ -381,6 +383,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: Colors.white,
   },
 });

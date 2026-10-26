@@ -71,16 +71,16 @@ const STATUS = {
 };
 
 const TransactionScreen = ({ navigation }: any) => {
-  const SUPPORT_EMAIL = 'support@voicetamil.app';
+  const SUPPORT_EMAIL = 'support@joinspeakly.com';
   const copyTxn = (id: string) => {
     Clipboard.setString(id);
     Alert.alert('Copied', 'Transaction ID copied.');
   };
 
   const handleContactUs = async () => {
-    const subject = encodeURIComponent('VoiceTamil Support');
+    const subject = encodeURIComponent('Speakly Support');
 
-    const body = encodeURIComponent(`Hello VoiceTamil Support Team,
+    const body = encodeURIComponent(`Hello Speakly Support Team,
   
   Please describe your issue below:
   

@@ -11,9 +11,11 @@ import {
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
+import authData from '../firebase/authData';
 
 interface Props {
   navigation: any;
+  route: any;
 }
 
 interface Language {
@@ -23,6 +25,11 @@ interface Language {
 }
 
 const LANGUAGES: Language[] = [
+  {
+    id: 0,
+    name: 'English',
+    symbol: 'A',
+  },
   {
     id: 1,
     name: 'Hindi',
@@ -55,8 +62,9 @@ const LANGUAGES: Language[] = [
   },
 ];
 
-const LanguageScreen: React.FC<Props> = ({ navigation }) => {
-  const [selected, setSelected] = useState('Hindi');
+const LanguageScreen: React.FC<Props> = ({ navigation, route }) => {
+  const [selected, setSelected] = useState('English');
+  const [loading, setLoading] = useState(false);
 
   const renderItem = ({ item }: { item: Language }) => {
     const active = selected === item.name;
@@ -97,12 +105,12 @@ const LanguageScreen: React.FC<Props> = ({ navigation }) => {
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
 
       <View style={styles.header}>
-        <Text style={styles.smallTitle}>Select your</Text>
+        <Text style={styles.smallTitle}>What do you want to practice?</Text>
 
-        <Text style={styles.title}>Primary Language</Text>
+        <Text style={styles.title}>Practice language</Text>
 
         <Text style={styles.note}>
-          *You cannot change this once you go ahead
+          You can update this later from your profile.
         </Text>
       </View>
 
@@ -120,8 +128,21 @@ const LanguageScreen: React.FC<Props> = ({ navigation }) => {
         style={{
           marginBottom: 25,
         }}
-        title="Set Language"
-        onPress={() => navigation.navigate('Avatar')}
+        title={loading ? 'Please wait...' : 'Continue'}
+        disabled={loading}
+        onPress={async () => {
+          try {
+            setLoading(true);
+            await authData.updateProfile({ practiceLanguage: selected });
+            navigation.navigate('Nickname', {
+              user: route?.params?.user,
+              gender: route?.params?.gender,
+              role: route?.params?.role,
+            });
+          } finally {
+            setLoading(false);
+          }
+        }}
       />
     </SafeAreaView>
   );

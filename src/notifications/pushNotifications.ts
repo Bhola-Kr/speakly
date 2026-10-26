@@ -22,7 +22,7 @@ const CHANNEL_ID = 'voicetamil_general';
 const INCOMING_CALL_CHANNEL_ID = 'voicetamil_incoming_calls_v2';
 const PENDING_ACCEPTED_CALL_KEY = 'pendingAcceptedNotificationCall';
 const MISSED_CALL_DELAY_MS = 30_000;
-export const ACCEPTED_CALL_EVENT = 'VoiceTamilAcceptedNotificationCall';
+export const ACCEPTED_CALL_EVENT = 'SpeaklyAcceptedNotificationCall';
 let tokenQueue = Promise.resolve();
 let signingOut = false;
 let permissionRequest: Promise<void> | undefined;
@@ -44,7 +44,7 @@ function ensureNotificationPermissionRequested() {
 export async function createNotificationChannel() {
   return notifee.createChannel({
     id: CHANNEL_ID,
-    name: 'VoiceTamil notifications',
+    name: 'Speakly notifications',
     importance: AndroidImportance.HIGH,
     sound: 'default',
   });
@@ -84,7 +84,7 @@ export async function displayPushNotification(
   const channelId = await createNotificationChannel();
   await notifee.displayNotification({
     id: message.messageId,
-    title: typeof title === 'string' ? title : 'VoiceTamil',
+    title: typeof title === 'string' ? title : 'Speakly',
     body: typeof body === 'string' ? body : undefined,
     data: message.data,
     android: {

@@ -188,7 +188,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
   const goOffline = () => {
     Alert.alert(
       'Go Offline',
-      'Are you sure you want to go offline? You will not receive any calls from male users while you are offline.',
+      'Are you sure you want to go offline? You will not receive practice calls from learners while you are offline.',
       [
         {
           text: 'Cancel',

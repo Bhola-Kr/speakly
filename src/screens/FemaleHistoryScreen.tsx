@@ -18,14 +18,12 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import { getMaleAvatar } from '../constants/constants';
 import RoomService, { CallHistory } from '../firebase/RoomService';
-import { useUser } from '../hooks/UserContext';
 
 interface Props {
   navigation: any;
 }
 
 const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
-  const { user } = useUser();
   const [menuVisible, setMenuVisible] = useState(false);
   const [history, setHistory] = useState<CallHistory[]>([]);
 

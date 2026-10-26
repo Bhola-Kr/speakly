@@ -45,8 +45,8 @@ screens. This is an app UI update gate, not server-side access enforcement.
 
 ## Store links
 
-Android defaults to the existing VoiceTamil Play Store listing:
-`https://play.google.com/store/apps/details?id=com.cozyds.voicetamil`.
+Android defaults to the existing Speakly Play Store listing:
+`https://play.google.com/store/apps/details?id=com.ra.speakly`.
 An optional `/configs/playStoreUrl` can override it with another Play Store URL.
 
 For iOS, set `/configs/appStoreUrl` to the real HTTPS `apps.apple.com` listing

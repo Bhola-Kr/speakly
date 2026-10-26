@@ -2,11 +2,12 @@ import { CALL_RATE_PER_MINUTE } from './constants';
 
 export const categories = [
   'All',
-  'Star',
-  'General',
-  'Life Stories',
-  'Confidence',
-  'Casual Chat',
+  'Everyday Conversations',
+  'Workplace Conversations',
+  'Interview Conversations',
+  'Travel & Culture',
+  'Confidence Building',
+  'Open-Topic Practice',
 ];
 
 export const experts = [

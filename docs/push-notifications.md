@@ -37,7 +37,7 @@ Admin SDK payload (run on your trusted backend):
 ```js
 await admin.messaging().send({
   token: deviceToken,
-  notification: { title: 'VoiceTamil', body: 'You have a new notification.' },
+  notification: { title: 'Speakly', body: 'You have a new notification.' },
   android: {
     priority: 'high',
     notification: { channelId: 'voicetamil_general', sound: 'default' },
@@ -65,8 +65,8 @@ until the user reopens the app. No automated test cases were added.
 
 For iOS, the repository does not contain `GoogleService-Info.plist` or APNs credentials:
 
-1. Register the iOS app `com.cozyds.voicetamil` in the same Firebase project.
-2. Add its downloaded `GoogleService-Info.plist` to the VoiceTamil Xcode target,
+1. Register the iOS app `com.ra.speakly` in the same Firebase project.
+2. Add its downloaded `GoogleService-Info.plist` to the Speakly Xcode target,
    including Copy Bundle Resources.
 3. Upload an APNs authentication key in Firebase > Project settings > Cloud Messaging.
 4. Select your signing team and a provisioning profile supporting Push Notifications.

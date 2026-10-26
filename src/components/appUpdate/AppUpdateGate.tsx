@@ -16,7 +16,7 @@ type UpdateConfig = {
 
 const DISMISSED_KEY = 'app-update-dismissed-version';
 const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.cozyds.voicetamil';
+  'https://play.google.com/store/apps/details?id=com.ra.speakly';
 
 export default function AppUpdateGate({
   children,

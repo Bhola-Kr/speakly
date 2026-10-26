@@ -4,7 +4,7 @@ import { Linking } from 'react-native';
 import type { CallHistory } from './RoomService';
 
 export const APP_REVIEW_URL =
-  'https://play.google.com/store/apps/details?id=com.cozyds.voicetamil';
+  'https://play.google.com/store/apps/details?id=com.ra.speakly';
 
 export async function claimReviewPrompt(
   uid: string,

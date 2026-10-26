@@ -1,4 +1,4 @@
-package com.cozyds.voicetamil
+package com.ra.speakly
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

@@ -8,7 +8,7 @@ export const faqs = [
     id: 1,
     question: 'How do I change my language?',
     answer:
-      'Go to Profile > Language and choose your preferred language. The app will automatically update.',
+      'Go to Profile > Language and choose the language you want to practice.',
   },
   {
     id: 2,
@@ -38,7 +38,7 @@ export const faqs = [
     id: 6,
     question: 'How do I view my call history?',
     answer:
-      'Open the Recent Calls section from your profile to view your previous conversations.',
+      'Open the Recent Sessions section from your profile to view your previous expert conversations.',
   },
   {
     id: 7,
@@ -56,13 +56,13 @@ export const faqs = [
     id: 9,
     question: 'Why am I unable to make a call?',
     answer:
-      'Please check your internet connection, microphone permission, and wallet balance. If the issue continues, contact support.',
+      'Please check your internet connection, microphone permission, and wallet balance. Expert sessions are charged per minute. If the issue continues, contact support.',
   },
   {
     id: 10,
     question: 'How can I contact customer support?',
     answer:
-      'You can contact us anytime by emailing support@voicetamil.app from the Contact Us section in the app.',
+      'You can contact us anytime by emailing support@joinspeakly.com from the Contact Us section in the app.',
   },
 ];
 

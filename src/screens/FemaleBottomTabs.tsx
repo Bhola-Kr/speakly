@@ -31,7 +31,7 @@ const FemaleBottomTabs = () => {
 
           height: 68,
 
-          backgroundColor: Colors.darkSurfaceElevated,
+          backgroundColor: Colors.white,
 
           borderRadius: 34,
 
@@ -39,12 +39,12 @@ const FemaleBottomTabs = () => {
 
           elevation: 15,
 
-          shadowColor: Colors.black,
+          shadowColor: Colors.primary,
           shadowOffset: {
             width: 0,
             height: 8,
           },
-          shadowOpacity: 0.25,
+          shadowOpacity: 0.12,
           shadowRadius: 12,
         },
 

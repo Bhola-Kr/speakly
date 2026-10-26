@@ -38,7 +38,7 @@ interface Props {
 }
 
 const ProfileSettingScreen = ({ navigation }: Props) => {
-  const SUPPORT_EMAIL = 'support@voicetamil.app';
+  const SUPPORT_EMAIL = 'support@joinspeakly.com';
 
   const { user } = useUser();
   const { activeCall, showCall } = useActiveCall();
@@ -78,7 +78,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
 
   // Replace with your Play Store package name
   const PLAY_STORE_URL =
-    'https://play.google.com/store/apps/details?id=com.cozyds.voicetamil';
+    'https://play.google.com/store/apps/details?id=com.ra.speakly';
 
   const handleLogout = () => {
     if (activeCall) {
@@ -154,9 +154,9 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   };
 
   const handleContactUs = async () => {
-    const subject = encodeURIComponent('VoiceTamil Support');
+    const subject = encodeURIComponent('Speakly Support');
 
-    const body = encodeURIComponent(`Hello VoiceTamil Support Team,
+    const body = encodeURIComponent(`Hello Speakly Support Team,
 
 Please describe your issue below:
 
@@ -189,8 +189,8 @@ Thank you.
   const handleShareApp = async () => {
     try {
       await Share.share({
-        title: 'VoiceTamil',
-        message: `Talk, connect, and enjoy conversations on VoiceTamil.
+        title: 'Speakly',
+        message: `Practice languages with expert speakers on Speakly.
 
 Download now:
 ${PLAY_STORE_URL}`,
@@ -371,7 +371,7 @@ ${PLAY_STORE_URL}`,
               <TouchableOpacity
                 activeOpacity={0.8}
                 style={styles.primaryButton}
-                onPress={() => navigation.navigate('AddBalance')}
+                onPress={() => navigation.navigate('Wallet')}
               >
                 <Text style={styles.primaryText}>Add Balance</Text>
               </TouchableOpacity>

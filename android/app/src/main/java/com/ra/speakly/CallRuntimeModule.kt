@@ -1,4 +1,4 @@
-package com.cozyds.voicetamil
+package com.ra.speakly
 
 import android.content.Intent
 import android.os.*
@@ -19,7 +19,7 @@ class CallRuntimeModule(private val context: ReactApplicationContext) : ReactCon
         OngoingCallService.onTick = {
             if (context.hasActiveReactInstance()) {
                 context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-                    .emit("VoiceTamilCallTick", null)
+                    .emit("SpeaklyCallTick", null)
             }
         }
         try {

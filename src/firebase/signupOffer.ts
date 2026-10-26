@@ -83,7 +83,7 @@ export const claimSignupOffer = async (): Promise<number> => {
     if (value?.offers?.signupOffer?.claimedAt) {
       throw new Error('This signup offer has already been claimed.');
     }
-    throw new Error('This offer is available only to male users.');
+    throw new Error('This offer is available only to learners.');
   }
 
   return config.amount;

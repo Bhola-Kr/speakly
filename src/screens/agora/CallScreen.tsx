@@ -453,7 +453,7 @@ const CallScreen = ({
       console.error('Unable to start background call service:', error);
       Alert.alert(
         'Unable to start call',
-        'Please reopen VoiceTamil and try again.',
+        'Please reopen Speakly and try again.',
       );
       await finishCall();
       return;

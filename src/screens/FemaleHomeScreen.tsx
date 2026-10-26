@@ -31,15 +31,15 @@ const tutorialData = [
     id: '1',
     title: 'Go Online',
     subtitle:
-      'Become available and receive anonymous voice calls from people who want to talk.',
+      'Become available and receive practice calls from language learners.',
     icon: 'radio',
     colors: [Colors.inkBlue, Colors.slateDark],
   },
   {
     id: '2',
-    title: 'Talk Freely',
+    title: 'Guide the conversation',
     subtitle:
-      'Enjoy one-on-one conversations without sharing your personal identity.',
+      'Help learners improve fluency through focused one-to-one conversation.',
     icon: 'chatbubbles',
     colors: [Colors.goldDark, Colors.secondary],
   },
@@ -53,9 +53,9 @@ const tutorialData = [
   },
   {
     id: '4',
-    title: 'Have Fun',
+    title: 'Build confidence',
     subtitle:
-      'Relax, make new friends, pass the time, and enjoy meaningful voice conversations.',
+      'Choose useful topics and create a welcoming language-practice session.',
     icon: 'happy',
     colors: [Colors.purpleDark, Colors.purple],
   },

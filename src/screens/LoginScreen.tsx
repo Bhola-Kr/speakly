@@ -34,10 +34,10 @@ import { sendOtp } from '../api/calls';
 const slides = [
   {
     image: require('../assets/onboarding2.png'),
-    title: 'Meet New Friends With Anonymous Voice Calls.',
+    title: 'Practice real conversations with language experts.',
   },
   {
-    title: 'Your Identity Stays Private. Just Relax & Talk.',
+    title: 'Choose a language, pick a topic, and speak with confidence.',
     image: require('../assets/onboarding1.png'),
   },
 ];
@@ -213,7 +213,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
 
           <Text style={styles.safeText}>
-            All your details are 100% safe & secure.
+            Language practice only. Speakly is not a dating or matchmaking app.
           </Text>
         </KeyboardAvoidingView>
       </ScrollView>
@@ -252,6 +252,8 @@ const styles = StyleSheet.create({
   heading: {
     textAlign: 'center',
     fontSize: moderateScale(16),
+    color: Colors.text,
+    fontWeight: '700',
   },
 
   dots: {
@@ -279,13 +281,13 @@ const styles = StyleSheet.create({
   gradientBorder: {
     marginHorizontal: moderateScale(22),
     padding: moderateScale(2),
-    borderRadius: moderateScale(18),
+    borderRadius: moderateScale(12),
   },
 
   inputBox: {
     height: verticalScale(40),
     backgroundColor: Colors.white,
-    borderRadius: moderateScale(16),
+    borderRadius: moderateScale(11),
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: moderateScale(15),
@@ -299,7 +301,7 @@ const styles = StyleSheet.create({
   callingCode: {
     fontSize: moderateScale(18),
     fontWeight: '600',
-    color: Colors.gray34,
+    color: Colors.text,
     marginLeft: moderateScale(4),
   },
 
@@ -319,7 +321,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: moderateScale(18),
-    color: Colors.darkBackground,
+    color: Colors.text,
     padding: 0,
   },
 
@@ -361,7 +363,7 @@ const styles = StyleSheet.create({
   },
 
   link: {
-    color: Colors.secondary,
+    color: Colors.tealDark,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
@@ -369,7 +371,7 @@ const styles = StyleSheet.create({
   safeText: {
     marginTop: verticalScale(8),
     textAlign: 'center',
-    color: Colors.gray136,
+    color: Colors.subText,
     fontSize: moderateScale(13),
   },
 });

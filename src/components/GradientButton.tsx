@@ -55,8 +55,8 @@ export default GradientButton;
 
 const styles = StyleSheet.create({
   button: {
-    height: 58,
-    borderRadius: 32,
+    height: 52,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 55,
@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
   text: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '700',
   },
 });

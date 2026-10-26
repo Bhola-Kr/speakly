@@ -1,11 +1,11 @@
 import { CALL_RATE_PER_MINUTE } from './constants';
 
 export default {
-  appName: 'தமிழ்',
+  appName: 'Speakly',
 
-  heading: 'Talk Freely',
+  heading: 'Speak with confidence',
 
-  subHeading: `Talk @ just ₹${CALL_RATE_PER_MINUTE}/min`,
+  subHeading: `Practice with an expert @ ₹${CALL_RATE_PER_MINUTE}/min`,
 
   phonePlaceholder: 'Your Mobile Number',
 

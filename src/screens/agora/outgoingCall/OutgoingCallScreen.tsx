@@ -18,7 +18,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './styles';
 import strings from '../../../constants/strings';
 import RoomService from '../../../firebase/RoomService';
-import { calculateAge, getFemaleAvatar } from '../../../constants/constants';
+import { getFemaleAvatar } from '../../../constants/constants';
 
 interface Props {
   navigation: any;
@@ -254,9 +254,9 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.englishName}>{englishName}</Text>
         )}
 
-        <Text style={styles.city}>{`${data?.maritalStatus} • ${calculateAge(
-          data?.birthYear,
-        )} Years`}</Text>
+        <Text style={styles.city}>
+          {data?.practiceLanguage || 'Language expert'}
+        </Text>
 
         <View style={styles.waveContainer}>
           <Animated.View

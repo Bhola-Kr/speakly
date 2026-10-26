@@ -5,9 +5,9 @@ import { WebView } from 'react-native-webview';
 import Colors from '../constants/colors';
 
 export const WEB_PAGES = {
-  about: 'https://voice-tamil.web.app/about.html',
-  privacy: 'https://voice-tamil.web.app/privacy-policy.html',
-  terms: 'https://voice-tamil.web.app/terms.html',
+  about: 'https://www.joinspeakly.com/how-it-works',
+  privacy: 'https://www.joinspeakly.com/privacy-policy',
+  terms: 'https://www.joinspeakly.com/terms-and-conditions',
 } as const;
 
 export const WebPageScreen = ({ url }: { url: string }) => (

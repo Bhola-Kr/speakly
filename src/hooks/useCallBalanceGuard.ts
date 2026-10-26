@@ -6,7 +6,7 @@ import { useUser } from './UserContext';
 import { useActiveCall } from './ActiveCallContext';
 
 /**
- * Prevents male users from starting a call when their wallet has no balance.
+ * Prevents learners from starting a paid session when their wallet is empty.
  */
 export const useCallBalanceGuard = (navigation: any) => {
   const { user } = useUser();

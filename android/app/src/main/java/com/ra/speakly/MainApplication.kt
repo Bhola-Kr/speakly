@@ -1,7 +1,7 @@
-package com.cozyds.voicetamil
+package com.ra.speakly
 
 import android.app.Application
-import com.cozyds.voicetamil.VoiceDetectorPackage
+import com.ra.speakly.VoiceDetectorPackage
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost

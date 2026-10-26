@@ -1,4 +1,4 @@
-package com.cozyds.voicetamil
+package com.ra.speakly
 
 import android.Manifest
 import android.content.pm.PackageManager

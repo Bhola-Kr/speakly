@@ -12,7 +12,7 @@ interface Props {
 const Banner = ({ randomCall, calling }: Props) => {
   return (
     <LinearGradient
-      colors={[Colors.darkSurface, Colors.primary]}
+      colors={[Colors.primary, Colors.navySurface]}
       style={{
         marginHorizontal: 16,
         marginTop: 16,
@@ -35,8 +35,8 @@ const Banner = ({ randomCall, calling }: Props) => {
               fontWeight: '800',
             }}
           >
-            Talk to{' '}
-            <Text style={{ color: Colors.secondary }}>Verified Users</Text>
+            Practice with{' '}
+              <Text style={{ color: Colors.secondary }}>Language Experts</Text>
           </Text>
 
           <Text
@@ -47,8 +47,8 @@ const Banner = ({ randomCall, calling }: Props) => {
               lineHeight: 18,
             }}
           >
-            Connect instantly with verified female users through private voice
-            calls.
+            Pick a conversation topic and build fluency through a focused
+            one-to-one voice session.
           </Text>
 
           <TouchableOpacity
@@ -74,7 +74,7 @@ const Banner = ({ randomCall, calling }: Props) => {
 
                 <Text
                   style={{
-                    color: Colors.black,
+                    color: Colors.white,
                     fontWeight: '700',
                     fontSize: 13,
                     marginLeft: 8,
@@ -88,18 +88,18 @@ const Banner = ({ randomCall, calling }: Props) => {
                 <MaterialCommunityIcons
                   name="phone"
                   size={16}
-                  color={Colors.black}
+                color={Colors.white}
                 />
 
                 <Text
                   style={{
-                    color: Colors.black,
+                    color: Colors.white,
                     fontWeight: '700',
                     fontSize: 13,
                     marginLeft: 6,
                   }}
                 >
-                  Random Call
+                  Find an expert
                 </Text>
               </>
             )}

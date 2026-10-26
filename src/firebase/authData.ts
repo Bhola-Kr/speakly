@@ -13,6 +13,8 @@ export type UpdateProfileData = {
   tamilName?: string;
   image?: string;
   gender?: string;
+  role?: 'learner' | 'expert';
+  practiceLanguage?: string;
   birthYear?: number | string;
   avatarId?: number | string;
   status?: string;
@@ -70,7 +72,11 @@ class AuthData {
   //-----------------------------
   // Create User
   //-----------------------------
-  createUser = async (user: any, gender: string) => {
+  createUser = async (
+    user: any,
+    gender: string,
+    role: 'learner' | 'expert' = gender === 'female' ? 'expert' : 'learner',
+  ) => {
     if (!user?.uid) {
       throw new Error('A valid user is required to create an account.');
     }
@@ -94,7 +100,6 @@ class AuthData {
           lastSeen: now,
           profile: {
             avatarId: 1,
-            maritalStatus: 'Single',
             category: 'General',
             rating: 4.9,
             status: 'offline',
@@ -108,6 +113,7 @@ class AuthData {
             uid,
             phone: profile.phone || phone,
             gender,
+            role,
           },
           verification: {
             phoneVerified: true,

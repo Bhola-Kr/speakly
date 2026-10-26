@@ -30,7 +30,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     window = UIWindow(frame: UIScreen.main.bounds)
 
     factory.startReactNative(
-      withModuleName: "VoiceTamil",
+      withModuleName: "Speakly",
       in: window,
       initialProperties: ["isHeadless": application.applicationState == .background],
       launchOptions: launchOptions

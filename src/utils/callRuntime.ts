@@ -32,7 +32,7 @@ export function setCallInterval(
   };
   const subscription =
     Platform.OS === 'android'
-      ? DeviceEventEmitter.addListener('VoiceTamilCallTick', tick)
+      ? DeviceEventEmitter.addListener('SpeaklyCallTick', tick)
       : undefined;
   const timer = Platform.OS !== 'android' ? setInterval(tick, 1000) : undefined;
   return () => {

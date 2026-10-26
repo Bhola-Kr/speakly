@@ -7,15 +7,15 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Image,
   Alert,
 } from 'react-native';
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-type Gender = 'male' | 'female';
+type Role = 'learner' | 'expert';
 
 interface Props {
   navigation: any;
@@ -25,42 +25,45 @@ interface Props {
 const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
   const user = route.params.user;
 
-  const [gender, setGender] = useState<Gender>('male');
+  const [role, setRole] = useState<Role>('learner');
   const [loading, setLoading] = useState(false);
 
-  const updateGender = async () => {
+  const updateRole = async () => {
     if (loading) {
       return;
     }
 
     try {
       setLoading(true);
-      await authData.createUser(user, gender);
+      // Legacy call services still use gender as their learner/expert switch.
+      const gender = role === 'expert' ? 'female' : 'male';
+      await authData.createUser(user, gender, role);
       await authData.updateProfile({
         gender,
+        role,
       });
 
-      navigation.navigate('Nickname', { user, gender });
+      navigation.navigate('Language', { user, gender, role });
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Unable to update gender.');
+      Alert.alert('Error', e?.message || 'Unable to save your choice.');
     } finally {
       setLoading(false);
     }
   };
 
   const renderCard = (
-    type: Gender,
-    image: any,
+    type: Role,
+    icon: string,
     title: string,
     subtitle?: string,
   ) => {
-    const selected = gender === type;
+    const selected = role === type;
 
     return (
       <TouchableOpacity
         activeOpacity={0.85}
         style={[styles.card, selected && styles.selectedCard]}
-        onPress={() => setGender(type)}
+        onPress={() => setRole(type)}
       >
         {selected && (
           <View style={styles.checkContainer}>
@@ -68,7 +71,13 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         )}
 
-        <Image source={image} style={styles.avatar} />
+        <View style={[styles.roleIcon, selected && styles.selectedRoleIcon]}>
+          <MaterialCommunityIcons
+            name={icon}
+            size={58}
+            color={selected ? Colors.white : Colors.tealDark}
+          />
+        </View>
 
         <Text style={styles.genderText}>{title}</Text>
 
@@ -87,29 +96,36 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         bounces={false}
       >
         <View style={styles.header}>
-          <Text style={styles.smallTitle}>Your</Text>
+          <Text style={styles.smallTitle}>How will you use Speakly?</Text>
 
-          <Text style={styles.title}>Gender</Text>
+          <Text style={styles.title}>Choose your role</Text>
         </View>
 
-        {renderCard('male', require('../assets/man.png'), 'Male')}
+        {renderCard(
+          'learner',
+          'account-voice',
+          'Practice a language',
+          'Choose a topic and speak with an expert',
+        )}
 
         <View style={{ height: 18 }} />
 
         {renderCard(
-          'female',
-          require('../assets/woman.png'),
-          'Female',
-          '(Audio verification needed)',
+          'expert',
+          'teach',
+          'Become an expert',
+          'Help learners build real conversation skills',
         )}
 
-        <Text style={styles.note}>Gender cannot be changed later.</Text>
+        <Text style={styles.note}>
+          Speakly is for language practice—not dating or matchmaking.
+        </Text>
 
         <GradientButton
           style={styles.actionButton}
           title={loading ? 'Please wait...' : 'Proceed'}
           disabled={loading}
-          onPress={updateGender}
+          onPress={updateRole}
         />
       </ScrollView>
     </SafeAreaView>
@@ -155,7 +171,7 @@ const styles = StyleSheet.create({
 
     backgroundColor: Colors.white,
 
-    borderRadius: 22,
+    borderRadius: 20,
 
     borderWidth: 2,
     borderColor: Colors.transparent,
@@ -193,25 +209,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  avatar: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    resizeMode: 'cover',
+  roleIcon: {
+    width: 112,
+    height: 112,
+    borderRadius: 32,
+    backgroundColor: Colors.screenTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  selectedRoleIcon: {
+    backgroundColor: Colors.secondary,
   },
 
   genderText: {
     marginTop: 14,
     fontSize: 20,
     fontWeight: '500',
-    color: Colors.gray47,
+    color: Colors.text,
     textAlign: 'center',
   },
 
   subTitle: {
     marginTop: 3,
     fontSize: 12,
-    color: Colors.gray142,
+    color: Colors.subText,
     textAlign: 'center',
     fontWeight: '400',
   },
@@ -220,7 +242,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
     marginBottom: 18,
     textAlign: 'center',
-    color: Colors.gray90,
+    color: Colors.subText,
     fontSize: 15,
     fontWeight: '400',
   },

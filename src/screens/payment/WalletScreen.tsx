@@ -283,7 +283,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 30,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
 
   transactionText: {
@@ -365,13 +367,13 @@ const styles = StyleSheet.create({
   card: {
     width: '48%',
     backgroundColor: Colors.white,
-    borderRadius: 22,
+    borderRadius: 18,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: Colors.border,
 
-    shadowColor: Colors.black,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: {
@@ -397,7 +399,7 @@ const styles = StyleSheet.create({
   },
 
   badgeText: {
-    color: Colors.black,
+    color: Colors.white,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -469,7 +471,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
 
-    shadowColor: Colors.black,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.12,
     shadowRadius: 18,
     shadowOffset: {

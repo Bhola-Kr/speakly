@@ -24,6 +24,7 @@ import BirthYearScreen from './screens/BirthYearScreen';
 import NicknameScreen from './screens/NicknameScreen';
 import OtpScreen from './screens/OtpScreen';
 import GenderScreen from './screens/GenderScreen';
+import LanguageScreen from './screens/LanguageScreen';
 import AvatarScreen from './screens/AvatarScreen';
 import AudioVerificationScreen from './screens/AudioVerificationScreen';
 import BottomTabs from './screens/BottomTabs';
@@ -95,7 +96,7 @@ function RootStack() {
       <Stack.Screen name="BirthYear" component={BirthYearScreen} />
       <Stack.Screen name="Nickname" component={NicknameScreen} />
       <Stack.Screen name="Gender" component={GenderScreen} />
-      {/* <Stack.Screen name="Language" component={LanguageScreen} /> */}
+      <Stack.Screen name="Language" component={LanguageScreen} />
       <Stack.Screen name="Avatar" component={AvatarScreen} />
       <Stack.Screen
         name="AudioVerification"
@@ -108,7 +109,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'About Voice Tamil',
+          title: 'About Speakly',
           headerStyle: { backgroundColor: Colors.background },
         }}
         name="About"
@@ -190,7 +191,7 @@ function AppNavigator() {
 
   const contactDeletionAdmin = React.useCallback(() => {
     const subject = encodeURIComponent('Account Deletion Support');
-    const body = encodeURIComponent(`Hello VoiceTamil Support Team,
+    const body = encodeURIComponent(`Hello Speakly Support Team,
 
 I need help with my pending account deletion request.
 
@@ -199,11 +200,11 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
 
 Thank you.`);
     Linking.openURL(
-      `mailto:support@voicetamil.app?subject=${subject}&body=${body}`,
+      `mailto:support@joinspeakly.com?subject=${subject}&body=${body}`,
     ).catch(() => {
       Alert.alert(
         'Contact Admin',
-        'Please email support@voicetamil.app for assistance.',
+        'Please email support@joinspeakly.com for assistance.',
       );
     });
   }, [user?.phone, user?.profile?.phone, user?.uid]);
@@ -486,7 +487,7 @@ const callStyles = StyleSheet.create({
     zIndex: 10,
   },
   hidden: { display: 'none' },
-  bar: { backgroundColor: '#126B42' },
+  bar: { backgroundColor: Colors.tealDark },
   returnButton: {
     paddingVertical: 12,
     paddingHorizontal: 16,

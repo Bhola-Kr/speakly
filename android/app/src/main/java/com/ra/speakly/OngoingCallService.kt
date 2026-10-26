@@ -1,4 +1,4 @@
-package com.cozyds.voicetamil
+package com.ra.speakly
 
 import android.app.*
 import android.content.Intent
@@ -44,7 +44,7 @@ class OngoingCallService : Service() {
             }
             val notification = builder
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("VoiceTamil call in progress")
+                .setContentTitle("Speakly call in progress")
                 .setContentText("Tap to return to your call")
                 .setContentIntent(pending)
                 .setCategory(Notification.CATEGORY_CALL)
@@ -61,7 +61,7 @@ class OngoingCallService : Service() {
             }
             if (wakeLock == null) {
                 wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
-                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "VoiceTamil:ActiveCall")
+                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Speakly:ActiveCall")
                     .apply { acquire() }
                 handler.post(ticker)
             }

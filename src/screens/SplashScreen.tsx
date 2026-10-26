@@ -3,7 +3,6 @@ import {
   SafeAreaView,
   View,
   Text,
-  Image,
   ActivityIndicator,
   StyleSheet,
   StatusBar,
@@ -14,6 +13,7 @@ import DeviceInfo from 'react-native-device-info';
 import Colors from '../constants/colors';
 import authData from '../firebase/authData';
 import { hasValidUsername } from '../utils/profileValidation';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const SplashScreen = ({ navigation }: any) => {
   const navigateTo = useCallback(
@@ -62,11 +62,7 @@ const SplashScreen = ({ navigation }: any) => {
           navigateTo('Main');
           break;
         case 'female':
-          navigateTo(
-            userInfo?.verification?.voiceVerified === true
-              ? 'FemaleBottomTabs'
-              : 'AudioVerification',
-          );
+          navigateTo('FemaleBottomTabs');
           break;
         default:
           navigateTo('Gender', { user: currentUser });
@@ -86,15 +82,17 @@ const SplashScreen = ({ navigation }: any) => {
       <StatusBar backgroundColor={Colors.primary} barStyle={'light-content'} />
       <View style={styles.content}>
         {/* Replace with your logo */}
-        <Image
-          source={require('../assets/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <View style={styles.logoMark}>
+          <MaterialCommunityIcons
+            name="message-text-outline"
+            size={62}
+            color={Colors.white}
+          />
+        </View>
 
-        {/* <Text style={styles.title}>VoiceTamil</Text> */}
+        <Text style={styles.title}>speakly</Text>
 
-        <Text style={styles.subtitle}>Connect • Talk • Enjoy</Text>
+        <Text style={styles.subtitle}>Learn • Speak • Grow</Text>
       </View>
 
       <View style={styles.bottom}>
@@ -123,17 +121,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  logo: {
-    width: 240,
-    height: 240,
-    marginBottom: 30,
+  logoMark: {
+    width: 112,
+    height: 112,
+    borderRadius: 32,
+    backgroundColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
 
   title: {
     fontSize: 34,
     fontWeight: '700',
-    color: Colors.secondary,
-    letterSpacing: 1,
+    color: Colors.white,
+    letterSpacing: -1.5,
   },
 
   subtitle: {

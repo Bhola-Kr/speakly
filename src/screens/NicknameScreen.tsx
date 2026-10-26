@@ -18,7 +18,6 @@ import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
 import {
-  hasValidName,
   hasValidUsername,
   MIN_USERNAME_LENGTH,
 } from '../utils/profileValidation';
@@ -32,13 +31,10 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
   const gender = route.params.gender;
   const [nickname, setNickname] = useState('');
   const [nicknameTouched, setNicknameTouched] = useState(false);
-  const [tamilName, setTamilName] = useState('');
 
   const [loading, setLoading] = useState(false);
 
-  const isValid =
-    hasValidUsername(nickname) &&
-    (gender !== 'female' || hasValidName(tamilName, 2));
+  const isValid = hasValidUsername(nickname);
 
   const saveUser = async () => {
     if (loading) {
@@ -55,20 +51,11 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
       return;
     }
 
-    if (gender === 'female' && !hasValidName(tamilName, 2)) {
-      Alert.alert(
-        'Invalid Tamil Name',
-        'Enter a valid Tamil name without numbers.',
-      );
-      return;
-    }
-
     try {
       setLoading(true);
 
       await authData.updateProfile({
         name: nickname.trim(),
-        ...(gender === 'female' ? { tamilName: tamilName.trim() } : {}),
       });
 
       navigation.navigate('BirthYear', { gender });
@@ -142,31 +129,6 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
               Use at least {MIN_USERNAME_LENGTH} letters. Phone numbers and
               numeric characters are not allowed.
             </Text>
-          )}
-
-          {gender === 'female' && (
-            <>
-              <Text style={styles.tamilNameLabel}>Tamil Name</Text>
-
-              <LinearGradient
-                colors={Colors.gradient}
-                style={[styles.gradientBorder, styles.tamilNameBorder]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    value={tamilName}
-                    onChangeText={setTamilName}
-                    placeholder="பெயரை தமிழில் உள்ளிடவும்"
-                    placeholderTextColor={Colors.placeholder}
-                    autoCapitalize="words"
-                    returnKeyType="done"
-                    style={styles.input}
-                  />
-                </View>
-              </LinearGradient>
-            </>
           )}
 
           <GradientButton

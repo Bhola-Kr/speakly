@@ -24,7 +24,7 @@ const FAQScreen = () => {
         <Text style={styles.title}>Frequently Asked Questions</Text>
 
         <Text style={styles.subtitle}>
-          Find answers to the most commonly asked questions about VoiceTamil.
+          Find answers to the most commonly asked questions about Speakly.
         </Text>
 
         {faqs.map(item => {
@@ -65,7 +65,7 @@ const FAQScreen = () => {
             our support team.
           </Text>
 
-          <Text style={styles.email}>support@voicetamil.app</Text>
+          <Text style={styles.email}>support@joinspeakly.com</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

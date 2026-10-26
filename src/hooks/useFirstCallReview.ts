@@ -41,7 +41,7 @@ export function useFirstCallReview() {
             const claimed = await claimReviewPrompt(uid, gender, history);
             if (!claimed || !active) return;
             Alert.alert(
-              'Review VoiceTamil',
+              'Review Speakly',
               'Thank you for making your first call. Would you like to share your experience on Google Play?',
               [
                 { text: 'No thanks', style: 'cancel' },

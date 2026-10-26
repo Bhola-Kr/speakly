@@ -756,7 +756,7 @@ class RoomService {
     });
 
     if (rooms.length === 0) {
-      throw new Error('No female users are currently online.');
+      throw new Error('No language experts are currently online.');
     }
 
     // Shuffle so every user has an equal chance
@@ -779,7 +779,7 @@ class RoomService {
       }
     }
 
-    throw new Error('No female users are currently online.');
+    throw new Error('No language experts are currently online.');
   }
 }
 

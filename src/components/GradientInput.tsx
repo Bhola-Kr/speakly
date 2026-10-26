@@ -25,13 +25,13 @@ const styles = StyleSheet.create({
   border: {
     marginTop: 40,
     marginHorizontal: 20,
-    borderRadius: 18,
-    padding: 1.3,
+    borderRadius: 12,
+    padding: 1,
   },
 
   container: {
     height: 70,
-    borderRadius: 17,
+    borderRadius: 11,
     backgroundColor: Colors.inputBackground,
     justifyContent: 'center',
     paddingHorizontal: 22,

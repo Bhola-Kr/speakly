@@ -17,7 +17,7 @@ export const profile = {
 export const manAccountMenus = [
   {
     id: 1,
-    title: 'Recent Calls',
+    title: 'Recent Sessions',
     icon: 'history',
     screen: 'Recents',
   },
@@ -32,7 +32,7 @@ export const manAccountMenus = [
 export const femaleAccountMenus = [
   {
     id: 1,
-    title: 'Recent Calls',
+    title: 'Recent Sessions',
     icon: 'history',
     screen: 'Recents',
   },
@@ -73,7 +73,7 @@ export const securityMenus = [
 export const supportMenus = [
   {
     id: 7,
-    title: 'About Voice Tamil',
+    title: 'About Speakly',
     icon: 'information-outline',
     screen: 'About',
   },

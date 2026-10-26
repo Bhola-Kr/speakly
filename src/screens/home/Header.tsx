@@ -25,15 +25,35 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
         justifyContent: 'space-between',
       }}
     >
-      <Text
-        style={{
-          fontSize: 30,
-          fontWeight: '800',
-          color: Colors.text,
-        }}
-      >
-        தமிழ்
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 12,
+            backgroundColor: Colors.secondary,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <MaterialCommunityIcons
+            name="message-text-outline"
+            size={22}
+            color={Colors.white}
+          />
+        </View>
+        <Text
+          style={{
+            marginLeft: 9,
+            fontSize: 25,
+            fontWeight: '800',
+            color: Colors.primary,
+            letterSpacing: -1.2,
+          }}
+        >
+          speakly
+        </Text>
+      </View>
 
       <View
         style={{
@@ -71,7 +91,7 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
               {user?.wallet?.balance || 0}
             </Text>
 
-            <TouchableOpacity
+            <View
               style={{
                 width: 24,
                 height: 24,
@@ -86,7 +106,7 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
                 size={16}
                 color={Colors.black}
               />
-            </TouchableOpacity>
+            </View>
           </LinearGradient>
         </TouchableOpacity>
 

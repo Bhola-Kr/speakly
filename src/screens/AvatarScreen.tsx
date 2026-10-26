@@ -114,8 +114,9 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
                 routes: [{ name: 'Main' }],
               });
             } else {
-              navigation.navigate('AudioVerification', {
-                avatarId: selectedAvatar,
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'FemaleBottomTabs' }],
               });
             }
           } catch (e: any) {

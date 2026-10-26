@@ -24,7 +24,7 @@ const CategoryList = ({ categories, selected, onSelect }: Props) => {
             marginRight: 12,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: active ? Colors.primary : Colors.white,
+            backgroundColor: active ? Colors.secondary : Colors.white,
             borderWidth: 1,
             borderColor: Colors.secondary,
           }}
@@ -32,7 +32,7 @@ const CategoryList = ({ categories, selected, onSelect }: Props) => {
           <Text
             style={{
               fontWeight: '700',
-              color: active ? Colors.secondary : Colors.text,
+              color: active ? Colors.white : Colors.text,
             }}
           >
             {item}
