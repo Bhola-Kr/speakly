@@ -3,6 +3,8 @@ export interface Avatar {
   image: any;
 }
 
+export const SUPPORT_EMAIL = 'support@joinspeakly.com';
+
 export const faqs = [
   {
     id: 1,
@@ -61,8 +63,7 @@ export const faqs = [
   {
     id: 10,
     question: 'How can I contact customer support?',
-    answer:
-      'You can contact us anytime by emailing support@joinspeakly.com from the Contact Us section in the app.',
+    answer: `You can contact us anytime by emailing ${SUPPORT_EMAIL} from the Contact Us section in the app.`,
   },
 ];
 

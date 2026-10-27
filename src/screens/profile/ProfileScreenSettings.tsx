@@ -25,7 +25,11 @@ import {
   securityMenus,
   femaleAccountMenus,
 } from './dummyData';
-import { formatDate, getUserAvatar } from '../../constants/constants';
+import {
+  formatDate,
+  getUserAvatar,
+  SUPPORT_EMAIL,
+} from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 import { useActiveCall } from '../../hooks/ActiveCallContext';
 import RoomService from '../../firebase/RoomService';
@@ -38,8 +42,6 @@ interface Props {
 }
 
 const ProfileSettingScreen = ({ navigation }: Props) => {
-  const SUPPORT_EMAIL = 'support@joinspeakly.com';
-
   const { user } = useUser();
   const { activeCall, showCall } = useActiveCall();
   const profile = user?.profile;

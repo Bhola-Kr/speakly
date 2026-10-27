@@ -10,7 +10,7 @@ import {
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../constants/colors';
-import { faqs } from '../constants/constants';
+import { faqs, SUPPORT_EMAIL } from '../constants/constants';
 
 const FAQScreen = () => {
   const [expanded, setExpanded] = useState<number | null>(1);
@@ -65,7 +65,7 @@ const FAQScreen = () => {
             our support team.
           </Text>
 
-          <Text style={styles.email}>support@joinspeakly.com</Text>
+          <Text style={styles.email}>{SUPPORT_EMAIL}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

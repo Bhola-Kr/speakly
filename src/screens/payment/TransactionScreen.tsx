@@ -14,6 +14,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
+import { SUPPORT_EMAIL } from '../../constants/constants';
 const transactions = [
   {
     id: '1',
@@ -71,7 +72,6 @@ const STATUS = {
 };
 
 const TransactionScreen = ({ navigation }: any) => {
-  const SUPPORT_EMAIL = 'support@joinspeakly.com';
   const copyTxn = (id: string) => {
     Clipboard.setString(id);
     Alert.alert('Copied', 'Transaction ID copied.');

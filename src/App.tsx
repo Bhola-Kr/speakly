@@ -29,6 +29,7 @@ import AvatarScreen from './screens/AvatarScreen';
 import AudioVerificationScreen from './screens/AudioVerificationScreen';
 import BottomTabs from './screens/BottomTabs';
 import Colors from './constants/colors';
+import { SUPPORT_EMAIL } from './constants/constants';
 import ProfileSettingScreen from './screens/profile/ProfileScreenSettings';
 import { EditProfileScreen } from './screens/profile/EditProfileScreen';
 import WalletScreen from './screens/payment/WalletScreen';
@@ -201,11 +202,11 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
 
 Thank you.`);
     Linking.openURL(
-      `mailto:support@joinspeakly.com?subject=${subject}&body=${body}`,
+      `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`,
     ).catch(() => {
       Alert.alert(
         'Contact Admin',
-        'Please email support@joinspeakly.com for assistance.',
+        `Please email ${SUPPORT_EMAIL} for assistance.`,
       );
     });
   }, [user?.phone, user?.profile?.phone, user?.uid]);
