@@ -58,7 +58,7 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
         name: nickname.trim(),
       });
 
-      navigation.navigate('BirthYear', { gender });
+      navigation.navigate('Avatar', { gender });
     } catch (e: any) {
       console.log('Create User Error:', e);
 

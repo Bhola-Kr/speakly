@@ -18,7 +18,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './styles';
 import strings from '../../../constants/strings';
 import RoomService from '../../../firebase/RoomService';
-import { getFemaleAvatar } from '../../../constants/constants';
+import { getFemaleAvatar, getMaleAvatar } from '../../../constants/constants';
 
 interface Props {
   navigation: any;
@@ -98,6 +98,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
               gender: 'male',
               userName: englishName || displayName,
               tamilName,
+              expertGender: data?.gender,
               avatarId: data?.avatarId,
               femaleUid: data?.uid,
               agora: room?.agora,
@@ -133,6 +134,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
     };
   }, [
     data?.avatarId,
+    data?.gender,
     data?.name,
     data?.tamilName,
     data?.uid,
@@ -242,7 +244,11 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <View style={styles.avatarBorder}>
             <Image
-              source={getFemaleAvatar(data?.avatarId)}
+              source={
+                String(data?.gender).toLowerCase() === 'female'
+                  ? getFemaleAvatar(data?.avatarId)
+                  : getMaleAvatar(data?.avatarId)
+              }
               style={styles.avatar}
             />
           </View>
@@ -254,9 +260,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.englishName}>{englishName}</Text>
         )}
 
-        <Text style={styles.city}>
-          {data?.practiceLanguage || 'Language expert'}
-        </Text>
+        <Text style={styles.city}>Conversation expert</Text>
 
         <View style={styles.waveContainer}>
           <Animated.View

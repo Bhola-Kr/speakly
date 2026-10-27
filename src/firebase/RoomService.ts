@@ -36,6 +36,7 @@ export interface UserInfo {
   uid: string;
   name: string;
   tamilName?: string;
+  gender?: string;
   avatarId: number | string;
 }
 
@@ -134,6 +135,7 @@ class RoomService {
         uid: firebaseUser.uid,
         name: user.profile.name,
         ...(tamilName ? { tamilName } : {}),
+        gender: user.profile.gender,
         avatarId: user.profile.avatarId,
       },
       male: null,
@@ -187,7 +189,7 @@ class RoomService {
       database().ref(`rooms/${firebaseUser.uid}`).once('value'),
     ]);
     const user = userSnapshot.val();
-    if (user?.profile?.gender !== 'female') return false;
+    if (user?.isExpert !== true) return false;
     // Only the explicit Go Online action enables persistent availability.
     // Back navigation, app backgrounding and reconnects never disable it.
     if (user?.settings?.voiceCallsEnabled !== true) return false;
@@ -198,10 +200,7 @@ class RoomService {
       ['waiting', 'ringing', 'accepted', 'active'].includes(room.status)
     ) {
       await this.armOfflineOnDisconnect(firebaseUser.uid);
-      if (
-        room.status === 'waiting' &&
-        user?.profile?.status !== 'online'
-      ) {
+      if (room.status === 'waiting' && user?.profile?.status !== 'online') {
         await database()
           .ref(`users/${firebaseUser.uid}/profile/status`)
           .set('online');
@@ -283,6 +282,7 @@ class RoomService {
       room.male = {
         uid: firebaseUser.uid,
         name: male.profile.name,
+        gender: male.profile.gender,
         avatarId: male.profile.avatarId,
       };
       room.agora = {
@@ -507,15 +507,17 @@ class RoomService {
     // Wait a moment so both users receive "ended"
     setTimeout(async () => {
       const updatedAt = Date.now();
-      await database().ref().update({
-        [`rooms/${femaleUid}/status`]: 'waiting',
-        [`rooms/${femaleUid}/currentCallId`]: '',
-        [`rooms/${femaleUid}/male`]: null,
-        [`rooms/${femaleUid}/callSettled`]: null,
-        [`rooms/${femaleUid}/chargedAmount`]: null,
-        [`rooms/${femaleUid}/updatedAt`]: updatedAt,
-        [`users/${femaleUid}/profile/status`]: 'online',
-      });
+      await database()
+        .ref()
+        .update({
+          [`rooms/${femaleUid}/status`]: 'waiting',
+          [`rooms/${femaleUid}/currentCallId`]: '',
+          [`rooms/${femaleUid}/male`]: null,
+          [`rooms/${femaleUid}/callSettled`]: null,
+          [`rooms/${femaleUid}/chargedAmount`]: null,
+          [`rooms/${femaleUid}/updatedAt`]: updatedAt,
+          [`users/${femaleUid}/profile/status`]: 'online',
+        });
     }, 1000);
   }
 

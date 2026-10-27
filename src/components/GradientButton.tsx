@@ -29,9 +29,12 @@ const GradientButton = ({
 
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
+      activeOpacity={0.88}
       disabled={isDisabled}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      style={styles.touchable}
     >
       <LinearGradient
         colors={
@@ -54,18 +57,26 @@ const GradientButton = ({
 export default GradientButton;
 
 const styles = StyleSheet.create({
+  touchable: {
+    marginHorizontal: 24,
+    marginTop: 28,
+  },
   button: {
-    height: 52,
-    borderRadius: 12,
+    height: 56,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 55,
-    marginTop: 45,
+    shadowColor: Colors.secondary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 14,
+    elevation: 6,
   },
 
   text: {
     color: Colors.white,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
 });

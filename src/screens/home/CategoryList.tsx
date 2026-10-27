@@ -18,21 +18,21 @@ const CategoryList = ({ categories, selected, onSelect }: Props) => {
           activeOpacity={0.85}
           onPress={() => onSelect(item)}
           style={{
-            height: 42,
-            paddingHorizontal: 20,
-            borderRadius: 22,
-            marginRight: 12,
+            height: 40,
+            paddingHorizontal: 18,
+            borderRadius: 14,
+            marginRight: 10,
             justifyContent: 'center',
             alignItems: 'center',
             backgroundColor: active ? Colors.secondary : Colors.white,
             borderWidth: 1,
-            borderColor: Colors.secondary,
+            borderColor: active ? Colors.secondary : Colors.border,
           }}
         >
           <Text
             style={{
               fontWeight: '700',
-              color: active ? Colors.white : Colors.text,
+              color: active ? Colors.white : Colors.subText,
             }}
           >
             {item}

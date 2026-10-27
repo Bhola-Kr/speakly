@@ -1,6 +1,7 @@
 import auth from '@react-native-firebase/auth';
 
-const BASE_URL = 'https://us-central1-voice-tamil.cloudfunctions.net/api';
+const BASE_URL =
+  'https://us-central1-recent-chat-7fd34.cloudfunctions.net/api';
 
 class Api {
   private async request<T>(

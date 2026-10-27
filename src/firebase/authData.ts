@@ -17,6 +17,7 @@ export type UpdateProfileData = {
   practiceLanguage?: string;
   birthYear?: number | string;
   avatarId?: number | string;
+  avatarSelected?: boolean;
   status?: string;
 };
 
@@ -72,11 +73,7 @@ class AuthData {
   //-----------------------------
   // Create User
   //-----------------------------
-  createUser = async (
-    user: any,
-    gender: string,
-    role: 'learner' | 'expert' = gender === 'female' ? 'expert' : 'learner',
-  ) => {
+  createUser = async (user: any, gender: string) => {
     if (!user?.uid) {
       throw new Error('A valid user is required to create an account.');
     }
@@ -85,53 +82,52 @@ class AuthData {
     const phone = user.phoneNumber || uid;
     const now = Date.now();
 
-    await databaseRef(`users/${uid}`)
-      .transaction(currentUser => {
-        const isNewAccount = !currentUser;
-        const existing = currentUser || {};
-        const profile = existing.profile || {};
+    await databaseRef(`users/${uid}`).transaction(currentUser => {
+      const isNewAccount = !currentUser;
+      const existing = currentUser || {};
+      const profile = existing.profile || {};
 
-        return {
-          ...existing,
+      return {
+        ...existing,
+        uid,
+        phone: existing.phone || phone,
+        createdAt: existing.createdAt || now,
+        lastSeen: now,
+        isExpert: existing.isExpert === true,
+        profile: {
+          avatarId: 1,
+          avatarSelected: false,
+          category: 'General',
+          rating: 4.9,
+          status: 'offline',
+          name: '',
+          tamilName: '',
+          image: '',
+          birthYear: '',
+          age: '',
+          ...profile,
+          price: CALL_RATE_PER_MINUTE,
           uid,
-          phone: existing.phone || phone,
-          createdAt: existing.createdAt || now,
-          lastSeen: now,
-          profile: {
-            avatarId: 1,
-            category: 'General',
-            rating: 4.9,
-            status: 'offline',
-            name: '',
-            tamilName: '',
-            image: '',
-            birthYear: '',
-            age: '',
-            ...profile,
-            price: CALL_RATE_PER_MINUTE,
-            uid,
-            phone: profile.phone || phone,
-            gender,
-            role,
-          },
-          verification: {
-            phoneVerified: true,
-            voiceVerified: false,
-            ...(existing.verification || {}),
-          },
-          wallet: {
-            balance: 0,
-            ...(existing.wallet || {}),
-          },
-          settings: {
-            notification: true,
-            ...(isNewAccount && gender === 'female'
-              ? { voiceCallsEnabled: false }
-              : {}),
-            ...(existing.settings || {}),
-          },
-        };
-      });
+          phone: profile.phone || phone,
+          gender,
+          role: existing.profile?.role || 'learner',
+        },
+        verification: {
+          phoneVerified: true,
+          voiceVerified: false,
+          ...(existing.verification || {}),
+        },
+        wallet: {
+          balance: 0,
+          ...(existing.wallet || {}),
+        },
+        settings: {
+          notification: true,
+          ...(isNewAccount ? { voiceCallsEnabled: false } : {}),
+          ...(existing.settings || {}),
+        },
+      };
+    });
   };
 
   //-----------------------------
@@ -150,7 +146,7 @@ class AuthData {
     const currentUser = auth().currentUser;
     if (currentUser) {
       const user = await this.getUser(currentUser.uid);
-      if (user?.profile?.gender === 'female') {
+      if (user?.isExpert === true) {
         await RoomService.goOffline();
       }
     }
@@ -188,15 +184,16 @@ class AuthData {
     const requestedAt = Date.now();
     const scheduledDeletionAt = requestedAt + ACCOUNT_DELETION_DELAY_MS;
 
-    await databaseRef(`users/${user.uid}/accountDeletion`)
-      .transaction(currentRequest => ({
+    await databaseRef(`users/${user.uid}/accountDeletion`).transaction(
+      currentRequest => ({
         ...(currentRequest || {}),
         status: true,
         requestedAt: currentRequest?.requestedAt || requestedAt,
         scheduledDeletionAt:
           currentRequest?.scheduledDeletionAt || scheduledDeletionAt,
         updatedAt: requestedAt,
-      }));
+      }),
+    );
 
     return { requestedAt, scheduledDeletionAt };
   };
@@ -208,8 +205,9 @@ class AuthData {
       throw new Error('No authenticated user found.');
     }
 
-    await databaseRef(`users/${user.uid}/verification`)
-      .update(verificationData);
+    await databaseRef(`users/${user.uid}/verification`).update(
+      verificationData,
+    );
   };
 
   updateProfile = async (profileData: UpdateProfileData) => {
@@ -231,31 +229,30 @@ class AuthData {
         profileData.name !== undefined ||
         profileData.tamilName !== undefined
       ) {
-        await databaseRef(`rooms/${user.uid}`)
-          .transaction(room => {
-            if (!room?.female || room.female.uid !== user.uid) {
-              return;
-            }
+        await databaseRef(`rooms/${user.uid}`).transaction(room => {
+          if (!room?.female || room.female.uid !== user.uid) {
+            return;
+          }
 
-            const female = {
-              ...room.female,
-              ...(profileData.avatarId !== undefined
-                ? { avatarId: profileData.avatarId }
-                : {}),
-              ...(profileData.name !== undefined
-                ? { name: profileData.name }
-                : {}),
-              ...(profileData.tamilName !== undefined
-                ? { tamilName: profileData.tamilName }
-                : {}),
-            };
+          const female = {
+            ...room.female,
+            ...(profileData.avatarId !== undefined
+              ? { avatarId: profileData.avatarId }
+              : {}),
+            ...(profileData.name !== undefined
+              ? { name: profileData.name }
+              : {}),
+            ...(profileData.tamilName !== undefined
+              ? { tamilName: profileData.tamilName }
+              : {}),
+          };
 
-            return {
-              ...room,
-              female,
-              updatedAt: Date.now(),
-            };
-          });
+          return {
+            ...room,
+            female,
+            updatedAt: Date.now(),
+          };
+        });
       }
 
       // Keep Firebase Auth profile in sync

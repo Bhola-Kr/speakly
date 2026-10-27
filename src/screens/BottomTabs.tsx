@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { BackHandler } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -12,8 +14,23 @@ const Tab = createBottomTabNavigator();
 const BottomTabs = () => {
   const insets = useSafeAreaInsets();
 
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          BackHandler.exitApp();
+          return true;
+        },
+      );
+
+      return () => subscription.remove();
+    }, []),
+  );
+
   return (
     <Tab.Navigator
+      backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
 
@@ -24,28 +41,29 @@ const BottomTabs = () => {
         tabBarStyle: {
           position: 'absolute',
 
-          left: 20,
-          right: 20,
-          bottom: Math.max(insets.bottom, 18),
-          marginHorizontal: 10,
+          left: 16,
+          right: 16,
+          bottom: Math.max(insets.bottom, 12),
 
-          height: 68,
+          height: 72,
 
           backgroundColor: Colors.white,
 
-          borderRadius: 34,
+          borderRadius: 24,
 
           borderTopWidth: 0,
 
-          elevation: 15,
+          borderWidth: 1,
+          borderColor: Colors.border,
+          elevation: 12,
 
           shadowColor: Colors.primary,
           shadowOffset: {
             width: 0,
             height: 8,
           },
-          shadowOpacity: 0.12,
-          shadowRadius: 12,
+          shadowOpacity: 0.14,
+          shadowRadius: 18,
         },
 
         tabBarItemStyle: {
@@ -58,9 +76,9 @@ const BottomTabs = () => {
         tabBarInactiveTintColor: Colors.gray143,
 
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '700',
-          marginBottom: 4,
+          fontSize: 11,
+          fontWeight: '800',
+          marginBottom: 6,
         },
       }}
     >

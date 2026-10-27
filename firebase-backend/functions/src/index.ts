@@ -1,4 +1,4 @@
-import { onRequest } from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v1/https";
 import { logger } from "firebase-functions";
 import express, { Request, Response } from "express";
 import { RtcRole, RtcTokenBuilder } from "agora-token";
@@ -10,10 +10,13 @@ const app = express();
 app.use(express.json());
 
 const serviceAccount = require("../adminsdk.json");
+const FIREBASE_PROJECT_ID = "recent-chat-7fd34";
+const FIREBASE_DATA_ROOT = "speakly";
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://voice-tamil-default-rtdb.firebaseio.com",
+  projectId: FIREBASE_PROJECT_ID,
+  databaseURL: "https://recent-chat-7fd34-default-rtdb.firebaseio.com",
 });
 
 const MSG91_WIDGET_ID = "3668716f3732343639373333";
@@ -48,7 +51,7 @@ app.get("/myIp", async (_req, res) => {
 async function getUserFcmToken(uid: string) {
   const tokenSnapshot = await admin
     .database()
-    .ref(`users/${uid}/fcmTokens`)
+    .ref(`${FIREBASE_DATA_ROOT}/users/${uid}/fcmTokens`)
     .once("value");
   const tokenData = tokenSnapshot.val();
   const token = typeof tokenData === "string" ? tokenData : tokenData?.token;
@@ -710,10 +713,4 @@ app.get("/", (_req: Request, res: Response) => {
 // ============================================
 // FIREBASE FUNCTION
 // ============================================
-export const api = onRequest(
-  {
-    region: "us-central1",
-    cors: true,
-  },
-  app,
-);
+export const api = onRequest(app);

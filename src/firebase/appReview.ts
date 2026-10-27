@@ -8,33 +8,30 @@ export const APP_REVIEW_URL =
 
 export async function claimReviewPrompt(
   uid: string,
-  gender: string,
   history: CallHistory[],
 ): Promise<boolean> {
   if (
     auth().currentUser?.uid !== uid ||
-    gender !== 'male' ||
     !history.some(call => call.status === 'Completed' && call.duration > 0)
   ) {
     return false;
   }
 
   // Persist before displaying, so remounts and other devices cannot ask again.
-  const result = await databaseRef(`users/${uid}/appReview`)
-    .transaction(
-      current => {
-        if (
-          current?.promptedAt ||
-          current?.storeOpenedAt ||
-          current?.alreadyReviewedAt
-        ) {
-          return;
-        }
-        return { ...current, promptedAt: Date.now() };
-      },
-      undefined,
-      false,
-    );
+  const result = await databaseRef(`users/${uid}/appReview`).transaction(
+    current => {
+      if (
+        current?.promptedAt ||
+        current?.storeOpenedAt ||
+        current?.alreadyReviewedAt
+      ) {
+        return;
+      }
+      return { ...current, promptedAt: Date.now() };
+    },
+    undefined,
+    false,
+  );
 
   return result.committed;
 }

@@ -114,7 +114,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Good To See You! 👋</Text>
+            <Text style={styles.greeting}>EXPERT DASHBOARD</Text>
 
             <Text numberOfLines={1} style={styles.userName}>
               {displayName}
@@ -127,7 +127,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             )}
 
             <Text style={styles.subtitle}>
-              Ready to receive voice calls today?
+              Choose when learners can reach you.
             </Text>
           </View>
 
@@ -146,7 +146,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Tips</Text>
+            <Text style={styles.sectionTitle}>Make every session count</Text>
           </View>
 
           <FlatList
@@ -216,12 +216,12 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             {goingOnline ? (
               <>
                 <ActivityIndicator size="small" color={Colors.white} />
-                <Text style={styles.onlineText}>GOING ONLINE...</Text>
+                <Text style={styles.onlineText}>Getting you ready…</Text>
               </>
             ) : (
               <>
                 <View style={styles.onlineDot} />
-                <Text style={styles.onlineText}>GO ONLINE</Text>
+                <Text style={styles.onlineText}>Start receiving calls</Text>
               </>
             )}
           </LinearGradient>
@@ -238,11 +238,10 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               flex: 1,
             }}
           >
-            <Text style={styles.reminderTitle}>Daily Reminder</Text>
+            <Text style={styles.reminderTitle}>You set the pace</Text>
 
             <Text style={styles.reminderDesc}>
-              Go online whenever you're free to meet new people, have
-              interesting conversations, and enjoy your time.
+              Go online only when you have time for a focused conversation.
             </Text>
           </View>
 
@@ -265,16 +264,15 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
 
           <Text style={styles.statusDescription}>
-            Your profile is currently{' '}
+            Learners currently see your profile as{' '}
             <Text
               style={{
                 fontWeight: '700',
               }}
             >
               {user?.profile?.status === 'online' ? 'visible' : 'hidden'}
-            </Text>{' '}
-            to users. Tap the "GO ONLINE" button whenever you're ready to
-            receive calls.
+            </Text>
+            . Use the button above whenever you're ready to receive calls.
           </Text>
         </View>
 
@@ -289,7 +287,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.reminderCard}
         >
           <View style={{ flex: 1 }}>
-            <Text style={styles.reminderTitle}>Enjoy</Text>
+            <Text style={styles.reminderTitle}>Private by design</Text>
 
             <Text style={styles.reminderDesc}>
               Connect with people through private voice conversations. Your
@@ -315,7 +313,7 @@ const styles = StyleSheet.create({
 
   tutorialCard: {
     marginRight: 10,
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 22,
   },
 
@@ -381,10 +379,10 @@ const styles = StyleSheet.create({
   },
 
   onlineButton: {
-    height: 62,
+    height: 60,
     marginHorizontal: 18,
     marginBottom: 22,
-    borderRadius: 31,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
@@ -404,9 +402,9 @@ const styles = StyleSheet.create({
 
   onlineText: {
     color: Colors.white,
-    fontWeight: '700',
-    fontSize: 18,
-    letterSpacing: 1,
+    fontWeight: '800',
+    fontSize: 17,
+    letterSpacing: 0.2,
   },
 
   noticeFooter: {
@@ -435,7 +433,7 @@ const styles = StyleSheet.create({
   reminderCard: {
     marginHorizontal: 18,
     marginBottom: 22,
-    borderRadius: 24,
+    borderRadius: 22,
     padding: 22,
     flexDirection: 'row',
     alignItems: 'center',
@@ -467,7 +465,9 @@ const styles = StyleSheet.create({
   statusCard: {
     backgroundColor: Colors.white,
     marginHorizontal: 18,
-    borderRadius: 24,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: Colors.border,
     padding: 22,
 
     shadowColor: Colors.black,
@@ -527,14 +527,15 @@ const styles = StyleSheet.create({
   },
 
   greeting: {
-    fontSize: 16,
-    color: Colors.subText,
-    fontWeight: '500',
+    fontSize: 11,
+    color: Colors.secondary,
+    fontWeight: '800',
+    letterSpacing: 1.2,
   },
 
   userName: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 30,
+    fontWeight: '900',
     color: Colors.text,
     marginTop: 4,
   },
@@ -578,7 +579,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 17,
     borderWidth: 2,
     borderColor: Colors.secondary,
   },

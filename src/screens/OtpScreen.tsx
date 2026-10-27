@@ -23,6 +23,7 @@ import authData from '../firebase/authData';
 import { hasValidUsername } from '../utils/profileValidation';
 import { useUser } from '../hooks/UserContext';
 import { resendMSGOtp, verifyMSGOtp } from '../api/calls';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface Props {
   navigation: any;
@@ -115,11 +116,13 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       // Verify OTP through your backend
       const response = await verifyMSGOtp(phoneNumber, otpToVerify, requestId);
 
-      if (!response?.success || !response?.uid) {
+      if (!response?.success || !response?.uid || !response?.token) {
         throw new Error(response?.message || 'Failed to authenticate user.');
       }
 
-      const firebaseUser = await authData.firebaseLogin(phoneNumber);
+      // OTP verification already returns the Firebase custom token. Reuse it
+      // instead of making a second token request for the same login.
+      const firebaseUser = await authData.loginWithCustomToken(response.token);
 
       // Get user information using the UID
       const userInfo = await authData.getUser(firebaseUser.uid);
@@ -134,37 +137,25 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
       await refreshUser();
 
-      // Existing user but onboarding not completed
-      if (!userInfo?.profile?.gender) {
+      // Profile setup is the third and final signup screen.
+      if (
+        !userInfo?.profile?.gender ||
+        !hasValidUsername(userInfo?.profile?.name) ||
+        userInfo?.profile?.avatarSelected !== true
+      ) {
         navigation.replace('Gender', {
           user: firebaseUser,
+          existingProfile: userInfo?.profile,
         });
         return;
       }
 
-      if (!hasValidUsername(userInfo?.profile?.name)) {
-        navigation.replace('Nickname', {
-          user: firebaseUser,
-          gender: userInfo.profile.gender,
-        });
-        return;
-      }
-
-      if (userInfo?.profile?.gender === 'male') {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        });
-      } else if (userInfo?.profile?.gender === 'female') {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'FemaleBottomTabs' }],
-        });
-      } else {
-        navigation.replace('Gender', {
-          user: firebaseUser,
-        });
-      }
+      navigation.reset({
+        index: 0,
+        routes: [
+          { name: userInfo?.isExpert === true ? 'FemaleBottomTabs' : 'Main' },
+        ],
+      });
     } catch (e: any) {
       console.error('verifyOtp -> error', e);
 
@@ -233,14 +224,20 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
             activeOpacity={0.8}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.backIcon}>‹</Text>
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={23}
+              color={Colors.text}
+            />
           </TouchableOpacity>
 
           <Image
-            source={require('../assets/otp.png')}
+            source={require('../assets/otp-verification-v2.png')}
             resizeMode="contain"
             style={styles.image}
           />
+
+          <Text style={styles.eyebrow}>SECURE VERIFICATION</Text>
 
           <Text style={styles.title}>Verify your number</Text>
 
@@ -360,64 +357,70 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    marginLeft: 18,
-    marginTop: 15,
-    width: 40,
-    height: 40,
+    marginLeft: 20,
+    marginTop: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 15,
     justifyContent: 'center',
-  },
-
-  backIcon: {
-    fontSize: 42,
-    color: Colors.black,
-    fontWeight: '300',
-    marginTop: -5,
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
 
   image: {
-    width: 190,
-    height: 190,
+    width: 210,
+    height: 210,
     alignSelf: 'center',
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+
+  eyebrow: {
+    color: Colors.secondary,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    marginBottom: 7,
   },
 
   title: {
     color: Colors.text,
-    fontSize: 27,
-    fontWeight: '800',
+    fontSize: 29,
+    fontWeight: '900',
     textAlign: 'center',
     marginBottom: 10,
   },
 
   description: {
     fontSize: 17,
-    color: Colors.gray140,
+    color: Colors.subText,
     textAlign: 'center',
     marginHorizontal: 28,
     lineHeight: 24,
   },
 
   bold: {
-    color: Colors.gray102,
-    fontWeight: '600',
+    color: Colors.text,
+    fontWeight: '800',
   },
 
   changeText: {
     marginTop: 8,
     fontSize: 15,
     textAlign: 'center',
-    color: Colors.gray140,
+    color: Colors.subText,
   },
 
   changeLink: {
-    color: Colors.gray62,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    color: Colors.secondary,
+    fontWeight: '800',
   },
 
   otpSection: {
-    marginTop: 36,
+    marginTop: 30,
     alignItems: 'center',
   },
 
@@ -431,7 +434,7 @@ const styles = StyleSheet.create({
 
   pinRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     position: 'relative',
   },
 
@@ -444,15 +447,17 @@ const styles = StyleSheet.create({
   },
 
   pinBorder: {
-    width: 58,
-    height: 64,
-    borderRadius: 16,
+    width: 60,
+    height: 66,
+    borderRadius: 18,
     padding: 1.5,
   },
 
   pinCell: {
     flex: 1,
-    borderRadius: 15,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: Colors.border,
     backgroundColor: Colors.otpInputSurface,
     alignItems: 'center',
     justifyContent: 'center',

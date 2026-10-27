@@ -48,6 +48,7 @@ import RoomService from '../../firebase/RoomService';
 import {
   CALL_RATE_PER_MINUTE,
   getFemaleAvatar,
+  getMaleAvatar,
 } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 
@@ -74,12 +75,7 @@ const EMPTY_NOTE: MaleUserNote = {
   details: '',
 };
 
-const CallScreen = ({
-  route,
-  visible,
-  onMinimize,
-  onFinished,
-}: Props) => {
+const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const { user } = useUser();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const compactLayout = screenHeight < 700 || screenWidth < 360;
@@ -108,6 +104,8 @@ const CallScreen = ({
     gender = 'male',
     femaleUid,
     maleUid,
+    maleGender,
+    expertGender,
     agora,
   } = route?.params ?? {};
 
@@ -176,8 +174,7 @@ const CallScreen = ({
 
     // The current minute is already paid. Two further payable minutes means
     // the call has three minutes remaining, including the current minute.
-    const countdownThreshold =
-      CALL_RATE_PER_MINUTE * (LOW_BALANCE_MINUTES - 1);
+    const countdownThreshold = CALL_RATE_PER_MINUTE * (LOW_BALANCE_MINUTES - 1);
     if (countdownBalance > countdownThreshold) {
       countdownAlertedRef.current = false;
       return;
@@ -216,9 +213,7 @@ const CallScreen = ({
     }
 
     setMaleUserNote(EMPTY_NOTE);
-    const noteRef = database().ref(
-      `userNotes/${currentFemaleUid}/${maleUid}`,
-    );
+    const noteRef = database().ref(`userNotes/${currentFemaleUid}/${maleUid}`);
     const listener = noteRef.on('value', snapshot => {
       const savedNote = snapshot.val();
 
@@ -821,8 +816,12 @@ const CallScreen = ({
             <Image
               source={
                 gender === 'male'
+                  ? String(expertGender).toLowerCase() === 'male'
+                    ? getMaleAvatar(avatarId)
+                    : getFemaleAvatar(avatarId)
+                  : String(maleGender).toLowerCase() === 'female'
                   ? getFemaleAvatar(avatarId)
-                  : require('../../assets/man.png')
+                  : getMaleAvatar(avatarId)
               }
               style={[styles.avatar, compactLayout && styles.avatarCompact]}
             />
@@ -995,10 +994,7 @@ const CallScreen = ({
 
           <TouchableOpacity
             activeOpacity={0.9}
-            style={[
-              styles.endButton,
-              compactLayout && styles.endButtonCompact,
-            ]}
+            style={[styles.endButton, compactLayout && styles.endButtonCompact]}
             onPress={leaveCall}
           >
             <MaterialCommunityIcons
@@ -1075,8 +1071,7 @@ const CallScreen = ({
                 }
                 style={[
                   styles.saveNoteButton,
-                  (savingNote ||
-                    (!quickNote.trim() && !noteDetails.trim())) &&
+                  (savingNote || (!quickNote.trim() && !noteDetails.trim())) &&
                     styles.saveNoteButtonDisabled,
                 ]}
                 onPress={saveNote}

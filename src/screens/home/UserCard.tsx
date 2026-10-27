@@ -12,9 +12,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import Colors from '../../constants/colors';
 import {
-  calculateAge,
   CALL_RATE_PER_MINUTE,
   getFemaleAvatar,
+  getMaleAvatar,
 } from '../../constants/constants';
 
 interface Props {
@@ -47,13 +47,14 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
   const displayName = tamilName || englishName || 'N/A';
   const subtitle = [
     tamilName && tamilName !== englishName ? englishName : '',
-    calculateAge(item?.profile?.birthYear)
-      ? `${calculateAge(item?.profile?.birthYear)} yrs`
-      : '',
-    item?.profile?.practiceLanguage || 'Language expert',
+    'Conversation expert',
   ]
     .filter(Boolean)
     .join(' • ');
+  const avatar =
+    String(item?.profile?.gender).toLowerCase() === 'female'
+      ? getFemaleAvatar(item?.profile?.avatarId)
+      : getMaleAvatar(item?.profile?.avatarId);
   const currentStatus =
     statusConfig[item?.profile?.status as keyof typeof statusConfig] ||
     statusConfig.offline;
@@ -62,10 +63,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
     <View style={styles.card}>
       <View style={styles.row}>
         <View style={styles.avatarWrapper}>
-          <Image
-            source={getFemaleAvatar(item?.profile?.avatarId)}
-            style={styles.avatar}
-          />
+          <Image source={avatar} style={styles.avatar} />
 
           <View style={styles.onlineDotOuter}>
             <View
@@ -178,11 +176,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: Colors.border,
 
-    padding: 12,
+    padding: 14,
 
     shadowColor: Colors.primary,
     shadowOpacity: 0.07,
@@ -205,11 +203,9 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: Colors.border,
+    width: 72,
+    height: 72,
+    borderRadius: 22,
   },
 
   onlineDotOuter: {
@@ -240,8 +236,8 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: Colors.text,
   },
 
@@ -358,11 +354,11 @@ const styles = StyleSheet.create({
   },
 
   callButton: {
-    height: 40,
-    paddingHorizontal: 18,
-    borderRadius: 12,
+    height: 44,
+    paddingHorizontal: 20,
+    borderRadius: 14,
 
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
 
     flexDirection: 'row',
     alignItems: 'center',

@@ -105,18 +105,18 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
           try {
             await updateProfile({
               avatarId: selectedAvatar,
+              avatarSelected: true,
             });
             if (isEditMode) {
               navigation.goBack();
-            } else if (gender === 'male') {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Main' }],
-              });
             } else {
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'FemaleBottomTabs' }],
+                routes: [
+                  {
+                    name: user?.isExpert === true ? 'FemaleBottomTabs' : 'Main',
+                  },
+                ],
               });
             }
           } catch (e: any) {

@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   ActivityIndicator,
@@ -14,6 +13,7 @@ import Colors from '../constants/colors';
 import authData from '../firebase/authData';
 import { hasValidUsername } from '../utils/profileValidation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import LinearGradient from 'react-native-linear-gradient';
 
 const SplashScreen = ({ navigation }: any) => {
   const navigateTo = useCallback(
@@ -44,29 +44,19 @@ const SplashScreen = ({ navigation }: any) => {
         return;
       }
 
-      if (!userInfo?.profile?.gender) {
-        navigateTo('Gender', { user: currentUser });
-        return;
-      }
-
-      if (!hasValidUsername(userInfo?.profile?.name)) {
-        navigateTo('Nickname', {
+      if (
+        !userInfo?.profile?.gender ||
+        !hasValidUsername(userInfo?.profile?.name) ||
+        userInfo?.profile?.avatarSelected !== true
+      ) {
+        navigateTo('Gender', {
           user: currentUser,
-          gender: userInfo.profile.gender,
+          existingProfile: userInfo?.profile,
         });
         return;
       }
 
-      switch (userInfo?.profile?.gender) {
-        case 'male':
-          navigateTo('Main');
-          break;
-        case 'female':
-          navigateTo('FemaleBottomTabs');
-          break;
-        default:
-          navigateTo('Gender', { user: currentUser });
-      }
+      navigateTo(userInfo?.isExpert === true ? 'FemaleBottomTabs' : 'Main');
     } catch (error) {
       console.error('SplashScreen:', error);
       navigateTo('Login');
@@ -78,7 +68,10 @@ const SplashScreen = ({ navigation }: any) => {
   }, [initializeApp]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <LinearGradient
+      colors={[Colors.primary, Colors.purpleDark]}
+      style={styles.container}
+    >
       <StatusBar backgroundColor={Colors.primary} barStyle={'light-content'} />
       <View style={styles.content}>
         {/* Replace with your logo */}
@@ -92,7 +85,9 @@ const SplashScreen = ({ navigation }: any) => {
 
         <Text style={styles.title}>speakly</Text>
 
-        <Text style={styles.subtitle}>Learn • Speak • Grow</Text>
+        <Text style={styles.subtitle}>
+          Real conversations. Real confidence.
+        </Text>
       </View>
 
       <View style={styles.bottom}>
@@ -102,14 +97,13 @@ const SplashScreen = ({ navigation }: any) => {
 
         <Text style={styles.version}>Version {DeviceInfo.getVersion()}</Text>
       </View>
-    </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary,
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 70,
@@ -124,16 +118,16 @@ const styles = StyleSheet.create({
   logoMark: {
     width: 112,
     height: 112,
-    borderRadius: 32,
-    backgroundColor: Colors.secondary,
+    borderRadius: 36,
+    backgroundColor: Colors.overlayWhite18,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
 
   title: {
-    fontSize: 34,
-    fontWeight: '700',
+    fontSize: 38,
+    fontWeight: '900',
     color: Colors.white,
     letterSpacing: -1.5,
   },
@@ -159,7 +153,7 @@ const styles = StyleSheet.create({
   version: {
     marginTop: 20,
     fontSize: 13,
-    color: Colors.placeholder,
+    color: Colors.overlayWhite90,
   },
 });
 

@@ -46,6 +46,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const { activeCall, showCall } = useActiveCall();
   const profile = user?.profile;
   const gender = profile?.gender || 'male';
+  const isExpert = user?.isExpert === true;
   const phoneNumber = user?.phone || profile?.phone || 'Not available';
   const isAdmin = user?.isAdmin || false;
   const profileName =
@@ -53,13 +54,13 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const [totalCallDuration, setTotalCallDuration] = useState(0);
 
   useEffect(() => {
-    if (gender !== 'female') {
+    if (!isExpert) {
       setTotalCallDuration(0);
       return;
     }
 
     return RoomService.listenTotalCallDuration(setTotalCallDuration);
-  }, [gender]);
+  }, [isExpert]);
 
   const formattedTotalCallDuration = useMemo(() => {
     const totalSeconds = Math.floor(totalCallDuration / 1000);
@@ -233,7 +234,7 @@ ${PLAY_STORE_URL}`,
                 } else if (item.screen) {
                   if (item.screen === 'Recents') {
                     navigation.navigate(
-                      gender === 'male' ? 'ManHistory' : 'FemaleHistory',
+                      isExpert ? 'FemaleHistory' : 'ManHistory',
                       {
                         showBack: true,
                       },
@@ -305,7 +306,7 @@ ${PLAY_STORE_URL}`,
             <Text style={styles.title}>Profile</Text>
           </View>
 
-          {gender === 'male' && (
+          {!isExpert && (
             <TouchableOpacity
               style={styles.wallet}
               onPress={() => navigation.navigate('Wallet')}
@@ -369,7 +370,7 @@ ${PLAY_STORE_URL}`,
               <Text style={styles.outlineText}>Edit Profile</Text>
             </TouchableOpacity>
 
-            {gender === 'male' && (
+            {!isExpert && (
               <TouchableOpacity
                 activeOpacity={0.8}
                 style={styles.primaryButton}
@@ -381,7 +382,7 @@ ${PLAY_STORE_URL}`,
           </View>
         </View>
 
-        {gender === 'female' && (
+        {isExpert && (
           <View style={styles.callTimeCard}>
             <View style={styles.callTimeIcon}>
               <MaterialCommunityIcons
@@ -406,7 +407,7 @@ ${PLAY_STORE_URL}`,
 
         {renderSection(
           'Account',
-          gender === 'male' ? manAccountMenus : femaleAccountMenus,
+          isExpert ? femaleAccountMenus : manAccountMenus,
         )}
 
         {isAdmin &&

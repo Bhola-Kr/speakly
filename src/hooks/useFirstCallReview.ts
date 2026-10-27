@@ -14,12 +14,12 @@ export function useFirstCallReview() {
   const { user } = useUser();
   const { activeCall } = useActiveCall();
   const uid = user?.uid;
-  const gender = user?.profile?.gender;
+  const isExpert = user?.isExpert === true;
 
   useFocusEffect(
     useCallback(() => {
       // Only a Play Store listing is configured for this app.
-      if (activeCall || Platform.OS !== 'android' || !uid || gender !== 'male') return;
+      if (activeCall || Platform.OS !== 'android' || !uid || isExpert) return;
 
       let active = true;
       let pending = false;
@@ -38,7 +38,7 @@ export function useFirstCallReview() {
         timer = setTimeout(() => {
           const showPrompt = async () => {
             if (!active) return;
-            const claimed = await claimReviewPrompt(uid, gender, history);
+            const claimed = await claimReviewPrompt(uid, history);
             if (!claimed || !active) return;
             Alert.alert(
               'Review Speakly',
@@ -79,6 +79,6 @@ export function useFirstCallReview() {
         if (timer) clearTimeout(timer);
         unsubscribe();
       };
-    }, [uid, gender, activeCall]),
+    }, [uid, isExpert, activeCall]),
   );
 }

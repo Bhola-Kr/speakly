@@ -20,13 +20,9 @@ import {
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './screens/LoginScreen';
-import BirthYearScreen from './screens/BirthYearScreen';
-import NicknameScreen from './screens/NicknameScreen';
 import OtpScreen from './screens/OtpScreen';
 import GenderScreen from './screens/GenderScreen';
-import LanguageScreen from './screens/LanguageScreen';
 import AvatarScreen from './screens/AvatarScreen';
-import AudioVerificationScreen from './screens/AudioVerificationScreen';
 import BottomTabs from './screens/BottomTabs';
 import Colors from './constants/colors';
 import { SUPPORT_EMAIL } from './constants/constants';
@@ -79,9 +75,15 @@ const getStatusBarAppearance = (screen: string) => {
     return { backgroundColor: Colors.navy, barStyle: 'light-content' as const };
   }
   if (screen === 'Splash' || screen === 'Call' || screen === 'OnlineRoom') {
-    return { backgroundColor: Colors.primary, barStyle: 'light-content' as const };
+    return {
+      backgroundColor: Colors.primary,
+      barStyle: 'light-content' as const,
+    };
   }
-  return { backgroundColor: Colors.background, barStyle: 'dark-content' as const };
+  return {
+    backgroundColor: Colors.background,
+    barStyle: 'dark-content' as const,
+  };
 };
 
 function RootStack() {
@@ -95,17 +97,18 @@ function RootStack() {
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Otp" component={OtpScreen} />
-      <Stack.Screen name="BirthYear" component={BirthYearScreen} />
-      <Stack.Screen name="Nickname" component={NicknameScreen} />
       <Stack.Screen name="Gender" component={GenderScreen} />
-      <Stack.Screen name="Language" component={LanguageScreen} />
       <Stack.Screen name="Avatar" component={AvatarScreen} />
       <Stack.Screen
-        name="AudioVerification"
-        component={AudioVerificationScreen}
+        name="Main"
+        component={BottomTabs}
+        options={{ gestureEnabled: false }}
       />
-      <Stack.Screen name="Main" component={BottomTabs} />
-      <Stack.Screen name="FemaleBottomTabs" component={FemaleBottomTabs} />
+      <Stack.Screen
+        name="FemaleBottomTabs"
+        component={FemaleBottomTabs}
+        options={{ gestureEnabled: false }}
+      />
       <Stack.Screen name="ProfileSetting" component={ProfileSettingScreen} />
       <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
       <Stack.Screen
@@ -214,8 +217,7 @@ Thank you.`);
     () => getStatusBarAppearance(activeScreen),
     [activeScreen],
   );
-  const femaleUid =
-    user?.profile?.gender === 'female' ? String(user?.uid || '') : '';
+  const femaleUid = user?.isExpert === true ? String(user?.uid || '') : '';
   const syncActiveScreen = () =>
     setActiveScreen(navigationRef.getCurrentRoute()?.name ?? 'Splash');
 
@@ -278,7 +280,10 @@ Thank you.`);
           incomingNotificationRef.current = '';
           if (resolvedCallId) {
             cancelIncomingCallNotification(resolvedCallId).catch(error =>
-              console.warn('Unable to clear incoming call notification:', error),
+              console.warn(
+                'Unable to clear incoming call notification:',
+                error,
+              ),
             );
           }
         }
@@ -299,6 +304,7 @@ Thank you.`);
           userName: room.male?.name,
           avatarId: room.male?.avatarId,
           maleUid: room.male?.uid,
+          maleGender: room.male?.gender,
           femaleUid,
           uid: room.roomId,
           agora: room.agora,
@@ -340,6 +346,7 @@ Thank you.`);
       userName: room.male?.name,
       avatarId: room.male?.avatarId,
       maleUid: room.male?.uid,
+      maleGender: room.male?.gender,
       femaleUid,
       uid: room.roomId,
       agora: room.agora,

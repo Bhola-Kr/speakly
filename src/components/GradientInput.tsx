@@ -23,22 +23,22 @@ export default GradientInput;
 
 const styles = StyleSheet.create({
   border: {
-    marginTop: 40,
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 1,
+    marginTop: 28,
+    marginHorizontal: 24,
+    borderRadius: 18,
+    padding: 1.5,
   },
 
   container: {
-    height: 70,
-    borderRadius: 11,
+    minHeight: 58,
+    borderRadius: 17,
     backgroundColor: Colors.inputBackground,
     justifyContent: 'center',
-    paddingHorizontal: 22,
+    paddingHorizontal: 18,
   },
 
   input: {
-    fontSize: 20,
+    fontSize: 17,
     color: Colors.text,
   },
 });

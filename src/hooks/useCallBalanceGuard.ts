@@ -17,10 +17,10 @@ export const useCallBalanceGuard = (navigation: any) => {
       showCall();
       return false;
     }
-    const isMale = user?.profile?.gender?.toLowerCase() === 'male';
+    const isRegularUser = user?.isExpert !== true;
     const balance = Number(user?.wallet?.balance || 0);
 
-    if (!isMale || balance >= CALL_RATE_PER_MINUTE) {
+    if (!isRegularUser || balance >= CALL_RATE_PER_MINUTE) {
       return true;
     }
 
@@ -37,5 +37,5 @@ export const useCallBalanceGuard = (navigation: any) => {
     );
 
     return false;
-  }, [activeCall, showCall, navigation, user?.profile?.gender, user?.wallet?.balance]);
+  }, [activeCall, showCall, navigation, user?.isExpert, user?.wallet?.balance]);
 };

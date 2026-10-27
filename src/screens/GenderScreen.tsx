@@ -8,14 +8,22 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  FlatList,
+  Image,
+  TextInput,
 } from 'react-native';
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Avatar, femaleAvatars, maleAvatars } from '../constants/constants';
+import {
+  hasValidUsername,
+  MIN_USERNAME_LENGTH,
+} from '../utils/profileValidation';
 
-type Role = 'learner' | 'expert';
+type Gender = 'male' | 'female';
 
 interface Props {
   navigation: any;
@@ -24,26 +32,48 @@ interface Props {
 
 const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
   const user = route.params.user;
+  const existingProfile = route.params?.existingProfile;
 
-  const [role, setRole] = useState<Role>('learner');
+  const [gender, setGender] = useState<Gender>(
+    existingProfile?.gender === 'female' ? 'female' : 'male',
+  );
+  const [nickname, setNickname] = useState(String(existingProfile?.name || ''));
+  const [selectedAvatar, setSelectedAvatar] = useState(
+    Number(existingProfile?.avatarId) || 1,
+  );
   const [loading, setLoading] = useState(false);
+  const avatars = gender === 'female' ? femaleAvatars : maleAvatars;
 
-  const updateRole = async () => {
+  const completeProfile = async () => {
     if (loading) {
       return;
     }
 
     try {
+      if (!hasValidUsername(nickname)) {
+        Alert.alert(
+          'Enter a nickname',
+          `Use at least ${MIN_USERNAME_LENGTH} letters for your nickname.`,
+        );
+        return;
+      }
+
       setLoading(true);
-      // Legacy call services still use gender as their learner/expert switch.
-      const gender = role === 'expert' ? 'female' : 'male';
-      await authData.createUser(user, gender, role);
+      await authData.createUser(user, gender);
       await authData.updateProfile({
         gender,
-        role,
+        name: nickname.trim(),
+        avatarId: selectedAvatar,
+        avatarSelected: true,
       });
 
-      navigation.navigate('Language', { user, gender, role });
+      const savedUser = await authData.getUser(user.uid);
+      navigation.reset({
+        index: 0,
+        routes: [
+          { name: savedUser?.isExpert === true ? 'FemaleBottomTabs' : 'Main' },
+        ],
+      });
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Unable to save your choice.');
     } finally {
@@ -51,19 +81,27 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  const selectGender = (nextGender: Gender) => {
+    setGender(nextGender);
+    setSelectedAvatar(1);
+  };
+
   const renderCard = (
-    type: Role,
+    type: Gender,
     icon: string,
     title: string,
     subtitle?: string,
   ) => {
-    const selected = role === type;
+    const selected = gender === type;
 
     return (
       <TouchableOpacity
         activeOpacity={0.85}
         style={[styles.card, selected && styles.selectedCard]}
-        onPress={() => setRole(type)}
+        onPress={() => selectGender(type)}
+        accessibilityRole="radio"
+        accessibilityLabel={title}
+        accessibilityState={{ selected }}
       >
         {selected && (
           <View style={styles.checkContainer}>
@@ -74,7 +112,7 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={[styles.roleIcon, selected && styles.selectedRoleIcon]}>
           <MaterialCommunityIcons
             name={icon}
-            size={58}
+            size={30}
             color={selected ? Colors.white : Colors.tealDark}
           />
         </View>
@@ -96,26 +134,63 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         bounces={false}
       >
         <View style={styles.header}>
-          <Text style={styles.smallTitle}>How will you use Speakly?</Text>
+          <Text style={styles.step}>STEP 3 OF 3</Text>
 
-          <Text style={styles.title}>Choose your role</Text>
+          <Text style={styles.title}>Create your profile</Text>
+
+          <Text style={styles.smallTitle}>
+            Choose your gender, nickname and avatar.
+          </Text>
         </View>
 
-        {renderCard(
-          'learner',
-          'account-voice',
-          'Practice a language',
-          'Choose a topic and speak with an expert',
-        )}
+        <Text style={styles.label}>Gender</Text>
+        <View style={styles.genderRow}>
+          {renderCard('male', 'gender-male', 'Male')}
+          {renderCard('female', 'gender-female', 'Female')}
+        </View>
 
-        <View style={{ height: 18 }} />
+        <Text style={styles.label}>Nickname</Text>
+        <TextInput
+          value={nickname}
+          onChangeText={setNickname}
+          placeholder="What should we call you?"
+          placeholderTextColor={Colors.placeholder}
+          autoCapitalize="words"
+          maxLength={20}
+          style={styles.input}
+        />
 
-        {renderCard(
-          'expert',
-          'teach',
-          'Become an expert',
-          'Help learners build real conversation skills',
-        )}
+        <Text style={styles.label}>Choose an avatar</Text>
+        <FlatList
+          horizontal
+          data={avatars}
+          key={gender}
+          keyExtractor={(item: Avatar) => String(item.id)}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.avatarList}
+          renderItem={({ item }: { item: Avatar }) => {
+            const selected = selectedAvatar === item.id;
+            return (
+              <TouchableOpacity
+                onPress={() => setSelectedAvatar(item.id)}
+                style={[styles.avatarButton, selected && styles.selectedAvatar]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+              >
+                <Image source={item.image} style={styles.avatar} />
+                {selected && (
+                  <View style={styles.avatarCheck}>
+                    <MaterialCommunityIcons
+                      name="check"
+                      size={14}
+                      color={Colors.white}
+                    />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          }}
+        />
 
         <Text style={styles.note}>
           Speakly is for language practice—not dating or matchmaking.
@@ -123,9 +198,9 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
 
         <GradientButton
           style={styles.actionButton}
-          title={loading ? 'Please wait...' : 'Proceed'}
-          disabled={loading}
-          onPress={updateRole}
+          title={loading ? 'Creating profile...' : 'Start Speaking'}
+          disabled={loading || !hasValidUsername(nickname)}
+          onPress={completeProfile}
         />
       </ScrollView>
     </SafeAreaView>
@@ -141,45 +216,62 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingHorizontal: 26,
-    paddingTop: 10,
-    paddingBottom: 28,
+    paddingHorizontal: 22,
+    paddingTop: 8,
+    paddingBottom: 36,
   },
 
   header: {
-    marginTop: 50,
-    marginBottom: 5,
+    marginTop: 24,
+    marginBottom: 24,
+  },
+
+  step: {
+    color: Colors.secondary,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.4,
   },
 
   smallTitle: {
-    fontSize: 20,
-    color: Colors.text,
+    marginTop: 7,
+    fontSize: 15,
+    lineHeight: 21,
+    color: Colors.subText,
     fontWeight: '400',
   },
 
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    marginTop: 5,
+    fontSize: 30,
+    fontWeight: '900',
     color: Colors.text,
     letterSpacing: -1,
   },
 
+  label: {
+    marginTop: 18,
+    marginBottom: 10,
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  genderRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
   card: {
-    width: '88%',
-    maxWidth: 310,
-    alignSelf: 'center',
-
+    flex: 1,
     backgroundColor: Colors.white,
-
-    borderRadius: 20,
-
-    borderWidth: 2,
-    borderColor: Colors.transparent,
-
-    paddingTop: 22,
-    paddingBottom: 18,
-
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    paddingVertical: 14,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
 
   selectedCard: {
@@ -189,14 +281,11 @@ const styles = StyleSheet.create({
   checkContainer: {
     position: 'absolute',
 
-    right: 14,
-    top: 14,
-
-    width: 34,
-    height: 34,
-
-    borderRadius: 17,
-
+    right: 7,
+    top: 7,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: Colors.secondary,
 
     justifyContent: 'center',
@@ -205,14 +294,14 @@ const styles = StyleSheet.create({
 
   check: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: '700',
   },
 
   roleIcon: {
-    width: 112,
-    height: 112,
-    borderRadius: 32,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     backgroundColor: Colors.screenTint,
     alignItems: 'center',
     justifyContent: 'center',
@@ -223,9 +312,9 @@ const styles = StyleSheet.create({
   },
 
   genderText: {
-    marginTop: 14,
-    fontSize: 20,
-    fontWeight: '500',
+    marginLeft: 9,
+    fontSize: 16,
+    fontWeight: '800',
     color: Colors.text,
     textAlign: 'center',
   },
@@ -238,9 +327,59 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
+  input: {
+    height: 56,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    paddingHorizontal: 17,
+    color: Colors.text,
+    fontSize: 16,
+  },
+
+  avatarList: {
+    paddingVertical: 3,
+    paddingRight: 12,
+  },
+
+  avatarButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: Colors.transparent,
+    padding: 3,
+  },
+
+  selectedAvatar: {
+    borderColor: Colors.secondary,
+  },
+
+  avatar: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 19,
+  },
+
+  avatarCheck: {
+    position: 'absolute',
+    right: -3,
+    bottom: -3,
+    width: 23,
+    height: 23,
+    borderRadius: 9,
+    backgroundColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.white,
+  },
+
   note: {
-    marginTop: 18,
-    marginBottom: 18,
+    marginTop: 20,
+    marginBottom: 4,
     textAlign: 'center',
     color: Colors.subText,
     fontSize: 15,

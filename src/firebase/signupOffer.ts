@@ -54,7 +54,7 @@ export const claimSignupOffer = async (): Promise<number> => {
       if (!firstInvocation) return;
       userValue = { ...initialUser };
     }
-    if (userValue?.profile?.gender !== 'male') return;
+    if (userValue?.isExpert === true) return;
     if (userValue?.offers?.signupOffer?.claimedAt) return;
 
     const currentBalance = Number(userValue?.wallet?.balance);
@@ -83,7 +83,7 @@ export const claimSignupOffer = async (): Promise<number> => {
     if (value?.offers?.signupOffer?.claimedAt) {
       throw new Error('This signup offer has already been claimed.');
     }
-    throw new Error('This offer is available only to learners.');
+    throw new Error('This offer is available only to regular users.');
   }
 
   return config.amount;

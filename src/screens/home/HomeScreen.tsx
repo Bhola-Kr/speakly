@@ -5,7 +5,15 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Alert, FlatList, StatusBar, StyleSheet, Text } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+  ActivityIndicator,
+} from 'react-native';
 import { scopedDatabase as database } from '../../firebase/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,7 +24,6 @@ import UserCard from './UserCard';
 
 import Colors from '../../constants/colors';
 import { categories } from '../../constants/dummyData';
-import { calculateAge } from '../../constants/constants';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
 import { useFirstCallReview } from '../../hooks/useFirstCallReview';
@@ -27,6 +34,7 @@ import {
   listenSignupOffer,
   SignupOfferConfig,
 } from '../../firebase/signupOffer';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface Props {
   navigation: any;
@@ -40,9 +48,7 @@ const hasCompleteFemaleProfile = (item: any) => {
     String(profile?.tamilName || '').trim() ||
       String(profile?.name || '').trim(),
   );
-  const hasAge = Boolean(calculateAge(profile?.birthYear));
-
-  return hasName && hasAge;
+  return hasName;
 };
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
@@ -50,6 +56,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
+  const [expertsLoaded, setExpertsLoaded] = useState(false);
   const [randomCalling, setRandomCalling] = useState(false);
   const [callingUserId, setCallingUserId] = useState<string | null>(null);
   const [offer, setOffer] = useState<SignupOfferConfig>({
@@ -81,7 +88,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const offerClaimed = Boolean(user?.offers?.signupOffer?.claimedAt);
   const showOffer =
-    user?.profile?.gender === 'male' &&
+    user?.isExpert !== true &&
     offer.active &&
     offer.amount > 0 &&
     !offerClaimed &&
@@ -109,10 +116,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    const ref = database()
-      .ref('users')
-      .orderByChild('profile/gender')
-      .equalTo('female');
+    const ref = database().ref('users').orderByChild('isExpert').equalTo(true);
 
     const listener = ref.on('value', snapshot => {
       const users: any[] = [];
@@ -126,6 +130,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         return false;
       });
       setFemaleUsers(users);
+      setExpertsLoaded(true);
     });
 
     return () => {
@@ -188,6 +193,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           uid: randomRoom?.female?.uid,
           name: randomRoom?.female?.name,
           tamilName: randomRoom?.female?.tamilName,
+          gender: randomRoom?.female?.gender,
           avatarId: randomRoom?.female?.avatarId,
         },
         room: randomRoom,
@@ -217,7 +223,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
         <Banner randomCall={onRandomCall} calling={randomCalling} />
 
-        <Text style={styles.heading}>Featured Experts</Text>
+        <Text style={styles.eyebrow}>CHOOSE YOUR CONVERSATION</Text>
+        <Text style={styles.heading}>Experts ready to talk</Text>
 
         <CategoryList
           categories={categories}
@@ -257,6 +264,27 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         windowSize={7}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            {expertsLoaded ? (
+              <>
+                <View style={styles.emptyIcon}>
+                  <MaterialCommunityIcons
+                    name="account-voice-off"
+                    size={28}
+                    color={Colors.secondary}
+                  />
+                </View>
+                <Text style={styles.emptyTitle}>No experts here yet</Text>
+                <Text style={styles.emptyText}>
+                  Try another topic or check back in a little while.
+                </Text>
+              </>
+            ) : (
+              <ActivityIndicator color={Colors.secondary} size="large" />
+            )}
+          </View>
+        }
         renderItem={renderItem}
       />
 
@@ -278,15 +306,63 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 20,
-    fontWeight: '500',
+    fontSize: 24,
+    fontWeight: '800',
     color: Colors.text,
-    marginHorizontal: 20,
-    marginVertical: 12,
+    marginHorizontal: 18,
+    marginTop: 3,
+    marginBottom: 14,
+    letterSpacing: -0.5,
+  },
+
+  eyebrow: {
+    color: Colors.secondary,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+    marginHorizontal: 18,
+    marginTop: 24,
   },
 
   listContent: {
     paddingBottom: 120,
+  },
+
+  emptyState: {
+    marginHorizontal: 18,
+    marginTop: 18,
+    minHeight: 190,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+
+  emptyIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: Colors.screenTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  emptyTitle: {
+    marginTop: 14,
+    color: Colors.text,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+
+  emptyText: {
+    marginTop: 6,
+    color: Colors.subText,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 
   card: {
