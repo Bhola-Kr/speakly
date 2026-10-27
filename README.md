@@ -62,6 +62,24 @@ If everything is set up correctly, you should see your new app running in the An
 
 This is one way to run your app — you can also build it directly from Android Studio or Xcode.
 
+## Android release bundle
+
+The release bundle is signed with a local upload keystore. Keep the keystore and its credentials out of version control:
+
+1. Place the keystore at `android/app/speakly.jks`.
+2. Create `android/keystore.properties` with the following entries, filling in the local keystore credentials:
+
+   ```properties
+   MYAPP_UPLOAD_STORE_FILE=app/speakly.jks
+   MYAPP_UPLOAD_STORE_PASSWORD=<keystore password>
+   MYAPP_UPLOAD_KEY_ALIAS=<key alias>
+   MYAPP_UPLOAD_KEY_PASSWORD=<key password>
+   ```
+
+3. Run `npm run aab`. The signed bundle is written to `android/app/build/outputs/bundle/release/app-release.aab`.
+
+Back up the keystore and its passwords securely. Replacing the signing key can prevent updates to an app published with the previous key.
+
 ## Step 3: Modify your app
 
 Now that you have successfully run the app, let's make changes!

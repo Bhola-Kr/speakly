@@ -34,7 +34,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import auth from '@react-native-firebase/auth';
-import database from '@react-native-firebase/database';
+import { scopedDatabase as database } from '../../firebase/firebase';
 import InCallManager from 'react-native-incall-manager';
 
 import styles from './styles';

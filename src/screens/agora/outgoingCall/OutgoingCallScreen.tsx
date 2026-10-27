@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import database from '@react-native-firebase/database';
+import { scopedDatabase as database } from '../../../firebase/firebase';
 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 

@@ -1,9 +1,7 @@
 import { AppState, DeviceEventEmitter, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
-import database, {
-  FirebaseDatabaseTypes,
-} from '@react-native-firebase/database';
+import { FirebaseDatabaseTypes } from '@react-native-firebase/database';
 import messaging, {
   FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
@@ -17,6 +15,7 @@ import notifee, {
   TimestampTrigger,
 } from '@notifee/react-native';
 import { hasCompletedSignup } from '../utils/profileValidation';
+import { scopedDatabase as database } from '../firebase/firebase';
 
 const CHANNEL_ID = 'voicetamil_general';
 const INCOMING_CALL_CHANNEL_ID = 'voicetamil_incoming_calls_v2';

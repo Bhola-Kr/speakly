@@ -4,6 +4,12 @@ apply plugin: "com.facebook.react"
 apply plugin: 'com.google.gms.google-services'
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -84,8 +90,8 @@ android {
         applicationId "com.ra.speakly"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 21
-        versionName "4.0.0"
+        versionCode 1
+        versionName "1.0.0"
     }
     signingConfigs {
         debug {
@@ -95,10 +101,10 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('voicetamil-release.keystore')
-            storePassword 'voicetamil@321'
-            keyAlias 'voicetamil'
-            keyPassword 'voicetamil@321'
+            storeFile rootProject.file(keystoreProperties.getProperty("MYAPP_UPLOAD_STORE_FILE", "app/speakly.jks"))
+            storePassword keystoreProperties.getProperty("MYAPP_UPLOAD_STORE_PASSWORD")
+            keyAlias keystoreProperties.getProperty("MYAPP_UPLOAD_KEY_ALIAS")
+            keyPassword keystoreProperties.getProperty("MYAPP_UPLOAD_KEY_PASSWORD")
         }
     }
     buildTypes {

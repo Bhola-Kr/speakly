@@ -1,14 +1,54 @@
 {
   "project_info": {
-    "project_number": "487291370238",
-    "firebase_url": "https://voice-tamil-default-rtdb.firebaseio.com",
-    "project_id": "voice-tamil",
-    "storage_bucket": "voice-tamil.firebasestorage.app"
+    "project_number": "336180604339",
+    "firebase_url": "https://recent-chat-7fd34-default-rtdb.firebaseio.com",
+    "project_id": "recent-chat-7fd34",
+    "storage_bucket": "recent-chat-7fd34.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:487291370238:android:5122bc3d31b854aa4943af",
+        "mobilesdk_app_id": "1:336180604339:android:80bf67a3ffadac6b842fc6",
+        "android_client_info": {
+          "package_name": "com.chat.recentchat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0ZPn4fuAHHNaEI8gSd9fRb3XhWriRnTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      },
+      "admob_app_id": "ca-app-pub-3230017247689957~1089949371"
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336180604339:android:60de1813594b9457842fc6",
+        "android_client_info": {
+          "package_name": "com.koisk.videokiosk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0ZPn4fuAHHNaEI8gSd9fRb3XhWriRnTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      },
+      "admob_app_id": "ca-app-pub-3230017247689957~2971772912"
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336180604339:android:f213590e1e82af2a842fc6",
         "android_client_info": {
           "package_name": "com.ra.speakly"
         }
@@ -16,7 +56,64 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBvs95vpSlZ7S-45vKmDeHnn6I02CEl0FQ"
+          "current_key": "AIzaSyA0ZPn4fuAHHNaEI8gSd9fRb3XhWriRnTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336180604339:android:ecc9a92cff96699a842fc6",
+        "android_client_info": {
+          "package_name": "com.rcent.threadsdownloader"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0ZPn4fuAHHNaEI8gSd9fRb3XhWriRnTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336180604339:android:4e637cb30b6f650b842fc6",
+        "android_client_info": {
+          "package_name": "com.recenttalk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0ZPn4fuAHHNaEI8gSd9fRb3XhWriRnTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336180604339:android:17cc3c0b4c416333842fc6",
+        "android_client_info": {
+          "package_name": "com.videochat.recentchat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0ZPn4fuAHHNaEI8gSd9fRb3XhWriRnTE"
         }
       ],
       "services": {

@@ -4,7 +4,7 @@ import {
   SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput,
   TouchableOpacity, View,
 } from 'react-native';
-import database from '@react-native-firebase/database';
+import { scopedDatabase as database } from '../../firebase/firebase';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../../constants/colors';
 import { useUser } from '../../hooks/UserContext';

@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 
-import database from '@react-native-firebase/database';
+import { scopedDatabase as database } from '../firebase/firebase';
 import auth from '@react-native-firebase/auth';
 import authData, { UpdateProfileData } from '../firebase/authData';
 

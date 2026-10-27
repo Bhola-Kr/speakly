@@ -1,5 +1,5 @@
 import auth from '@react-native-firebase/auth';
-import database from '@react-native-firebase/database';
+import { databaseRef } from './firebase';
 
 export type SignupOfferConfig = {
   active: boolean;
@@ -17,7 +17,7 @@ const parseConfig = (value: any): SignupOfferConfig => {
 export const listenSignupOffer = (
   callback: (config: SignupOfferConfig) => void,
 ) => {
-  const ref = database().ref('configs');
+  const ref = databaseRef('configs');
   const listener = ref.on(
     'value',
     snapshot => callback(parseConfig(snapshot.val())),
@@ -35,13 +35,13 @@ export const claimSignupOffer = async (): Promise<number> => {
 
   // Always read the latest config at claim time. A disabled or malformed offer
   // is never credited even if an older modal was already visible.
-  const configSnapshot = await database().ref('configs').once('value');
+  const configSnapshot = await databaseRef('configs').once('value');
   const config = parseConfig(configSnapshot.val());
   if (!config.active || config.amount <= 0) {
     throw new Error('This offer is no longer available.');
   }
 
-  const userRef = database().ref(`users/${uid}`);
+  const userRef = databaseRef(`users/${uid}`);
   const initialSnapshot = await userRef.once('value');
   if (!initialSnapshot.exists()) throw new Error('User account was not found.');
   const initialUser = initialSnapshot.val();

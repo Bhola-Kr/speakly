@@ -61,6 +61,7 @@ import { AdminUsersScreen } from './screens/admin/AdminUsersScreen';
 import IncomingCallModal from './screens/agora/IncomingCallModal';
 import RoomService, { Room } from './firebase/RoomService';
 import database from '@react-native-firebase/database';
+import { databaseRef } from './firebase/firebase';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -324,9 +325,7 @@ Thank you.`);
     if (!femaleUid || activeCall || !navigationRef.isReady()) return;
     const pending = await consumePendingAcceptedCall();
     if (!pending || pending.femaleUid !== femaleUid) return;
-    const snapshot = await database()
-      .ref(`rooms/${femaleUid}`)
-      .once('value');
+    const snapshot = await databaseRef(`rooms/${femaleUid}`).once('value');
     const room = snapshot.val() as Room | null;
     if (
       !room ||

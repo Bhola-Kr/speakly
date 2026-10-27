@@ -1,5 +1,5 @@
 import auth from '@react-native-firebase/auth';
-import database from '@react-native-firebase/database';
+import { scopedDatabase as database } from './firebase';
 import {
   calculateCallAmount,
   CALL_RATE_PER_MINUTE,

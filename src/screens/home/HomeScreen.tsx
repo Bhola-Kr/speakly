@@ -6,7 +6,7 @@ import React, {
   useState,
 } from 'react';
 import { Alert, FlatList, StatusBar, StyleSheet, Text } from 'react-native';
-import database from '@react-native-firebase/database';
+import { scopedDatabase as database } from '../../firebase/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from './Header';

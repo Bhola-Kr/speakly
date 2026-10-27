@@ -1,4 +1,3 @@
-import database from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import { fetchFirebaseToken } from '../api/calls';
@@ -6,6 +5,7 @@ import { Alert } from 'react-native';
 import { CALL_RATE_PER_MINUTE } from '../constants/constants';
 import { unregisterPushNotifications } from '../notifications/pushNotifications';
 import RoomService from './RoomService';
+import { databaseRef } from './firebase';
 
 export type UpdateProfileData = {
   id?: string;
@@ -85,8 +85,7 @@ class AuthData {
     const phone = user.phoneNumber || uid;
     const now = Date.now();
 
-    await database()
-      .ref(`users/${uid}`)
+    await databaseRef(`users/${uid}`)
       .transaction(currentUser => {
         const isNewAccount = !currentUser;
         const existing = currentUser || {};
@@ -166,7 +165,7 @@ class AuthData {
   //-----------------------------
 
   getUser = async (uid: string) => {
-    const snapshot = await database().ref(`users/${uid}`).once('value');
+    const snapshot = await databaseRef(`users/${uid}`).once('value');
 
     return snapshot.val();
   };
@@ -176,7 +175,7 @@ class AuthData {
   //-----------------------------
 
   updateUser = async (uid: string, data: any) => {
-    await database().ref(`users/${uid}`).update(data);
+    await databaseRef(`users/${uid}`).update(data);
   };
 
   requestAccountDeletion = async () => {
@@ -189,8 +188,7 @@ class AuthData {
     const requestedAt = Date.now();
     const scheduledDeletionAt = requestedAt + ACCOUNT_DELETION_DELAY_MS;
 
-    await database()
-      .ref(`users/${user.uid}/accountDeletion`)
+    await databaseRef(`users/${user.uid}/accountDeletion`)
       .transaction(currentRequest => ({
         ...(currentRequest || {}),
         status: true,
@@ -210,8 +208,7 @@ class AuthData {
       throw new Error('No authenticated user found.');
     }
 
-    await database()
-      .ref(`users/${user.uid}/verification`)
+    await databaseRef(`users/${user.uid}/verification`)
       .update(verificationData);
   };
 
@@ -227,15 +224,14 @@ class AuthData {
         throw new Error('No profile data provided.');
       }
 
-      await database().ref(`users/${user.uid}/profile`).update(profileData);
+      await databaseRef(`users/${user.uid}/profile`).update(profileData);
 
       if (
         profileData.avatarId !== undefined ||
         profileData.name !== undefined ||
         profileData.tamilName !== undefined
       ) {
-        await database()
-          .ref(`rooms/${user.uid}`)
+        await databaseRef(`rooms/${user.uid}`)
           .transaction(room => {
             if (!room?.female || room.female.uid !== user.uid) {
               return;

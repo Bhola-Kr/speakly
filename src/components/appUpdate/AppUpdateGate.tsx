@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AppState, Linking, Platform, StyleSheet, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
-import database from '@react-native-firebase/database';
+import { scopedDatabase as database } from '../../firebase/firebase';
 import DeviceInfo from 'react-native-device-info';
 import AppUpdateNotice from './AppUpdateNotice';
 import { getUpdateKind, parseAppVersion } from '../../utils/appVersion';
