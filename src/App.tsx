@@ -66,6 +66,11 @@ import AppAlert from './components/AppAlert';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
+// Checkout SDK activities can temporarily recreate the React root surface on
+// Android without killing the JS process. Keep the navigation tree outside the
+// component so that returning from PayU resumes the current screen instead of
+// starting again at Splash.
+let retainedNavigationState: any;
 const deferUpdatesOn = new Set([
   'Splash',
   'Call',
@@ -387,8 +392,12 @@ Thank you.`);
   return (
     <NavigationContainer
       ref={navigationRef}
+      initialState={retainedNavigationState}
       onReady={syncActiveScreen}
-      onStateChange={syncActiveScreen}
+      onStateChange={state => {
+        retainedNavigationState = state;
+        syncActiveScreen();
+      }}
     >
       <View style={callStyles.root}>
         {activeCall && !visible && (

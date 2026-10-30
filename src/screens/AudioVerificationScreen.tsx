@@ -22,6 +22,7 @@ import { databaseRef } from '../firebase/firebase';
 
 const REVIEW_WINDOW_MS = 30 * 60 * 1000;
 const MIN_RECORDING_SECONDS = 5;
+const MAX_RECORDING_SECONDS = 10;
 const PROMPTS: Record<string, string> = {
   English:
     'Hello, I am joining Speakly as a language expert. I will help learners speak clearly and confidently.',
@@ -49,6 +50,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
   const [submittedAt, setSubmittedAt] = useState(0);
   const [reviewDueAt, setReviewDueAt] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingStartedAtRef = useRef(0);
+  const isStoppingRef = useRef(false);
+  const stopAndSubmitRecordingRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
     const currentUser = auth().currentUser;
@@ -71,14 +75,6 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
     });
     return () => ref.off('value', listener);
   }, [navigation]);
-
-  useEffect(() => {
-    if (status !== 'recording') return;
-    timerRef.current = setInterval(() => setSeconds(value => value + 1), 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [status]);
 
   const reviewMessage = useMemo(() => {
     if (!reviewDueAt) return 'Your application is waiting for admin review.';
@@ -142,29 +138,78 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
     setStatus('pending');
   };
 
-  const toggleRecording = async () => {
+  const stopAndSubmitRecording = async () => {
+    if (isStoppingRef.current) return;
+    isStoppingRef.current = true;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     try {
-      if (status === 'idle') {
-        if (!(await requestPermission()))
-          throw new Error('Microphone permission is required.');
-        await VoiceDetector.startRecording();
-        setSeconds(0);
-        setStatus('recording');
-        return;
-      }
-      if (status === 'recording') {
-        if (timerRef.current) clearInterval(timerRef.current);
-        const result = await VoiceDetector.stopAndVerify();
-        await submitRecording(result);
-      }
+      const result = await VoiceDetector.stopAndVerify();
+      await submitRecording(result);
     } catch (error: any) {
       setStatus('idle');
       Alert.alert(
         'Unable to submit recording',
         error?.message || 'Please try again.',
       );
+    } finally {
+      isStoppingRef.current = false;
     }
   };
+  stopAndSubmitRecordingRef.current = stopAndSubmitRecording;
+
+  const toggleRecording = async () => {
+    if (status === 'recording') {
+      await stopAndSubmitRecording();
+      return;
+    }
+
+    if (status !== 'idle') return;
+
+    try {
+      if (!(await requestPermission()))
+        throw new Error('Microphone permission is required.');
+      await VoiceDetector.startRecording();
+      recordingStartedAtRef.current = Date.now();
+      isStoppingRef.current = false;
+      setSeconds(0);
+      setStatus('recording');
+    } catch (error: any) {
+      setStatus('idle');
+      Alert.alert(
+        'Unable to start recording',
+        error?.message || 'Please try again.',
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (status !== 'recording') return;
+
+    const updateTimer = () => {
+      const elapsedSeconds = Math.min(
+        MAX_RECORDING_SECONDS,
+        Math.floor((Date.now() - recordingStartedAtRef.current) / 1000),
+      );
+      setSeconds(elapsedSeconds);
+
+      if (elapsedSeconds >= MAX_RECORDING_SECONDS) {
+        stopAndSubmitRecordingRef.current().catch(() => undefined);
+      }
+    };
+
+    timerRef.current = setInterval(updateTimer, 250);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [status]);
 
   if (status === 'pending') {
     return (
@@ -245,8 +290,8 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
               </Text>
               <Text style={styles.recordHint}>
                 {status === 'recording'
-                  ? 'Tap to stop and submit'
-                  : `Record at least ${MIN_RECORDING_SECONDS} seconds`}
+                  ? `Recording stops automatically at ${MAX_RECORDING_SECONDS} seconds`
+                  : `Record ${MIN_RECORDING_SECONDS}–${MAX_RECORDING_SECONDS} seconds`}
               </Text>
             </>
           )}

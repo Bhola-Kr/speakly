@@ -11,6 +11,25 @@ type HashEvent = {
   postSalt?: string;
 };
 
+const FINAL_STATUSES = new Set(['success', 'failed']);
+const PAYMENT_VERIFICATION_ATTEMPTS = 4;
+const PAYMENT_VERIFICATION_DELAY_MS = 400;
+
+const wait = (milliseconds: number) =>
+  new Promise(resolve => setTimeout(resolve, milliseconds));
+
+const continueVerificationInBackground = async (transactionId: string) => {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await wait(1000);
+    try {
+      const result = await verifyWalletPayment(transactionId);
+      if (FINAL_STATUSES.has(result.data.status)) return;
+    } catch {
+      // The PayU webhook and scheduled reconciliation remain as fallbacks.
+    }
+  }
+};
+
 export const openPayUCheckout = async (
   packId: number,
 ): Promise<PaymentTransaction> => {
@@ -29,13 +48,60 @@ export const openPayUCheckout = async (
     const subscriptions: Array<{ remove: () => void }> = [];
     const cleanup = () => subscriptions.forEach(item => item.remove());
 
-    const finish = async () => {
+    const verifyUntilFinal = async () => {
+      let payment = transaction;
+      let lastError: unknown;
+
+      for (let attempt = 0; attempt < PAYMENT_VERIFICATION_ATTEMPTS; attempt++) {
+        try {
+          const result = await verifyWalletPayment(transaction.transactionId);
+          payment = result.data;
+          lastError = undefined;
+
+          if (FINAL_STATUSES.has(payment.status)) return payment;
+        } catch (error) {
+          lastError = error;
+        }
+        if (attempt < PAYMENT_VERIFICATION_ATTEMPTS - 1) {
+          await wait(PAYMENT_VERIFICATION_DELAY_MS);
+        }
+      }
+
+      if (lastError && payment.status === 'initiated') throw lastError;
+      if (!FINAL_STATUSES.has(payment.status)) {
+        continueVerificationInBackground(transaction.transactionId).catch(
+          () => undefined,
+        );
+      }
+      return payment;
+    };
+
+    const finishSuccessfulPayment = async () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      try {
+        resolve(await verifyUntilFinal());
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    const finishUnsuccessfulPayment = async () => {
       if (settled) return;
       settled = true;
       cleanup();
       try {
         const result = await verifyWalletPayment(transaction.transactionId);
-        resolve(result.data);
+        if (result.data.status === 'success') {
+          resolve(result.data);
+          return;
+        }
+        reject(
+          new Error(
+            result.data.failureReason || 'The payment was not completed.',
+          ),
+        );
       } catch (error) {
         reject(error);
       }
@@ -63,7 +129,15 @@ export const openPayUCheckout = async (
           const parsed =
             typeof response === 'string' ? JSON.parse(response) : response;
           const hash = String((parsed as any)?.hash || '');
-          if (!hash) throw new Error('Payment hash was not returned.');
+          if (!hash) {
+            const message = String(
+              (parsed as any)?.message ||
+                (parsed as any)?.error ||
+                'Payment hash was not returned by the server.',
+            );
+            console.error('PayU hash response did not contain a hash', parsed);
+            throw new Error(message);
+          }
           PayUBizSdk.hashGenerated({ [event.hashName]: hash });
         } catch (error) {
           if (!settled) {
@@ -73,10 +147,10 @@ export const openPayUCheckout = async (
           }
         }
       }),
-      emitter.addListener('onPaymentSuccess', finish),
-      emitter.addListener('onPaymentFailure', finish),
-      emitter.addListener('onPaymentCancel', finish),
-      emitter.addListener('onError', finish),
+      emitter.addListener('onPaymentSuccess', finishSuccessfulPayment),
+      emitter.addListener('onPaymentFailure', finishUnsuccessfulPayment),
+      emitter.addListener('onPaymentCancel', finishUnsuccessfulPayment),
+      emitter.addListener('onError', finishUnsuccessfulPayment),
     );
 
     try {

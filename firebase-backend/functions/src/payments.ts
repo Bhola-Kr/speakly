@@ -6,8 +6,10 @@ import { defineString } from 'firebase-functions/params';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { RECHARGE_PACKS } from './constants';
 
-export const PAYU_MERCHANT_KEY = 'Rsdmix';
-export const PAYU_MERCHANT_SALT = 'MLzzjEiz2FCsqQqj0SUqXJ2gVn7u0RLp';
+// PayU test credentials. Keep the salt in backend code only; never return it
+// to the mobile client or include it in the React Native bundle.
+export const PAYU_MERCHANT_KEY = 'l6GPzg';
+export const PAYU_MERCHANT_SALT = 'OQeSTO9g6bCBnWZcSkKI0iOWOB43dqqF';
 const PAYU_ENVIRONMENT = defineString('PAYU_ENVIRONMENT', {
   default: 'test',
   description: 'PayU environment: test or production',
@@ -377,7 +379,12 @@ export const generatePaymentHash = async (req: Request, res: Response) => {
     const transactionId = String(req.body?.transactionId || '');
     const hashString = String(req.body?.hashString || '');
     const postSalt = String(req.body?.postSalt || '');
-    if (!transactionId || !hashString || hashString.length > 4096) {
+    if (
+      !transactionId ||
+      !hashString ||
+      hashString.length > 4096 ||
+      postSalt.length > 4096
+    ) {
       return res
         .status(400)
         .json({ success: false, message: 'Invalid hash request' });
@@ -391,11 +398,6 @@ export const generatePaymentHash = async (req: Request, res: Response) => {
       return res
         .status(403)
         .json({ success: false, message: 'Payment is not available' });
-    }
-    if (!hashString.startsWith(`${PAYU_MERCHANT_KEY}|`)) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Invalid merchant hash request' });
     }
     return res.json({
       success: true,

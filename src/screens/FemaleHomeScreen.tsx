@@ -68,8 +68,15 @@ interface Props {
 
 const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const { width: windowWidth } = useWindowDimensions();
-  const tutorialCardWidth = windowWidth - 50;
-  const tutorialSnapWidth = tutorialCardWidth + 10;
+  const carouselHorizontalPadding = 20;
+  const tutorialCardGap = 10;
+  const tutorialCardWidth = Math.max(
+    1,
+    windowWidth -
+      UI.spacing.lg * 2 -
+      carouselHorizontalPadding * 2,
+  );
+  const tutorialSnapWidth = tutorialCardWidth + tutorialCardGap;
   const [page, setPage] = useState(0);
   const [goingOnline, setGoingOnline] = useState(false);
 
@@ -151,20 +158,34 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <FlatList
+            key={tutorialCardWidth}
             ref={bannerRef}
             horizontal
-            pagingEnabled
             data={tutorialData}
+            style={styles.tutorialList}
             contentContainerStyle={{
-              paddingHorizontal: 20,
+              paddingHorizontal: carouselHorizontalPadding,
             }}
             keyExtractor={item => item.id}
             showsHorizontalScrollIndicator={false}
             snapToInterval={tutorialSnapWidth}
+            snapToAlignment="start"
+            disableIntervalMomentum
             decelerationRate="fast"
+            getItemLayout={(_, index) => ({
+              length: tutorialSnapWidth,
+              offset: tutorialSnapWidth * index,
+              index,
+            })}
             onMomentumScrollEnd={e => {
-              const index = Math.round(
-                e.nativeEvent.contentOffset.x / tutorialSnapWidth,
+              const index = Math.max(
+                0,
+                Math.min(
+                  tutorialData.length - 1,
+                  Math.round(
+                    e.nativeEvent.contentOffset.x / tutorialSnapWidth,
+                  ),
+                ),
               );
 
               setPage(index);
@@ -316,7 +337,10 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderRadius: UI.radius.card,
     padding: 22,
+    overflow: 'hidden',
   },
+
+  tutorialList: { width: '100%' },
 
   tutorialTop: {
     flexDirection: 'row',

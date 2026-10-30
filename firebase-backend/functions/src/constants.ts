@@ -9,7 +9,7 @@ export const RECHARGE_PACKS = [
     id: 8,
     amount: 50,
     bonus: 0,
-    tag: "Chat Package",
+    tag: "NEW",
   },
   {
     id: 1,
@@ -20,13 +20,13 @@ export const RECHARGE_PACKS = [
   {
     id: 2,
     amount: 200,
-    bonus: 0,
+    bonus: 10,
     tag: "",
   },
   {
     id: 3,
     amount: 300,
-    bonus: 0,
+    bonus: 20,
     tag: "",
   },
   {

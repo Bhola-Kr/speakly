@@ -55,8 +55,21 @@ const getUser = (snapshot: any): UserRecord | null => {
     ? { ...value, uid: snapshot.key || value.uid }
     : null;
 };
+const getPreferredLanguage = (user: UserRecord) =>
+  String(
+    user.expertApplication?.language ||
+      user.profile?.practiceLanguage ||
+      user.profile?.nativeLanguage ||
+      '',
+  ).trim();
 const matches = (user: UserRecord, query: string) =>
-  [user.uid, user.phone, user.profile?.name, user.profile?.tamilName]
+  [
+    user.uid,
+    user.phone,
+    user.profile?.name,
+    user.profile?.tamilName,
+    getPreferredLanguage(user),
+  ]
     .map(value => String(value || '').toLocaleLowerCase())
     .some(value => value.includes(query.trim().toLocaleLowerCase()));
 
@@ -508,6 +521,11 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     const name = String(
       item.profile?.name || item.profile?.tamilName || 'Unnamed user',
     );
+    const preferredLanguage = getPreferredLanguage(item);
+    const isExpertAccount =
+      item.isExpert === true ||
+      item.profile?.role === 'expert' ||
+      Boolean(item.expertApplication);
     return (
       <TouchableOpacity style={styles.userRow} onPress={() => selectUser(item)}>
         <View style={styles.userAvatar}>
@@ -522,6 +540,11 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           <Text style={styles.userMeta} numberOfLines={1}>
             {String(item.phone || uid)}
           </Text>
+          {isExpertAccount && preferredLanguage ? (
+            <Text style={styles.userLanguage} numberOfLines={1}>
+              Expert language: {preferredLanguage}
+            </Text>
+          ) : null}
         </View>
         <MaterialCommunityIcons
           name="chevron-right"
@@ -944,6 +967,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   userMeta: { color: Colors.subText, fontSize: 12 },
+  userLanguage: {
+    marginTop: 3,
+    color: Colors.secondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   empty: {
     color: Colors.subText,
     textAlign: 'center',
