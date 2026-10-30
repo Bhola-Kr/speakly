@@ -7,6 +7,10 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.*
+import java.io.File
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.*
 import kotlin.concurrent.thread
 
@@ -200,6 +204,8 @@ fun stopAndVerify(
                 return@Thread
             }
 
+            val audioFile = writeWaveFile(audioData)
+
             val pitches =
                 mutableListOf<Float>()
 
@@ -311,6 +317,16 @@ fun stopAndVerify(
                 pitches.size
             )
 
+            result.putString(
+                "localUri",
+                audioFile.absolutePath
+            )
+
+            result.putInt(
+                "durationMs",
+                (totalSamples * 1000) / sampleRate
+            )
+
             promise.resolve(result)
 
         } catch (e: Exception) {
@@ -325,6 +341,34 @@ fun stopAndVerify(
     }.start()
 
 }
+
+    private fun writeWaveFile(audioData: ShortArray): File {
+        val file = File(
+            reactContext.cacheDir,
+            "expert-verification-${System.currentTimeMillis()}.wav"
+        )
+        val dataSize = audioData.size * 2
+        val buffer = ByteBuffer.allocate(44 + dataSize)
+            .order(ByteOrder.LITTLE_ENDIAN)
+
+        buffer.put("RIFF".toByteArray(Charsets.US_ASCII))
+        buffer.putInt(36 + dataSize)
+        buffer.put("WAVE".toByteArray(Charsets.US_ASCII))
+        buffer.put("fmt ".toByteArray(Charsets.US_ASCII))
+        buffer.putInt(16)
+        buffer.putShort(1.toShort())
+        buffer.putShort(1.toShort())
+        buffer.putInt(sampleRate)
+        buffer.putInt(sampleRate * 2)
+        buffer.putShort(2.toShort())
+        buffer.putShort(16.toShort())
+        buffer.put("data".toByteArray(Charsets.US_ASCII))
+        buffer.putInt(dataSize)
+        audioData.forEach { buffer.putShort(it) }
+
+        FileOutputStream(file).use { it.write(buffer.array()) }
+        return file
+    }
 
     @ReactMethod
     fun detectGender(promise: Promise) {

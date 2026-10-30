@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions/v1';
+import { onRequest } from 'firebase-functions/v1/https';
 import { logger } from 'firebase-functions';
 import express, { Request, Response } from 'express';
 import { RtcRole, RtcTokenBuilder } from 'agora-token';
@@ -729,6 +729,9 @@ app.get('/', (_req: Request, res: Response) => {
 // FIREBASE FUNCTION
 // ============================================
 export { reconcilePayuPayments };
-export const api = functions
-  .runWith({ timeoutSeconds: 300 })
-  .https.onRequest(app);
+export const api = onRequest(
+  {
+    cors: true,
+  },
+  app,
+);

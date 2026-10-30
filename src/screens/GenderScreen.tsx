@@ -33,6 +33,9 @@ interface Props {
 const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
   const user = route.params.user;
   const existingProfile = route.params?.existingProfile;
+  const selectedRole: 'learner' | 'expert' =
+    route.params?.role === 'expert' ? 'expert' : 'learner';
+  const selectedLanguage = String(route.params?.language || 'English');
 
   const [gender, setGender] = useState<Gender>(
     existingProfile?.gender === 'female' ? 'female' : 'male',
@@ -59,20 +62,37 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
       }
 
       setLoading(true);
-      await authData.createUser(user, gender);
+      await authData.createUser(
+        user,
+        gender,
+        selectedRole,
+        selectedLanguage,
+      );
       await authData.updateProfile({
         gender,
         name: nickname.trim(),
         avatarId: selectedAvatar,
         avatarSelected: true,
+        role: selectedRole,
+        practiceLanguage: selectedLanguage,
+        nativeLanguage: selectedLanguage,
       });
 
-      const savedUser = await authData.getUser(user.uid);
+      if (selectedRole === 'expert') {
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'AudioVerification',
+              params: { language: selectedLanguage },
+            },
+          ],
+        });
+        return;
+      }
       navigation.reset({
         index: 0,
-        routes: [
-          { name: savedUser?.isExpert === true ? 'FemaleBottomTabs' : 'Main' },
-        ],
+        routes: [{ name: 'Main' }],
       });
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Unable to save your choice.');

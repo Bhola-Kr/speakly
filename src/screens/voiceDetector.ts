@@ -7,6 +7,8 @@ export interface VoiceResult {
   pitch: number;
   confidence: number;
   samples: number;
+  localUri?: string;
+  durationMs?: number;
 }
 
 export default {

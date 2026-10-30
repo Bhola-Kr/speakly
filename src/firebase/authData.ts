@@ -15,6 +15,7 @@ export type UpdateProfileData = {
   gender?: string;
   role?: 'learner' | 'expert';
   practiceLanguage?: string;
+  nativeLanguage?: string;
   birthYear?: number | string;
   avatarId?: number | string;
   avatarSelected?: boolean;
@@ -73,7 +74,12 @@ class AuthData {
   //-----------------------------
   // Create User
   //-----------------------------
-  createUser = async (user: any, gender: string) => {
+  createUser = async (
+    user: any,
+    gender: string,
+    role: 'learner' | 'expert' = 'learner',
+    language = 'English',
+  ) => {
     if (!user?.uid) {
       throw new Error('A valid user is required to create an account.');
     }
@@ -110,7 +116,9 @@ class AuthData {
           uid,
           phone: profile.phone || phone,
           gender,
-          role: existing.profile?.role || 'learner',
+          role: existing.profile?.role || role,
+          practiceLanguage: existing.profile?.practiceLanguage || language,
+          nativeLanguage: existing.profile?.nativeLanguage || language,
         },
         verification: {
           phoneVerified: true,

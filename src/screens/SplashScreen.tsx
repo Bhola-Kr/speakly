@@ -49,9 +49,23 @@ const SplashScreen = ({ navigation }: any) => {
         !hasValidUsername(userInfo?.profile?.name) ||
         userInfo?.profile?.avatarSelected !== true
       ) {
-        navigateTo('Gender', {
+        navigateTo('OnboardingPreferences', {
           user: currentUser,
           existingProfile: userInfo?.profile,
+        });
+        return;
+      }
+
+      if (
+        userInfo?.profile?.role === 'expert' &&
+        userInfo?.expertApplication?.status !== 'approved' &&
+        userInfo?.expertApplication?.status !== 'rejected'
+      ) {
+        navigateTo('AudioVerification', {
+          language:
+            userInfo?.profile?.nativeLanguage ||
+            userInfo?.profile?.practiceLanguage ||
+            'English',
         });
         return;
       }

@@ -129,7 +129,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
       // Brand new user
       if (!userInfo) {
-        navigation.replace('Gender', {
+        navigation.replace('OnboardingPreferences', {
           user: firebaseUser,
         });
         return;
@@ -143,7 +143,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
         !hasValidUsername(userInfo?.profile?.name) ||
         userInfo?.profile?.avatarSelected !== true
       ) {
-        navigation.replace('Gender', {
+        navigation.replace('OnboardingPreferences', {
           user: firebaseUser,
           existingProfile: userInfo?.profile,
         });

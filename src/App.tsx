@@ -22,6 +22,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './screens/LoginScreen';
 import OtpScreen from './screens/OtpScreen';
 import GenderScreen from './screens/GenderScreen';
+import OnboardingPreferencesScreen from './screens/OnboardingPreferencesScreen';
+import AudioVerificationScreen from './screens/AudioVerificationScreen';
 import AvatarScreen from './screens/AvatarScreen';
 import BottomTabs from './screens/BottomTabs';
 import Colors from './constants/colors';
@@ -99,7 +101,16 @@ function RootStack() {
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Otp" component={OtpScreen} />
+      <Stack.Screen
+        name="OnboardingPreferences"
+        component={OnboardingPreferencesScreen}
+      />
       <Stack.Screen name="Gender" component={GenderScreen} />
+      <Stack.Screen
+        name="AudioVerification"
+        component={AudioVerificationScreen}
+        options={{ gestureEnabled: false }}
+      />
       <Stack.Screen name="Avatar" component={AvatarScreen} />
       <Stack.Screen
         name="Main"

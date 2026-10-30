@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   SafeAreaView,
@@ -21,6 +22,15 @@ import Colors from '../../constants/colors';
 import { useUser } from '../../hooks/UserContext';
 
 type UserRecord = Record<string, any> & { uid?: string };
+type ExpertApplication = {
+  uid: string;
+  status: 'pending' | 'approved' | 'rejected';
+  language?: string;
+  audioUrl?: string;
+  prompt?: string;
+  submittedAt?: number;
+  reviewDueAt?: number;
+};
 type EditableUserFields = {
   gender: string;
   name: string;
@@ -62,6 +72,8 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [reviewingUid, setReviewingUid] = useState('');
+  const [applications, setApplications] = useState<ExpertApplication[]>([]);
   const [error, setError] = useState('');
   const [selectedUid, setSelectedUid] = useState('');
   const [editingUser, setEditingUser] = useState<EditableUserFields | null>(
@@ -126,6 +138,26 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     if (allowed) loadUsers(false);
     // Pagination state must not restart the initial fetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowed]);
+
+  useEffect(() => {
+    if (!allowed) return;
+    const ref = database().ref('expertApplications');
+    const listener = ref.on('value', snapshot => {
+      const pending: ExpertApplication[] = [];
+      snapshot.forEach((child: any) => {
+        const value = child.val();
+        if (value?.status === 'pending') {
+          pending.push({ ...value, uid: child.key || value.uid });
+        }
+        return false;
+      });
+      pending.sort(
+        (a, b) => Number(a.submittedAt || 0) - Number(b.submittedAt || 0),
+      );
+      setApplications(pending);
+    });
+    return () => ref.off('value', listener);
   }, [allowed]);
 
   useEffect(() => {
@@ -332,6 +364,124 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     );
   };
 
+  const reviewApplication = async (
+    application: ExpertApplication,
+    decision: 'approved' | 'rejected',
+  ) => {
+    if (!application.uid || reviewingUid) return;
+    try {
+      setReviewingUid(application.uid);
+      const now = Date.now();
+      const approved = decision === 'approved';
+      const reviewed = {
+        ...application,
+        status: decision,
+        reviewedAt: now,
+        reviewedBy: String(currentUser?.uid || ''),
+        updatedAt: now,
+      };
+      await database()
+        .ref()
+        .update({
+          [`expertApplications/${application.uid}`]: reviewed,
+          [`users/${application.uid}/expertApplication`]: reviewed,
+          [`users/${application.uid}/isExpert`]: approved,
+          [`users/${application.uid}/profile/role`]: approved
+            ? 'expert'
+            : 'learner',
+          [`users/${application.uid}/verification/voiceVerified`]: approved,
+          [`users/${application.uid}/settings/voiceCallsEnabled`]: approved,
+        });
+      Alert.alert(
+        approved ? 'Expert Approved' : 'Application Rejected',
+        approved
+          ? 'The user now has expert access.'
+          : 'The user will continue as a learner.',
+      );
+    } catch (reviewError: any) {
+      Alert.alert(
+        'Review Failed',
+        readableError(reviewError, 'Unable to update this application.'),
+      );
+    } finally {
+      setReviewingUid('');
+    }
+  };
+
+  const renderApplications = () => (
+    <View style={styles.reviewSection}>
+      <View style={styles.reviewHeadingRow}>
+        <Text style={styles.reviewHeading}>Expert applications</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{applications.length}</Text>
+        </View>
+      </View>
+      {applications.length === 0 ? (
+        <Text style={styles.noApplications}>No applications awaiting review.</Text>
+      ) : (
+        applications.map(application => {
+          const overdue = Number(application.reviewDueAt || 0) < Date.now();
+          const busy = reviewingUid === application.uid;
+          return (
+            <View key={application.uid} style={styles.applicationCard}>
+              <View style={styles.applicationTopRow}>
+                <View style={styles.userCopy}>
+                  <Text style={styles.applicationUid} numberOfLines={1}>
+                    {application.uid}
+                  </Text>
+                  <Text style={styles.applicationMeta}>
+                    {application.language || 'Unknown language'} ·{' '}
+                    {overdue ? 'Review overdue' : 'Within review window'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.listenButton}
+                  onPress={() =>
+                    application.audioUrl
+                      ? Linking.openURL(application.audioUrl)
+                      : Alert.alert('Audio unavailable')
+                  }
+                >
+                  <MaterialCommunityIcons
+                    name="play-circle"
+                    size={24}
+                    color={Colors.secondary}
+                  />
+                  <Text style={styles.listenText}>Listen</Text>
+                </TouchableOpacity>
+              </View>
+              {!!application.prompt && (
+                <Text style={styles.applicationPrompt} numberOfLines={3}>
+                  {application.prompt}
+                </Text>
+              )}
+              <View style={styles.reviewActions}>
+                <TouchableOpacity
+                  disabled={busy}
+                  style={styles.rejectButton}
+                  onPress={() => reviewApplication(application, 'rejected')}
+                >
+                  <Text style={styles.rejectButtonText}>Reject</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={busy}
+                  style={styles.approveButton}
+                  onPress={() => reviewApplication(application, 'approved')}
+                >
+                  {busy ? (
+                    <ActivityIndicator color={Colors.white} />
+                  ) : (
+                    <Text style={styles.approveButtonText}>Approve expert</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })
+      )}
+    </View>
+  );
+
   if (!allowed)
     return (
       <SafeAreaView style={styles.centered}>
@@ -410,6 +560,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         onEndReachedThreshold={0.35}
         ListHeaderComponent={
           <>
+            {renderApplications()}
             <TextInput
               value={query}
               onChangeText={setQuery}
@@ -668,6 +819,69 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: '700', color: Colors.text },
   content: { paddingHorizontal: 16, paddingBottom: 60, flexGrow: 1 },
+  reviewSection: { marginTop: 8, marginBottom: 20 },
+  reviewHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  reviewHeading: { color: Colors.text, fontSize: 17, fontWeight: '800' },
+  countBadge: {
+    marginLeft: 8,
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countText: { color: Colors.white, fontSize: 12, fontWeight: '800' },
+  noApplications: {
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+    color: Colors.subText,
+    fontSize: 13,
+  },
+  applicationCard: {
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  applicationTopRow: { flexDirection: 'row', alignItems: 'center' },
+  applicationUid: { color: Colors.text, fontSize: 14, fontWeight: '800' },
+  applicationMeta: { marginTop: 3, color: Colors.subText, fontSize: 12 },
+  listenButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  listenText: { color: Colors.secondary, fontSize: 13, fontWeight: '800' },
+  applicationPrompt: {
+    marginTop: 12,
+    color: Colors.text,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  reviewActions: { marginTop: 14, flexDirection: 'row', gap: 10 },
+  rejectButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rejectButtonText: { color: Colors.danger, fontSize: 13, fontWeight: '800' },
+  approveButton: {
+    flex: 1.4,
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  approveButtonText: { color: Colors.white, fontSize: 13, fontWeight: '800' },
   searchInput: {
     height: 52,
     marginTop: 6,
