@@ -10,6 +10,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
+import UI from '../../constants/ui';
 
 type Props = {
   visible: boolean;
@@ -78,9 +79,12 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     backgroundColor: Colors.white,
-    borderRadius: 26,
+    borderRadius: UI.radius.alert,
     padding: 24,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...UI.shadow.modal,
   },
   iconCircle: {
     width: 82,
@@ -100,7 +104,7 @@ const styles = StyleSheet.create({
   title: {
     marginTop: 8,
     color: Colors.text,
-    fontSize: 25,
+    fontSize: UI.typography.screenTitle,
     fontWeight: '800',
     textAlign: 'center',
   },
@@ -113,9 +117,9 @@ const styles = StyleSheet.create({
   },
   claimButton: {
     width: '100%',
-    minHeight: 52,
+    minHeight: UI.size.primaryButtonHeight,
     marginTop: 22,
-    borderRadius: 16,
+    borderRadius: UI.radius.button,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -129,7 +133,8 @@ const styles = StyleSheet.create({
     color: Colors.subText,
     fontSize: 14,
     fontWeight: '600',
-    padding: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
   },
 });
 

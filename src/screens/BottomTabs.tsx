@@ -11,6 +11,22 @@ import Colors from '../constants/colors';
 
 const Tab = createBottomTabNavigator();
 
+const HomeTabIcon = ({ focused }: { focused: boolean }) => (
+  <Ionicons
+    name={focused ? 'home' : 'home-outline'}
+    size={24}
+    color={focused ? Colors.secondary : Colors.gray143}
+  />
+);
+
+const RecentsTabIcon = ({ focused }: { focused: boolean }) => (
+  <Ionicons
+    name={focused ? 'time' : 'time-outline'}
+    size={24}
+    color={focused ? Colors.secondary : Colors.gray143}
+  />
+);
+
 const BottomTabs = () => {
   const insets = useSafeAreaInsets();
 
@@ -41,34 +57,38 @@ const BottomTabs = () => {
         tabBarStyle: {
           position: 'absolute',
 
-          left: 16,
-          right: 16,
-          bottom: Math.max(insets.bottom, 12),
+          left: 12,
+          right: 12,
+          bottom: 0,
 
-          height: 72,
+          height: 68 + insets.bottom,
+          paddingTop: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
 
           backgroundColor: Colors.white,
 
-          borderRadius: 24,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
 
           borderTopWidth: 0,
 
           borderWidth: 1,
           borderColor: Colors.border,
-          elevation: 12,
+          elevation: 6,
 
           shadowColor: Colors.primary,
           shadowOffset: {
             width: 0,
             height: 8,
           },
-          shadowOpacity: 0.14,
-          shadowRadius: 18,
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
         },
 
         tabBarItemStyle: {
           justifyContent: 'center',
           alignItems: 'center',
+          paddingVertical: 2,
         },
 
         tabBarActiveTintColor: Colors.tealDark,
@@ -77,8 +97,12 @@ const BottomTabs = () => {
 
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '800',
-          marginBottom: 6,
+          lineHeight: 14,
+          fontWeight: '700',
+          marginTop: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 2,
         },
       }}
     >
@@ -86,13 +110,7 @@ const BottomTabs = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <Ionicons
-              name={focused ? 'home' : 'home-outline'}
-              size={22}
-              color={focused ? Colors.secondary : Colors.gray143}
-            />
-          ),
+          tabBarIcon: HomeTabIcon,
         }}
       />
 
@@ -100,13 +118,7 @@ const BottomTabs = () => {
         name="Recents"
         component={ManHistoryScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <Ionicons
-              name={focused ? 'time' : 'time-outline'}
-              size={22}
-              color={focused ? Colors.secondary : Colors.gray143}
-            />
-          ),
+          tabBarIcon: RecentsTabIcon,
         }}
       />
     </Tab.Navigator>

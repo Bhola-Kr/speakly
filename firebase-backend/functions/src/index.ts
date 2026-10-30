@@ -1,29 +1,38 @@
-import { onRequest } from "firebase-functions/v1/https";
-import { logger } from "firebase-functions";
-import express, { Request, Response } from "express";
-import { RtcRole, RtcTokenBuilder } from "agora-token";
-import * as admin from "firebase-admin";
-import { RECHARGE_PACKS } from "./constants";
+import * as functions from 'firebase-functions/v1';
+import { logger } from 'firebase-functions';
+import express, { Request, Response } from 'express';
+import { RtcRole, RtcTokenBuilder } from 'agora-token';
+import * as admin from 'firebase-admin';
+import { RECHARGE_PACKS } from './constants';
+import {
+  generatePaymentHash,
+  initiatePayment,
+  listPayments,
+  payuWebhook,
+  reconcilePayuPayments,
+  verifyPayment,
+} from './payments';
 
 const app = express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-const serviceAccount = require("../adminsdk.json");
-const FIREBASE_PROJECT_ID = "recent-chat-7fd34";
-const FIREBASE_DATA_ROOT = "speakly";
+const serviceAccount = require('../adminsdk.json');
+const FIREBASE_PROJECT_ID = 'recent-chat-7fd34';
+const FIREBASE_DATA_ROOT = 'speakly';
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   projectId: FIREBASE_PROJECT_ID,
-  databaseURL: "https://recent-chat-7fd34-default-rtdb.firebaseio.com",
+  databaseURL: 'https://recent-chat-7fd34-default-rtdb.firebaseio.com',
 });
 
-const MSG91_WIDGET_ID = "3668716f3732343639373333";
-const MSG91_AUTH_KEY = "556220AsRGad8ZeTT6a848e8fP1";
+const MSG91_WIDGET_ID = '3668716f3732343639373333';
+const MSG91_AUTH_KEY = '556220AsRGad8ZeTT6a848e8fP1';
 
 function normalizePhone(phone: string): string {
-  const mobile = phone.replace(/\D/g, "");
+  const mobile = phone.replace(/\D/g, '');
   if (mobile.length === 10) {
     return `91${mobile}`;
   }
@@ -31,16 +40,16 @@ function normalizePhone(phone: string): string {
   return mobile;
 }
 
-app.get("/myIp", async (_req, res) => {
+app.get('/myIp', async (_req, res) => {
   try {
-    const response = await fetch("https://api.ipify.org?format=json");
+    const response = await fetch('https://api.ipify.org?format=json');
     const data = await response.json();
 
-    logger.info("Firebase outbound IP", data);
+    logger.info('Firebase outbound IP', data);
 
     return res.json(data);
   } catch (error) {
-    logger.error("IP check failed", error);
+    logger.error('IP check failed', error);
 
     return res.status(500).json({
       success: false,
@@ -52,14 +61,14 @@ async function getUserFcmToken(uid: string) {
   const tokenSnapshot = await admin
     .database()
     .ref(`${FIREBASE_DATA_ROOT}/users/${uid}/fcmTokens`)
-    .once("value");
+    .once('value');
   const tokenData = tokenSnapshot.val();
-  const token = typeof tokenData === "string" ? tokenData : tokenData?.token;
+  const token = typeof tokenData === 'string' ? tokenData : tokenData?.token;
 
-  return typeof token === "string" && token.trim() ? token.trim() : null;
+  return typeof token === 'string' && token.trim() ? token.trim() : null;
 }
 
-app.post("/sendChatNotification", async (req: Request, res: Response) => {
+app.post('/sendChatNotification', async (req: Request, res: Response) => {
   try {
     const {
       type,
@@ -73,23 +82,23 @@ app.post("/sendChatNotification", async (req: Request, res: Response) => {
     } = req.body;
 
     if (
-      type !== "chat_message" ||
-      typeof recipientUid !== "string" ||
+      type !== 'chat_message' ||
+      typeof recipientUid !== 'string' ||
       !recipientUid.trim() ||
-      typeof senderUid !== "string" ||
+      typeof senderUid !== 'string' ||
       !senderUid.trim() ||
-      typeof senderName !== "string" ||
+      typeof senderName !== 'string' ||
       !senderName.trim() ||
-      typeof conversationId !== "string" ||
+      typeof conversationId !== 'string' ||
       !conversationId.trim() ||
-      typeof messageId !== "string" ||
+      typeof messageId !== 'string' ||
       !messageId.trim() ||
-      (messageType !== "text" && messageType !== "voice") ||
-      typeof preview !== "string"
+      (messageType !== 'text' && messageType !== 'voice') ||
+      typeof preview !== 'string'
     ) {
       return res.status(400).json({
         success: false,
-        message: "Valid chat notification data is required",
+        message: 'Valid chat notification data is required',
       });
     }
 
@@ -106,7 +115,7 @@ app.post("/sendChatNotification", async (req: Request, res: Response) => {
         body: preview.slice(0, 200),
       },
       data: {
-        type: "chat_message",
+        type: 'chat_message',
         senderUid: senderUid.trim(),
         senderName: senderName.trim(),
         conversationId: conversationId.trim(),
@@ -114,40 +123,40 @@ app.post("/sendChatNotification", async (req: Request, res: Response) => {
         messageType,
         recipientUid: recipientUid.trim(),
       },
-      android: { priority: "high" },
-      apns: { payload: { aps: { sound: "default" } } },
+      android: { priority: 'high' },
+      apns: { payload: { aps: { sound: 'default' } } },
     });
 
     return res.status(200).json({ success: true, delivered: true });
   } catch (error) {
-    logger.error("Send Chat Notification Error", error);
+    logger.error('Send Chat Notification Error', error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to send chat notification",
+      message: 'Unable to send chat notification',
     });
   }
 });
 
-app.post("/sendCallNotification", async (req: Request, res: Response) => {
+app.post('/sendCallNotification', async (req: Request, res: Response) => {
   try {
     const { type, recipientUid, femaleUid, callId, callerName } = req.body;
 
     if (
-      type !== "incoming_call" ||
-      typeof recipientUid !== "string" ||
+      type !== 'incoming_call' ||
+      typeof recipientUid !== 'string' ||
       !recipientUid.trim() ||
-      typeof femaleUid !== "string" ||
+      typeof femaleUid !== 'string' ||
       !femaleUid.trim() ||
       recipientUid.trim() !== femaleUid.trim() ||
-      typeof callId !== "string" ||
+      typeof callId !== 'string' ||
       !callId.trim() ||
-      typeof callerName !== "string" ||
+      typeof callerName !== 'string' ||
       !callerName.trim()
     ) {
       return res.status(400).json({
         success: false,
-        message: "Valid incoming call notification data is required",
+        message: 'Valid incoming call notification data is required',
       });
     }
 
@@ -161,26 +170,26 @@ app.post("/sendCallNotification", async (req: Request, res: Response) => {
     await admin.messaging().send({
       token: fcmToken,
       data: {
-        type: "incoming_call",
+        type: 'incoming_call',
         recipientUid: recipientUid.trim(),
         femaleUid: femaleUid.trim(),
         callId: callId.trim(),
         callerName: callerName.trim(),
       },
-      android: { priority: "high" },
+      android: { priority: 'high' },
       apns: {
         headers: {
-          "apns-priority": "10",
-          "apns-push-type": "alert",
+          'apns-priority': '10',
+          'apns-push-type': 'alert',
         },
         payload: {
           aps: {
             alert: {
-              title: "Incoming Voice Call",
+              title: 'Incoming Voice Call',
               body: `${callerName.trim()} is calling you`,
             },
-            category: "incoming-call",
-            sound: "default",
+            category: 'incoming-call',
+            sound: 'default',
           },
         },
       },
@@ -188,75 +197,81 @@ app.post("/sendCallNotification", async (req: Request, res: Response) => {
 
     return res.status(200).json({ success: true, delivered: true });
   } catch (error) {
-    logger.error("Send Call Notification Error", error);
+    logger.error('Send Call Notification Error', error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to send incoming call notification",
+      message: 'Unable to send incoming call notification',
     });
   }
 });
 
-app.get("/rechargePacks", async (_req: Request, res: Response) => {
+app.get('/rechargePacks', async (_req: Request, res: Response) => {
   try {
     return res.status(200).json({
       success: true,
       data: RECHARGE_PACKS,
     });
   } catch (error) {
-    logger.error("Get Recharge Packs Error", error);
+    logger.error('Get Recharge Packs Error', error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to get recharge packs",
+      message: 'Unable to get recharge packs',
     });
   }
 });
 
+app.post('/payments/initiate', initiatePayment);
+app.post('/payments/hash', generatePaymentHash);
+app.post('/payments/:transactionId/verify', verifyPayment);
+app.get('/payments', listPayments);
+app.post('/payu/callback', payuWebhook);
+
 // ============================================
 // MSG91 OTP WIDGET - SEND OTP
 // ============================================
-app.post("/sendOtp", async (req: Request, res: Response) => {
+app.post('/sendOtp', async (req: Request, res: Response) => {
   try {
     const { phone } = req.body;
 
     if (!phone) {
       return res.status(400).json({
         success: false,
-        message: "phone is required",
+        message: 'phone is required',
       });
     }
 
     if (!MSG91_AUTH_KEY) {
       return res.status(500).json({
         success: false,
-        message: "MSG91 auth key is not configured",
+        message: 'MSG91 auth key is not configured',
       });
     }
 
     if (!MSG91_WIDGET_ID) {
       return res.status(500).json({
         success: false,
-        message: "MSG91 widget ID is not configured",
+        message: 'MSG91 widget ID is not configured',
       });
     }
 
     const mobile = normalizePhone(phone);
 
-    if (mobile.length !== 12 || !mobile.startsWith("91")) {
+    if (mobile.length !== 12 || !mobile.startsWith('91')) {
       return res.status(400).json({
         success: false,
-        message: "Invalid Indian phone number",
+        message: 'Invalid Indian phone number',
       });
     }
 
     const response = await fetch(
-      "https://api.msg91.com/api/v5/widget/sendOtp",
+      'https://api.msg91.com/api/v5/widget/sendOtp',
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
           authkey: MSG91_AUTH_KEY,
         },
         body: JSON.stringify({
@@ -268,15 +283,15 @@ app.post("/sendOtp", async (req: Request, res: Response) => {
 
     const data = await response.json();
 
-    logger.info("MSG91 Send OTP Response", {
+    logger.info('MSG91 Send OTP Response', {
       status: response.status,
       data,
     });
 
-    if (!response.ok || data?.type === "error") {
+    if (!response.ok || data?.type === 'error') {
       return res.status(400).json({
         success: false,
-        message: data?.message || "Unable to send OTP",
+        message: data?.message || 'Unable to send OTP',
       });
     }
 
@@ -286,21 +301,21 @@ app.post("/sendOtp", async (req: Request, res: Response) => {
     if (!reqId) {
       return res.status(500).json({
         success: false,
-        message: "MSG91 did not return reqId",
+        message: 'MSG91 did not return reqId',
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent successfully",
+      message: 'OTP sent successfully',
       reqId,
     });
   } catch (error) {
-    logger.error("MSG91 Send OTP Error", error);
+    logger.error('MSG91 Send OTP Error', error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to send OTP",
+      message: 'Unable to send OTP',
     });
   }
 });
@@ -308,51 +323,51 @@ app.post("/sendOtp", async (req: Request, res: Response) => {
 // ============================================
 // MSG91 OTP WIDGET - VERIFY OTP
 // ============================================
-app.post("/verifyOtp", async (req: Request, res: Response) => {
+app.post('/verifyOtp', async (req: Request, res: Response) => {
   try {
     const { phone, otp, reqId } = req.body;
 
     if (!phone) {
       return res.status(400).json({
         success: false,
-        message: "phone is required",
+        message: 'phone is required',
       });
     }
 
     if (!otp) {
       return res.status(400).json({
         success: false,
-        message: "otp is required",
+        message: 'otp is required',
       });
     }
 
     if (!reqId) {
       return res.status(400).json({
         success: false,
-        message: "reqId is required",
+        message: 'reqId is required',
       });
     }
 
     if (!MSG91_AUTH_KEY) {
       return res.status(500).json({
         success: false,
-        message: "MSG91 auth key is not configured",
+        message: 'MSG91 auth key is not configured',
       });
     }
 
     if (!MSG91_WIDGET_ID) {
       return res.status(500).json({
         success: false,
-        message: "MSG91 widget ID is not configured",
+        message: 'MSG91 widget ID is not configured',
       });
     }
 
     const mobile = normalizePhone(phone);
 
-    if (mobile.length !== 12 || !mobile.startsWith("91")) {
+    if (mobile.length !== 12 || !mobile.startsWith('91')) {
       return res.status(400).json({
         success: false,
-        message: "Invalid Indian phone number",
+        message: 'Invalid Indian phone number',
       });
     }
 
@@ -361,11 +376,11 @@ app.post("/verifyOtp", async (req: Request, res: Response) => {
     // ==========================================
 
     const verifyOtpResponse = await fetch(
-      "https://api.msg91.com/api/v5/widget/verifyOtp",
+      'https://api.msg91.com/api/v5/widget/verifyOtp',
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           authkey: MSG91_AUTH_KEY,
         },
         body: JSON.stringify({
@@ -379,32 +394,32 @@ app.post("/verifyOtp", async (req: Request, res: Response) => {
 
     const verifyOtpData = await verifyOtpResponse.json();
 
-    logger.info("MSG91 Verify OTP Response", {
+    logger.info('MSG91 Verify OTP Response', {
       status: verifyOtpResponse.status,
       data: verifyOtpData,
     });
 
-    if (!verifyOtpResponse.ok || verifyOtpData?.type === "error") {
+    if (!verifyOtpResponse.ok || verifyOtpData?.type === 'error') {
       return res.status(401).json({
         success: false,
-        message: verifyOtpData?.message || "Invalid OTP",
+        message: verifyOtpData?.message || 'Invalid OTP',
       });
     }
 
     const accessToken = verifyOtpData?.message || verifyOtpData?.data?.message;
 
     if (!accessToken) {
-      logger.error("MSG91 did not return access token", {
+      logger.error('MSG91 did not return access token', {
         verifyOtpData,
       });
 
       return res.status(500).json({
         success: false,
-        message: "MSG91 access token was not returned",
+        message: 'MSG91 access token was not returned',
       });
     }
 
-    logger.info("MSG91 Access Token Received", {
+    logger.info('MSG91 Access Token Received', {
       accessTokenReceived: true,
     });
 
@@ -413,37 +428,37 @@ app.post("/verifyOtp", async (req: Request, res: Response) => {
     // ==========================================
 
     const verifyAccessTokenResponse = await fetch(
-      "https://control.msg91.com/api/v5/widget/verifyAccessToken",
+      'https://control.msg91.com/api/v5/widget/verifyAccessToken',
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           authkey: MSG91_AUTH_KEY,
-          "access-token": accessToken,
+          'access-token': accessToken,
         }),
       },
     );
 
     const verifyAccessTokenData = await verifyAccessTokenResponse.json();
 
-    logger.info("MSG91 Verify Access Token Response", {
+    logger.info('MSG91 Verify Access Token Response', {
       status: verifyAccessTokenResponse.status,
       data: verifyAccessTokenData,
     });
 
     if (
       !verifyAccessTokenResponse.ok ||
-      verifyAccessTokenData?.type === "error" ||
-      verifyAccessTokenData?.data?.type === "error"
+      verifyAccessTokenData?.type === 'error' ||
+      verifyAccessTokenData?.data?.type === 'error'
     ) {
       return res.status(401).json({
         success: false,
         message:
           verifyAccessTokenData?.message ||
           verifyAccessTokenData?.data?.message ||
-          "Invalid MSG91 access token",
+          'Invalid MSG91 access token',
       });
     }
 
@@ -456,7 +471,7 @@ app.post("/verifyOtp", async (req: Request, res: Response) => {
     try {
       await admin.auth().getUser(uid);
     } catch (error: any) {
-      if (error.code === "auth/user-not-found") {
+      if (error.code === 'auth/user-not-found') {
         await admin.auth().createUser({
           uid,
           phoneNumber: `+${uid}`,
@@ -474,58 +489,58 @@ app.post("/verifyOtp", async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: "OTP verified successfully",
+      message: 'OTP verified successfully',
       uid,
       token: firebaseToken,
     });
   } catch (error) {
-    logger.error("MSG91 Verify OTP Error", error);
+    logger.error('MSG91 Verify OTP Error', error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to verify OTP",
+      message: 'Unable to verify OTP',
     });
   }
 });
 
-app.post("/resendOtp", async (req: Request, res: Response) => {
+app.post('/resendOtp', async (req: Request, res: Response) => {
   try {
     const { phone, reqId } = req.body;
 
     if (!phone) {
       return res.status(400).json({
         success: false,
-        message: "phone is required",
+        message: 'phone is required',
       });
     }
 
     if (!reqId) {
       return res.status(400).json({
         success: false,
-        message: "reqId is required",
+        message: 'reqId is required',
       });
     }
 
     if (!MSG91_AUTH_KEY) {
       return res.status(500).json({
         success: false,
-        message: "MSG91 auth key is not configured",
+        message: 'MSG91 auth key is not configured',
       });
     }
 
     if (!MSG91_WIDGET_ID) {
       return res.status(500).json({
         success: false,
-        message: "MSG91 widget ID is not configured",
+        message: 'MSG91 widget ID is not configured',
       });
     }
 
     const mobile = normalizePhone(phone);
 
-    if (mobile.length !== 12 || !mobile.startsWith("91")) {
+    if (mobile.length !== 12 || !mobile.startsWith('91')) {
       return res.status(400).json({
         success: false,
-        message: "Invalid Indian phone number",
+        message: 'Invalid Indian phone number',
       });
     }
 
@@ -541,11 +556,11 @@ app.post("/resendOtp", async (req: Request, res: Response) => {
 
     body.retryChannel = 11;
     const response = await fetch(
-      "https://api.msg91.com/api/v5/widget/retryOtp",
+      'https://api.msg91.com/api/v5/widget/retryOtp',
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           authkey: MSG91_AUTH_KEY,
         },
         body: JSON.stringify(body),
@@ -554,7 +569,7 @@ app.post("/resendOtp", async (req: Request, res: Response) => {
 
     const data = await response.json();
 
-    logger.info("MSG91 Resend OTP Response", {
+    logger.info('MSG91 Resend OTP Response', {
       status: response.status,
       data,
     });
@@ -563,10 +578,10 @@ app.post("/resendOtp", async (req: Request, res: Response) => {
     // MSG91 ERROR
     // ==========================================
 
-    if (!response.ok || data?.type === "error") {
+    if (!response.ok || data?.type === 'error') {
       return res.status(400).json({
         success: false,
-        message: data?.message || "Unable to resend OTP",
+        message: data?.message || 'Unable to resend OTP',
       });
     }
 
@@ -576,15 +591,15 @@ app.post("/resendOtp", async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: "OTP resent successfully",
+      message: 'OTP resent successfully',
       data,
     });
   } catch (error) {
-    logger.error("MSG91 Resend OTP Error", error);
+    logger.error('MSG91 Resend OTP Error', error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to resend OTP",
+      message: 'Unable to resend OTP',
     });
   }
 });
@@ -592,12 +607,12 @@ app.post("/resendOtp", async (req: Request, res: Response) => {
 // ============================================
 // AGORA TOKEN
 // ============================================
-app.post("/generateAgoraToken", (req: Request, res: Response) => {
+app.post('/generateAgoraToken', (req: Request, res: Response) => {
   try {
-    const appId = "f6bec5b940ea4b11af21f3b931f73536";
-    const appCertificate = "a9aa916ebcc840ad920582398c5a9f64";
+    const appId = 'f6bec5b940ea4b11af21f3b931f73536';
+    const appCertificate = 'a9aa916ebcc840ad920582398c5a9f64';
 
-    const channelName = "voice_tamil";
+    const channelName = 'voice_tamil';
 
     const maleUid = Math.floor(Math.random() * 100000);
     const femaleUid = Math.floor(Math.random() * 100000);
@@ -649,7 +664,7 @@ app.post("/generateAgoraToken", (req: Request, res: Response) => {
 
     return res.status(500).json({
       success: false,
-      message: "Unable to generate Agora tokens",
+      message: 'Unable to generate Agora tokens',
     });
   }
 });
@@ -657,14 +672,14 @@ app.post("/generateAgoraToken", (req: Request, res: Response) => {
 // ============================================
 // FIREBASE CUSTOM TOKEN
 // ============================================
-app.post("/generateFirebaseToken", async (req: Request, res: Response) => {
+app.post('/generateFirebaseToken', async (req: Request, res: Response) => {
   try {
     const { phone } = req.body;
 
     if (!phone) {
       return res.status(400).json({
         success: false,
-        message: "phone is required",
+        message: 'phone is required',
       });
     }
 
@@ -673,7 +688,7 @@ app.post("/generateFirebaseToken", async (req: Request, res: Response) => {
     try {
       await admin.auth().getUser(uid);
     } catch (error: any) {
-      if (error.code === "auth/user-not-found") {
+      if (error.code === 'auth/user-not-found') {
         await admin.auth().createUser({
           uid,
           phoneNumber: `+${uid}`,
@@ -695,7 +710,7 @@ app.post("/generateFirebaseToken", async (req: Request, res: Response) => {
 
     return res.status(500).json({
       success: false,
-      message: "Unable to generate Firebase token",
+      message: 'Unable to generate Firebase token',
     });
   }
 });
@@ -703,14 +718,17 @@ app.post("/generateFirebaseToken", async (req: Request, res: Response) => {
 // ============================================
 // HEALTH CHECK
 // ============================================
-app.get("/", (_req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.json({
     success: true,
-    message: "Voice Tamil API Running 🚀",
+    message: 'Voice Tamil API Running 🚀',
   });
 });
 
 // ============================================
 // FIREBASE FUNCTION
 // ============================================
-export const api = onRequest(app);
+export { reconcilePayuPayments };
+export const api = functions
+  .runWith({ timeoutSeconds: 300 })
+  .https.onRequest(app);

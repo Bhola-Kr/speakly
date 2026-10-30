@@ -13,6 +13,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import InCallManager from 'react-native-incall-manager';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../../constants/colors';
+import UI from '../../constants/ui';
 
 interface Props {
   visible: boolean;
@@ -138,7 +139,7 @@ const IncomingCallModal = ({
                 name="check-decagram"
                 size={20}
                 color={Colors.success}
-                style={{ marginLeft: 6 }}
+                style={styles.verifiedIcon}
               />
             )}
           </View>
@@ -207,11 +208,15 @@ const styles = StyleSheet.create({
 
   container: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: UI.radius.alert,
+    borderTopRightRadius: UI.radius.alert,
     paddingHorizontal: 24,
     paddingTop: 18,
     paddingBottom: 34,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: Colors.border,
+    ...UI.shadow.modal,
   },
 
   handle: {
@@ -224,8 +229,9 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: UI.typography.screenTitle,
+    lineHeight: 34,
+    fontWeight: '800',
     color: Colors.text,
     textAlign: 'center',
   },
@@ -235,6 +241,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.subText,
     fontSize: 15,
+    lineHeight: 21,
   },
 
   avatarContainer: {
@@ -269,6 +276,10 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
 
+  verifiedIcon: {
+    marginLeft: 6,
+  },
+
   location: {
     marginTop: 8,
     textAlign: 'center',
@@ -283,6 +294,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     padding: 16,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
 
   noticeText: {

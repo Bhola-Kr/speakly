@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../../constants/colors';
+import UI from '../../constants/ui';
 import { UpdateKind } from '../../utils/appVersion';
 
 type Props = {
@@ -46,9 +47,7 @@ export default function AppUpdateNotice({
             color={Colors.coinText}
           />
           <View style={styles.bannerCopy}>
-            <Text style={styles.bannerTitle}>
-              A smoother Speakly is here
-            </Text>
+            <Text style={styles.bannerTitle}>A smoother Speakly is here</Text>
             <Text style={styles.bannerMessage}>
               Version {latestVersion} is available. Install for better
               performance.
@@ -182,14 +181,19 @@ export default function AppUpdateNotice({
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' },
-  modalContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  modalContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: UI.spacing.lg,
+  },
   card: {
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
-    borderRadius: 28,
+    borderRadius: UI.radius.alert,
     overflow: 'hidden',
     backgroundColor: Colors.background,
+    ...UI.shadow.modal,
   },
   hero: {
     alignItems: 'center',
@@ -239,8 +243,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 19,
   },
-  body: { padding: 24 },
-  title: { color: Colors.text, fontSize: 22, fontWeight: '700' },
+  body: { padding: UI.spacing.xl },
+  title: {
+    color: Colors.text,
+    fontSize: UI.typography.screenTitle,
+    fontWeight: '600',
+  },
   description: {
     color: Colors.subText,
     fontSize: 14,
@@ -249,8 +257,8 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   updateButton: {
-    minHeight: 54,
-    borderRadius: 16,
+    minHeight: UI.size.primaryButtonHeight,
+    borderRadius: UI.radius.button,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',

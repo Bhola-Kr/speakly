@@ -1,6 +1,22 @@
 pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
 plugins { id("com.facebook.react.settings") }
-extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    def configFile = file("build/generated/autolinking/source.json")
+    def configCommand = [
+        "/bin/bash",
+        file("../scripts/node-for-react-native.sh").absolutePath,
+        file("../scripts/generate-autolinking.js").absolutePath,
+        configFile.absolutePath
+    ]
+    def errorOutput = new ByteArrayOutputStream()
+    def process = configCommand.execute(null, file(".."))
+    process.consumeProcessErrorStream(errorOutput)
+    def exitCode = process.waitFor()
+    if (exitCode != 0) {
+        throw new GradleException("React Native autolinking failed: ${errorOutput}")
+    }
+    ex.autolinkLibrariesFromConfigFile(configFile)
+}
 rootProject.name = 'Speakly'
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')

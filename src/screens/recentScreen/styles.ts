@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import Colors from '../../constants/colors';
+import UI from '../../constants/ui';
 
 export default StyleSheet.create({
   container: {
@@ -9,7 +10,7 @@ export default StyleSheet.create({
   },
 
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: UI.spacing.lg,
     paddingBottom: 120,
   },
 
@@ -28,13 +29,13 @@ export default StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: UI.typography.sectionHeading,
+    fontWeight: '600',
     color: Colors.text,
     marginBottom: 18,
   },
   header: {
-    paddingHorizontal: 24,
+    paddingHorizontal: UI.spacing.lg,
     paddingBottom: 16,
   },
 
@@ -59,8 +60,8 @@ export default StyleSheet.create({
   },
 
   title: {
-    fontSize: 20,
-    fontWeight: '500',
+    fontSize: UI.typography.screenTitle,
+    fontWeight: '600',
     color: Colors.text,
   },
 
@@ -79,26 +80,9 @@ export default StyleSheet.create({
   },
 
   card: {
-    backgroundColor: Colors.white,
-
-    borderRadius: 22,
-
     padding: 18,
 
     marginBottom: 18,
-
-    shadowColor: Colors.black,
-
-    shadowOpacity: 0.08,
-
-    shadowRadius: 12,
-
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-
-    elevation: 5,
   },
 
   row: {
@@ -129,7 +113,7 @@ export default StyleSheet.create({
   },
 
   tamilName: {
-    fontSize: 22,
+    fontSize: UI.typography.sectionHeading,
 
     fontWeight: '700',
 
@@ -137,9 +121,9 @@ export default StyleSheet.create({
   },
 
   englishName: {
-    fontSize: 16,
+    fontSize: UI.typography.secondary,
 
-    color: Colors.text,
+    color: Colors.subText,
 
     marginTop: 3,
   },
@@ -156,6 +140,29 @@ export default StyleSheet.create({
     backgroundColor: Colors.border,
 
     marginVertical: 16,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+  },
+  metric: {
+    flex: 1,
+  },
+  cardFooter: {
+    marginTop: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusChip: {
+    minHeight: 34,
+    paddingHorizontal: 14,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   label: {
@@ -188,9 +195,9 @@ export default StyleSheet.create({
   },
 
   callButton: {
-    height: 46,
+    height: 44,
 
-    borderRadius: 23,
+    borderRadius: UI.radius.button,
 
     backgroundColor: Colors.primary,
 
@@ -201,6 +208,9 @@ export default StyleSheet.create({
     flexDirection: 'row',
 
     paddingHorizontal: 20,
+  },
+  callButtonDisabled: {
+    opacity: 0.6,
   },
 
   callText: {

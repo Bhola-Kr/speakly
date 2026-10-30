@@ -9,6 +9,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 
 import Colors from '../constants/colors';
+import UI from '../constants/ui';
 
 interface Props {
   title: string;
@@ -58,12 +59,12 @@ export default GradientButton;
 
 const styles = StyleSheet.create({
   touchable: {
-    marginHorizontal: 24,
+    marginHorizontal: UI.spacing.lg,
     marginTop: 28,
   },
   button: {
-    height: 56,
-    borderRadius: 18,
+    height: UI.size.primaryButtonHeight,
+    borderRadius: UI.radius.button,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: Colors.secondary,
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
 
   text: {
     color: Colors.white,
-    fontSize: 17,
+    fontSize: UI.typography.body,
     fontWeight: '800',
     letterSpacing: 0.2,
   },

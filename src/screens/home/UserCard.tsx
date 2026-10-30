@@ -11,6 +11,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
+import UI from '../../constants/ui';
+import SurfaceCard from '../../components/SurfaceCard';
 import {
   CALL_RATE_PER_MINUTE,
   getFemaleAvatar,
@@ -60,7 +62,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
     statusConfig.offline;
 
   return (
-    <View style={styles.card}>
+    <SurfaceCard style={styles.card}>
       <View style={styles.row}>
         <View style={styles.avatarWrapper}>
           <Image source={avatar} style={styles.avatar} />
@@ -90,7 +92,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
             📍 {item.city}, {item.state}
           </Text> */}
 
-          <View style={{ alignItems: 'center', alignSelf: 'flex-start' }}>
+          <View style={styles.statusWrapper}>
             <View
               style={[
                 styles.onlineChip,
@@ -137,7 +139,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
             style={styles.coin}
           />
 
-          <View style={{ marginLeft: 6 }}>
+          <View style={styles.priceCopy}>
             <Text style={styles.price}>{CALL_RATE_PER_MINUTE}</Text>
 
             <Text style={styles.perMinute}>₹ / min</Text>
@@ -151,7 +153,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
           style={styles.callButton}
         >
           {calling ? (
-            <ActivityIndicator size="small" color={Colors.secondary} />
+            <ActivityIndicator size="small" color={Colors.white} />
           ) : (
             <>
               <MaterialCommunityIcons
@@ -165,7 +167,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </SurfaceCard>
   );
 };
 
@@ -173,24 +175,9 @@ export default memo(UserCard);
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.white,
-    marginHorizontal: 16,
+    marginHorizontal: UI.spacing.lg,
     marginBottom: 12,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: Colors.border,
-
-    padding: 14,
-
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-
-    elevation: 3,
+    padding: UI.spacing.lg,
   },
 
   row: {
@@ -205,7 +192,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 72,
     height: 72,
-    borderRadius: 22,
+    borderRadius: UI.radius.card,
   },
 
   onlineDotOuter: {
@@ -232,18 +219,19 @@ const styles = StyleSheet.create({
 
   info: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 14,
   },
 
   name: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: UI.typography.sectionHeading,
+    fontWeight: '600',
     color: Colors.text,
   },
 
   subTitle: {
-    marginTop: 2,
-    fontSize: 12,
+    marginTop: 3,
+    fontSize: UI.typography.secondary,
+    lineHeight: 17,
     color: Colors.subText,
   },
 
@@ -284,7 +272,7 @@ const styles = StyleSheet.create({
 
     backgroundColor: Colors.onlineSurface,
 
-    marginLeft: 6,
+    marginTop: 8,
 
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -312,6 +300,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginVertical: 12,
   },
+  statusWrapper: {
+    alignSelf: 'flex-start',
+  },
+  priceCopy: {
+    marginLeft: 6,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -325,7 +319,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
 
-    borderRadius: 14,
+    borderRadius: UI.radius.button,
 
     borderWidth: 1,
     borderColor: Colors.coinBorder,
@@ -354,9 +348,9 @@ const styles = StyleSheet.create({
   },
 
   callButton: {
-    height: 44,
+    height: 48,
     paddingHorizontal: 20,
-    borderRadius: 14,
+    borderRadius: UI.radius.button,
 
     backgroundColor: Colors.secondary,
 

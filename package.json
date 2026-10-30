@@ -23,6 +23,7 @@
     "@react-navigation/bottom-tabs": "7.19.2",
     "@react-navigation/native": "7.4.1",
     "@react-navigation/native-stack": "7.19.2",
+    "payu-non-seam-less-react": "^4.2.9",
     "react": "19.2.3",
     "react-native": "0.86.0",
     "react-native-agora": "4.6.2",

@@ -23,6 +23,7 @@ import CategoryList from './CategoryList';
 import UserCard from './UserCard';
 
 import Colors from '../../constants/colors';
+import UI from '../../constants/ui';
 import { categories } from '../../constants/dummyData';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
@@ -306,10 +307,10 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: UI.typography.screenTitle,
+    fontWeight: '600',
     color: Colors.text,
-    marginHorizontal: 18,
+    marginHorizontal: UI.spacing.lg,
     marginTop: 3,
     marginBottom: 14,
     letterSpacing: -0.5,
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.3,
-    marginHorizontal: 18,
+    marginHorizontal: UI.spacing.lg,
     marginTop: 24,
   },
 
@@ -329,10 +330,10 @@ const styles = StyleSheet.create({
   },
 
   emptyState: {
-    marginHorizontal: 18,
+    marginHorizontal: UI.spacing.lg,
     marginTop: 18,
     minHeight: 190,
-    borderRadius: 22,
+    borderRadius: UI.radius.card,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,

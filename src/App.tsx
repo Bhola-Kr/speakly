@@ -25,6 +25,7 @@ import GenderScreen from './screens/GenderScreen';
 import AvatarScreen from './screens/AvatarScreen';
 import BottomTabs from './screens/BottomTabs';
 import Colors from './constants/colors';
+import UI from './constants/ui';
 import { SUPPORT_EMAIL } from './constants/constants';
 import ProfileSettingScreen from './screens/profile/ProfileScreenSettings';
 import { EditProfileScreen } from './screens/profile/EditProfileScreen';
@@ -59,6 +60,7 @@ import IncomingCallModal from './screens/agora/IncomingCallModal';
 import RoomService, { Room } from './firebase/RoomService';
 import database from '@react-native-firebase/database';
 import { databaseRef } from './firebase/firebase';
+import AppAlert from './components/AppAlert';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -477,6 +479,7 @@ export default function App({ isHeadless = false }: { isHeadless?: boolean }) {
       <UserProvider>
         <ActiveCallProvider>
           <AppNavigator />
+          <AppAlert />
         </ActiveCallProvider>
       </UserProvider>
     </SafeAreaProvider>
@@ -505,12 +508,15 @@ const callStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.62)',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: UI.spacing.xl,
   },
   deletionCard: {
-    borderRadius: 24,
+    borderRadius: UI.radius.alert,
     backgroundColor: Colors.white,
-    padding: 24,
+    padding: UI.spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...UI.shadow.modal,
   },
   deletionTitle: {
     color: Colors.text,
@@ -528,7 +534,7 @@ const callStyles = StyleSheet.create({
   },
   deletionPrimaryButton: {
     minHeight: 48,
-    borderRadius: 24,
+    borderRadius: UI.radius.button,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.primary,

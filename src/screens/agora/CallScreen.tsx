@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   TouchableOpacity,
   PermissionsAndroid,
   Platform,
@@ -19,6 +18,7 @@ import {
   Vibration,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   createAgoraRtcEngine,
@@ -761,7 +761,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       {visible && (
         <StatusBar backgroundColor={Colors.primary} barStyle="light-content" />
       )}
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
         <View style={[styles.header, compactLayout && styles.headerCompact]}>
           <TouchableOpacity
             onPress={onMinimize}
@@ -874,6 +874,10 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           {gender === 'female' &&
             Boolean(maleUserNote.quickNote || maleUserNote.details) && (
               <TouchableOpacity
+                accessibilityLabel={
+                  speaker ? 'Turn speaker off' : 'Turn speaker on'
+                }
+                accessibilityRole="button"
                 activeOpacity={0.8}
                 style={styles.savedNoteCard}
                 onPress={openNotes}
@@ -943,6 +947,10 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
             <View style={styles.controlItem}>
               <TouchableOpacity
+                accessibilityLabel={
+                  muted ? 'Unmute microphone' : 'Mute microphone'
+                }
+                accessibilityRole="button"
                 style={[
                   styles.controlButton,
                   compactLayout && styles.controlButtonCompact,
@@ -955,7 +963,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               >
                 <MaterialCommunityIcons
                   name={speaker ? 'volume-high' : 'volume-off'}
-                  size={compactLayout ? 25 : 30}
+                  size={compactLayout ? 22 : 24}
                   color={speaker ? Colors.darkBackground : Colors.white}
                 />
               </TouchableOpacity>
@@ -979,7 +987,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               >
                 <MaterialCommunityIcons
                   name={muted ? 'microphone-off' : 'microphone'}
-                  size={compactLayout ? 25 : 30}
+                  size={compactLayout ? 22 : 24}
                   color={muted ? Colors.darkBackground : Colors.white}
                 />
               </TouchableOpacity>
@@ -993,13 +1001,15 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           {/* End Call */}
 
           <TouchableOpacity
+            accessibilityLabel="End call"
+            accessibilityRole="button"
             activeOpacity={0.9}
             style={[styles.endButton, compactLayout && styles.endButtonCompact]}
             onPress={leaveCall}
           >
             <MaterialCommunityIcons
               name="phone-hangup"
-              size={compactLayout ? 32 : 40}
+              size={compactLayout ? 22 : 24}
               color={Colors.white}
             />
           </TouchableOpacity>

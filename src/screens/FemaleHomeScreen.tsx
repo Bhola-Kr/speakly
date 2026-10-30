@@ -19,6 +19,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import Colors from '../constants/colors';
+import UI from '../constants/ui';
 import { useUser } from '../hooks/UserContext';
 import { getUserAvatar } from '../constants/constants';
 import RoomService from '../firebase/RoomService';
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
 
   tutorialCard: {
     marginRight: 10,
-    borderRadius: 28,
+    borderRadius: UI.radius.card,
     padding: 22,
   },
 
@@ -379,10 +380,10 @@ const styles = StyleSheet.create({
   },
 
   onlineButton: {
-    height: 60,
-    marginHorizontal: 18,
+    height: UI.size.primaryButtonHeight,
+    marginHorizontal: UI.spacing.lg,
     marginBottom: 22,
-    borderRadius: 20,
+    borderRadius: UI.radius.button,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
@@ -431,9 +432,9 @@ const styles = StyleSheet.create({
   },
 
   reminderCard: {
-    marginHorizontal: 18,
+    marginHorizontal: UI.spacing.lg,
     marginBottom: 22,
-    borderRadius: 22,
+    borderRadius: UI.radius.card,
     padding: 22,
     flexDirection: 'row',
     alignItems: 'center',
@@ -464,20 +465,13 @@ const styles = StyleSheet.create({
 
   statusCard: {
     backgroundColor: Colors.white,
-    marginHorizontal: 18,
-    borderRadius: 22,
+    marginHorizontal: UI.spacing.lg,
+    borderRadius: UI.radius.card,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 22,
 
-    shadowColor: Colors.black,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    elevation: 5,
+    ...UI.shadow.card,
   },
 
   statusHeader: {
@@ -521,7 +515,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: 20,
+    marginHorizontal: UI.spacing.lg,
     marginTop: 12,
     marginBottom: 25,
   },
@@ -586,20 +580,12 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: Colors.white,
-    marginHorizontal: 18,
+    marginHorizontal: UI.spacing.lg,
     marginBottom: 22,
-    borderRadius: 24,
+    borderRadius: UI.radius.card,
     paddingVertical: 20,
 
-    shadowColor: Colors.black,
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-
-    elevation: 5,
+    ...UI.shadow.card,
   },
 
   sectionHeader: {
@@ -611,9 +597,9 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 20,
+    fontSize: UI.typography.sectionHeading,
     color: Colors.text,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 
   viewAll: {
@@ -691,10 +677,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: Colors.surface,
 
-    marginHorizontal: 20,
+    marginHorizontal: UI.spacing.lg,
     marginBottom: 18,
 
-    borderRadius: 20,
+    borderRadius: UI.radius.card,
 
     overflow: 'hidden',
   },
@@ -734,7 +720,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 8,
 
-    borderRadius: 18,
+    borderRadius: UI.radius.button,
   },
 
   noticeButtonText: {

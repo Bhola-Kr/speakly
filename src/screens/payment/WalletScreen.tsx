@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -13,13 +12,17 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import Colors from '../../constants/colors';
 import GradientButton from '../../components/GradientButton';
 import { fetchRechargePacks } from '../../api/calls';
 import type { RechargePack } from '../../api/api';
 import { useUser } from '../../hooks/UserContext';
+import { openPayUCheckout } from '../../payment/payuCheckout';
 
 const WalletScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
@@ -28,6 +31,7 @@ const WalletScreen = ({ navigation }: any) => {
   const [selectedPack, setSelectedPack] = useState<RechargePack | null>(null);
   const [loadingPacks, setLoadingPacks] = useState(true);
   const [packsError, setPacksError] = useState('');
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -77,15 +81,39 @@ const WalletScreen = ({ navigation }: any) => {
     return selectedPack ? selectedPack.amount + selectedPack.bonus : 0;
   }, [selectedPack]);
 
-  const onRecharge = () => {
-    Alert.alert(
-      'Payments Temporarily Unavailable',
-      'Wallet recharges are temporarily unavailable. Please try again later.',
-    );
+  const onRecharge = async () => {
+    if (!selectedPack || paying) return;
+    try {
+      setPaying(true);
+      const payment = await openPayUCheckout(selectedPack.id);
+      if (payment.status === 'success') {
+        Alert.alert(
+          'Recharge Successful',
+          `${payment.creditedAmount} coins were added to your wallet.`,
+        );
+      } else if (payment.status === 'failed') {
+        Alert.alert(
+          'Payment Unsuccessful',
+          payment.failureReason || 'No amount was charged to your wallet.',
+        );
+      } else {
+        Alert.alert(
+          'Payment Verification Pending',
+          'We are confirming this payment with PayU. Your wallet will update automatically after verification.',
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        'Unable to Complete Payment',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    } finally {
+      setPaying(false);
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
 
       <View style={styles.header}>
@@ -117,9 +145,7 @@ const WalletScreen = ({ navigation }: any) => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: 270,
-        }}
+        contentContainerStyle={styles.scrollContent}
       >
         <LinearGradient
           colors={Colors.goldGradient}
@@ -247,9 +273,11 @@ const WalletScreen = ({ navigation }: any) => {
           </View>
 
           <GradientButton
-            title="Payments Temporarily Unavailable"
+            title={`Pay ₹${selectedPack.amount}`}
             onPress={onRecharge}
-            style={{ marginTop: 12 }}
+            disabled={paying}
+            loading={paying}
+            style={styles.paymentButton}
           />
         </View>
       )}
@@ -261,6 +289,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+
+  scrollContent: {
+    paddingBottom: 270,
+  },
+
+  paymentButton: {
+    marginTop: 12,
   },
 
   header: {

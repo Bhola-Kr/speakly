@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import {
   View,
@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   useWindowDimensions,
+  Keyboard,
 } from 'react-native';
 
 import { Alert } from 'react-native';
@@ -49,7 +50,8 @@ interface Props {
 }
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -62,13 +64,28 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [activeSlide, setActiveSlide] = useState(0);
 
   const [acceptedPolicies, setAcceptedPolicies] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd());
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () =>
+      setKeyboardVisible(false),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const isValid = mobile.length === 10;
 
-  const onSelectCountry = (country: Country) => {
-    setCountry(country.cca2);
+  const onSelectCountry = (selectedCountry: Country) => {
+    setCountry(selectedCountry.cca2);
 
-    setCallingCode(country.callingCode[0]);
+    setCallingCode(selectedCountry.callingCode[0]);
   };
 
   const onGetOTP = async () => {
@@ -106,10 +123,17 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          ref={scrollRef}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          contentContainerStyle={styles.scrollContent}
+          keyboardDismissMode="none"
+          keyboardShouldPersistTaps="always"
+          showsVerticalScrollIndicator={false}
         >
           <View style={styles.brandRow}>
             <View style={styles.logoMark}>
@@ -122,35 +146,42 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.logo}>speakly</Text>
           </View>
 
-          <Carousel
-            loop
-            autoPlay
-            autoPlayInterval={3000}
-            width={width}
-            height={verticalScale(260)}
-            data={slides}
-            scrollAnimationDuration={800}
-            onSnapToItem={index => setActiveSlide(index)}
-            renderItem={({ item }) => (
-              <View style={styles.slide}>
-                <Image
-                  source={item.image}
-                  resizeMode="contain"
-                  style={styles.image}
-                />
-                <Text style={styles.heading}>{item.title}</Text>
-              </View>
-            )}
-          />
-
-          <View style={styles.dots}>
-            {slides.map((_, index) => (
-              <View
-                key={index}
-                style={[styles.dot, activeSlide === index && styles.activeDot]}
+          {!keyboardVisible && (
+            <>
+              <Carousel
+                loop
+                autoPlay
+                autoPlayInterval={3000}
+                width={width}
+                height={Math.min(verticalScale(260), height * 0.34)}
+                data={slides}
+                scrollAnimationDuration={800}
+                onSnapToItem={index => setActiveSlide(index)}
+                renderItem={({ item }) => (
+                  <View style={styles.slide}>
+                    <Image
+                      source={item.image}
+                      resizeMode="contain"
+                      style={styles.image}
+                    />
+                    <Text style={styles.heading}>{item.title}</Text>
+                  </View>
+                )}
               />
-            ))}
-          </View>
+
+              <View style={styles.dots}>
+                {slides.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.dot,
+                      activeSlide === index && styles.activeDot,
+                    ]}
+                  />
+                ))}
+              </View>
+            </>
+          )}
 
           <View style={styles.formHeader}>
             <Text style={styles.formTitle}>Start speaking today</Text>
@@ -204,6 +235,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 placeholder="Your Mobile Number"
                 placeholderTextColor={Colors.gray153}
                 style={styles.input}
+                returnKeyType="done"
+                onFocus={() => {
+                  setTimeout(() => scrollRef.current?.scrollToEnd(), 120);
+                }}
               />
             </View>
           </LinearGradient>
@@ -269,8 +304,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.safeText}>
             Language practice only. Speakly is not a dating or matchmaking app.
           </Text>
-        </KeyboardAvoidingView>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -281,6 +316,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+
+  keyboardView: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 32,
   },
 
   logo: {
@@ -349,7 +393,7 @@ const styles = StyleSheet.create({
   },
 
   gradientBorder: {
-    marginHorizontal: moderateScale(24),
+    marginHorizontal: moderateScale(16),
     padding: moderateScale(1.5),
     borderRadius: moderateScale(18),
   },
@@ -396,7 +440,7 @@ const styles = StyleSheet.create({
   },
 
   formHeader: {
-    marginHorizontal: moderateScale(24),
+    marginHorizontal: moderateScale(16),
     marginBottom: verticalScale(14),
   },
 
@@ -445,7 +489,7 @@ const styles = StyleSheet.create({
   consentCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginHorizontal: moderateScale(24),
+    marginHorizontal: moderateScale(16),
     marginTop: verticalScale(18),
     padding: moderateScale(14),
     borderWidth: 1,

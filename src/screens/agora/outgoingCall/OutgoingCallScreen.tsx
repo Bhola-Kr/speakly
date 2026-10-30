@@ -5,12 +5,13 @@ import {
   Animated,
   Easing,
   Image,
-  SafeAreaView,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { scopedDatabase as database } from '../../../firebase/firebase';
 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -26,6 +27,8 @@ interface Props {
 }
 
 export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { height } = useWindowDimensions();
+  const compactLayout = height < 700;
   const data = route?.params?.user;
   const femaleUid = data.uid;
   const tamilName = String(data?.tamilName || '').trim();
@@ -207,9 +210,9 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <StatusBar backgroundColor={Colors.navy} barStyle="light-content" />
-      <View style={styles.header}>
+      <View style={[styles.header, compactLayout && styles.headerCompact]}>
         <Text style={styles.logo}>{strings.appName}</Text>
 
         <Text style={styles.status}>Connecting{dots}</Text>
@@ -223,10 +226,11 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
         </Text>
       </View>
 
-      <View style={styles.body}>
+      <View style={[styles.body, compactLayout && styles.bodyCompact]}>
         <Animated.View
           style={[
             styles.avatarWrapper,
+            compactLayout && styles.avatarWrapperCompact,
             {
               transform: [{ scale: glowScale }],
             },
@@ -242,19 +246,26 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             ]}
           />
 
-          <View style={styles.avatarBorder}>
+          <View
+            style={[
+              styles.avatarBorder,
+              compactLayout && styles.avatarBorderCompact,
+            ]}
+          >
             <Image
               source={
                 String(data?.gender).toLowerCase() === 'female'
                   ? getFemaleAvatar(data?.avatarId)
                   : getMaleAvatar(data?.avatarId)
               }
-              style={styles.avatar}
+              style={[styles.avatar, compactLayout && styles.avatarCompact]}
             />
           </View>
         </Animated.View>
 
-        <Text style={styles.name}>{displayName}</Text>
+        <Text style={[styles.name, compactLayout && styles.nameCompact]}>
+          {displayName}
+        </Text>
 
         {showEnglishName && (
           <Text style={styles.englishName}>{englishName}</Text>
@@ -262,7 +273,12 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
         <Text style={styles.city}>Conversation expert</Text>
 
-        <View style={styles.waveContainer}>
+        <View
+          style={[
+            styles.waveContainer,
+            compactLayout && styles.waveContainerCompact,
+          ]}
+        >
           <Animated.View
             style={[
               styles.ripple,
@@ -274,7 +290,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           />
 
           <TouchableOpacity activeOpacity={0.9} style={styles.phoneButton}>
-            <Icon name="phone" size={34} color={Colors.inkBlue} />
+            <Icon name="phone" size={24} color={Colors.inkBlue} />
           </TouchableOpacity>
 
           <Text style={styles.callingText}>Calling user...</Text>

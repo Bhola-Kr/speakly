@@ -4,6 +4,7 @@ import { StyleSheet, TextInput, View, TextInputProps } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 import Colors from '../constants/colors';
+import UI from '../constants/ui';
 
 const GradientInput = (props: TextInputProps) => {
   return (
@@ -24,21 +25,21 @@ export default GradientInput;
 const styles = StyleSheet.create({
   border: {
     marginTop: 28,
-    marginHorizontal: 24,
-    borderRadius: 18,
+    marginHorizontal: UI.spacing.lg,
+    borderRadius: UI.radius.card,
     padding: 1.5,
   },
 
   container: {
     minHeight: 58,
-    borderRadius: 17,
+    borderRadius: UI.radius.button,
     backgroundColor: Colors.inputBackground,
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: UI.spacing.lg,
   },
 
   input: {
-    fontSize: 17,
+    fontSize: UI.typography.body,
     color: Colors.text,
   },
 });

@@ -1,4 +1,5 @@
 import Colors from '../../../constants/colors';
+import UI from '../../../constants/ui';
 import { Dimensions, StyleSheet } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -7,32 +8,40 @@ export default StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.navy,
-    paddingHorizontal: 24,
+    paddingHorizontal: UI.spacing.lg,
   },
 
   header: {
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 12,
+  },
+
+  headerCompact: {
+    marginTop: UI.spacing.xs,
   },
 
   logo: {
-    fontSize: 34,
-    fontWeight: '700',
+    fontSize: 30,
+    lineHeight: 38,
+    fontWeight: '800',
     color: Colors.secondary,
     letterSpacing: 1,
   },
 
   status: {
-    marginTop: 8,
+    marginTop: 12,
     color: Colors.white,
-    fontSize: 22,
+    fontSize: 21,
+    lineHeight: 28,
     fontWeight: '700',
   },
 
   statusSub: {
     marginTop: 6,
     color: Colors.slate,
-    fontSize: 15,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 
   statusTamilName: {
@@ -47,8 +56,13 @@ export default StyleSheet.create({
 
   body: {
     flex: 1,
-    justifyContent: 'space-evenly',
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 18,
+  },
+
+  bodyCompact: {
+    paddingVertical: UI.spacing.sm,
   },
 
   avatarWrapper: {
@@ -57,6 +71,11 @@ export default StyleSheet.create({
     borderRadius: 120,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  avatarWrapperCompact: {
+    width: 160,
+    height: 160,
   },
 
   glow: {
@@ -78,35 +97,60 @@ export default StyleSheet.create({
     backgroundColor: Colors.navySurface,
   },
 
+  avatarBorderCompact: {
+    width: 152,
+    height: 152,
+    borderRadius: 76,
+  },
+
   avatar: {
     width: 188,
     height: 188,
     borderRadius: 94,
   },
 
+  avatarCompact: {
+    width: 142,
+    height: 142,
+    borderRadius: 71,
+  },
+
   name: {
-    marginTop: 24,
-    fontSize: 34,
+    marginTop: 28,
+    fontSize: 30,
+    lineHeight: 38,
     color: Colors.white,
     fontWeight: '700',
   },
 
+  nameCompact: {
+    marginTop: UI.spacing.lg,
+    fontSize: UI.typography.screenTitle,
+    lineHeight: 31,
+  },
+
   englishName: {
     marginTop: 4,
-    fontSize: 17,
+    fontSize: 16,
+    lineHeight: 22,
     color: Colors.slate,
   },
 
   city: {
     marginTop: 6,
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 21,
     color: Colors.slate,
   },
 
   waveContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 28,
+  },
+
+  waveContainerCompact: {
+    marginTop: UI.spacing.lg,
   },
 
   ripple: {
@@ -119,9 +163,9 @@ export default StyleSheet.create({
   },
 
   phoneButton: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -136,11 +180,13 @@ export default StyleSheet.create({
 
   footer: {
     backgroundColor: Colors.navyCard,
-    borderRadius: 18,
+    borderRadius: UI.radius.card,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    marginBottom: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: Colors.overlayWhite15,
   },
 
   footerText: {
@@ -152,19 +198,19 @@ export default StyleSheet.create({
   },
 
   endButton: {
-    width: width - 48,
-    height: 58,
-    borderRadius: 30,
+    width: width - UI.spacing.lg * 2,
+    height: UI.size.primaryButtonHeight,
+    borderRadius: UI.radius.button,
     backgroundColor: Colors.errorBright,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: 28,
+    marginBottom: 18,
   },
 
   endText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: UI.typography.body,
     fontWeight: '700',
   },
 });

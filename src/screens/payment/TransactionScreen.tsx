@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -10,43 +9,17 @@ import {
   Alert,
   Clipboard,
   Linking,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
+import UI from '../../constants/ui';
 import { SUPPORT_EMAIL } from '../../constants/constants';
-const transactions = [
-  {
-    id: '1',
-    amount: 140,
-    credited: 168,
-    bonus: 28,
-    status: 'pending',
-    txnId: '121369466',
-    date: '22 Jul 2026',
-    time: '10:59 AM',
-  },
-  {
-    id: '2',
-    amount: 250,
-    credited: 285,
-    bonus: 35,
-    status: 'success',
-    txnId: '983456729',
-    date: '20 Jul 2026',
-    time: '08:12 PM',
-  },
-  {
-    id: '3',
-    amount: 100,
-    credited: 100,
-    bonus: 0,
-    status: 'failed',
-    txnId: '982311122',
-    date: '18 Jul 2026',
-    time: '04:36 PM',
-  },
-];
+import { fetchPaymentHistory, verifyWalletPayment } from '../../api/calls';
+import type { PaymentTransaction } from '../../api/api';
 
 const STATUS = {
   success: {
@@ -63,6 +36,20 @@ const STATUS = {
     text: 'PENDING',
   },
 
+  initiated: {
+    color: Colors.warningStrong,
+    background: Colors.warningStrongSurface,
+    icon: 'clock-outline',
+    text: 'PENDING',
+  },
+
+  crediting: {
+    color: Colors.warningStrong,
+    background: Colors.warningStrongSurface,
+    icon: 'sync',
+    text: 'CREDITING',
+  },
+
   failed: {
     color: Colors.errorStrong,
     background: Colors.errorStrongSurface,
@@ -72,6 +59,29 @@ const STATUS = {
 };
 
 const TransactionScreen = ({ navigation }: any) => {
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadPayments = useCallback(async (refresh = false) => {
+    try {
+      refresh ? setRefreshing(true) : setLoading(true);
+      setTransactions(await fetchPaymentHistory());
+    } catch (error) {
+      Alert.alert(
+        'Unable to Load Transactions',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPayments();
+  }, [loadPayments]);
+
   const copyTxn = (id: string) => {
     Clipboard.setString(id);
     Alert.alert('Copied', 'Transaction ID copied.');
@@ -110,17 +120,49 @@ const TransactionScreen = ({ navigation }: any) => {
     }
   };
 
-  const renderItem = ({ item }: any) => {
+  const refreshPayment = async (item: PaymentTransaction) => {
+    if (item.status === 'failed') {
+      navigation.navigate('Wallet');
+      return;
+    }
+    if (item.status === 'success') {
+      copyTxn(item.transactionId);
+      return;
+    }
+    try {
+      await verifyWalletPayment(item.transactionId);
+      await loadPayments(true);
+    } catch (error) {
+      Alert.alert(
+        'Verification Pending',
+        error instanceof Error
+          ? error.message
+          : 'We will check this payment again automatically.',
+      );
+    }
+  };
+
+  const renderItem = ({ item }: { item: PaymentTransaction }) => {
     const status = STATUS[item.status as keyof typeof STATUS];
+    const date = new Date(item.createdAt);
 
     return (
       <View style={styles.card}>
         <View style={styles.rowBetween}>
-          <View style={{ flex: 1 }}>
+          <View style={styles.flex}>
             <Text style={styles.amountTitle}>Recharge ₹{item.amount}</Text>
 
             <Text style={styles.date}>
-              {item.time} • {item.date}
+              {date.toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}{' '}
+              •{' '}
+              {date.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
             </Text>
           </View>
 
@@ -154,13 +196,13 @@ const TransactionScreen = ({ navigation }: any) => {
         <View style={styles.separator} />
 
         <View style={styles.txnRow}>
-          <View style={{ flex: 1 }}>
+          <View style={styles.flex}>
             <Text style={styles.label}>Transaction ID</Text>
 
-            <Text style={styles.value}>{item.txnId}</Text>
+            <Text style={styles.value}>{item.transactionId}</Text>
           </View>
 
-          <TouchableOpacity onPress={() => copyTxn(item.txnId)}>
+          <TouchableOpacity onPress={() => copyTxn(item.transactionId)}>
             <MaterialCommunityIcons
               name="content-copy"
               color={Colors.secondary}
@@ -172,9 +214,13 @@ const TransactionScreen = ({ navigation }: any) => {
         {item.status !== 'failed' && (
           <>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>Wallet Credited</Text>
+              <Text style={styles.label}>
+                {item.status === 'success'
+                  ? 'Wallet Credited'
+                  : 'Expected Wallet Credit'}
+              </Text>
 
-              <Text style={styles.price}>₹{item.credited}</Text>
+              <Text style={styles.price}>{item.creditedAmount} coins</Text>
             </View>
 
             <View style={styles.infoRow}>
@@ -195,13 +241,22 @@ const TransactionScreen = ({ navigation }: any) => {
         )}
 
         {item.status === 'failed' && (
-          <Text style={styles.failedText}>Payment was unsuccessful.</Text>
+          <Text style={styles.failedText}>
+            {item.failureReason || 'Payment was unsuccessful.'}
+          </Text>
         )}
 
-        <TouchableOpacity style={styles.bottomButton}>
+        <TouchableOpacity
+          style={styles.bottomButton}
+          onPress={() => refreshPayment(item)}
+        >
           <MaterialCommunityIcons
             name={
-              item.status === 'success' ? 'file-document-outline' : 'lifebuoy'
+              item.status === 'success'
+                ? 'content-copy'
+                : item.status === 'failed'
+                ? 'refresh'
+                : 'sync'
             }
             color={Colors.secondary}
             size={18}
@@ -209,10 +264,10 @@ const TransactionScreen = ({ navigation }: any) => {
 
           <Text style={styles.bottomButtonText}>
             {item.status === 'success'
-              ? 'Download Invoice'
+              ? 'Copy Receipt ID'
               : item.status === 'failed'
               ? 'Retry Recharge'
-              : 'Need Help'}
+              : 'Refresh Status'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -220,7 +275,7 @@ const TransactionScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
 
       <View style={styles.header}>
@@ -247,10 +302,33 @@ const TransactionScreen = ({ navigation }: any) => {
         data={transactions}
         keyExtractor={item => item.id}
         renderItem={renderItem}
-        contentContainerStyle={{
-          padding: 18,
-          paddingBottom: 40,
-        }}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadPayments(true)}
+            tintColor={Colors.secondary}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            {loading ? (
+              <ActivityIndicator size="large" color={Colors.secondary} />
+            ) : (
+              <>
+                <MaterialCommunityIcons
+                  name="receipt-text-clock-outline"
+                  size={42}
+                  color={Colors.secondary}
+                />
+                <Text style={styles.emptyTitle}>No transactions yet</Text>
+                <Text style={styles.emptyText}>
+                  Your wallet recharges will appear here.
+                </Text>
+              </>
+            )}
+          </View>
+        }
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
@@ -263,8 +341,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
 
+  flex: {
+    flex: 1,
+  },
+
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: UI.spacing.lg,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -274,29 +356,49 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: UI.typography.screenTitle,
+    fontWeight: '600',
     color: Colors.text,
+  },
+
+  listContent: {
+    flexGrow: 1,
+    padding: UI.spacing.lg,
+    paddingBottom: UI.spacing.xl,
+  },
+
+  emptyState: {
+    flex: 1,
+    minHeight: 320,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: UI.spacing.xl,
+  },
+
+  emptyTitle: {
+    marginTop: UI.spacing.lg,
+    color: Colors.text,
+    fontSize: UI.typography.sectionHeading,
+    fontWeight: '600',
+  },
+
+  emptyText: {
+    marginTop: UI.spacing.sm,
+    color: Colors.subText,
+    fontSize: UI.typography.secondary,
+    textAlign: 'center',
   },
 
   card: {
     backgroundColor: Colors.white,
-    borderRadius: 22,
-    padding: 18,
+    borderRadius: UI.radius.card,
+    padding: UI.spacing.lg,
     marginBottom: 18,
 
     borderWidth: 1,
     borderColor: Colors.border,
 
-    shadowColor: Colors.black,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    elevation: 4,
+    ...UI.shadow.card,
   },
 
   rowBetween: {
@@ -378,7 +480,7 @@ const styles = StyleSheet.create({
   bottomButton: {
     marginTop: 10,
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: UI.radius.button,
     paddingVertical: 14,
     paddingHorizontal: 16,
     flexDirection: 'row',

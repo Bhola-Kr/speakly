@@ -146,3 +146,14 @@ export const fetchRechargePacks = async () => {
     throw error;
   }
 };
+
+export const initiateWalletPayment = (packId: number) =>
+  Api.initiatePayment(packId);
+
+export const verifyWalletPayment = (transactionId: string) =>
+  Api.verifyPayment(transactionId);
+
+export const fetchPaymentHistory = async () => {
+  const response = await Api.getPayments();
+  return response.data;
+};

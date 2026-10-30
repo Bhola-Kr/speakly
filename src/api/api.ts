@@ -1,6 +1,6 @@
 import auth from '@react-native-firebase/auth';
 
-const BASE_URL =
+export const API_BASE_URL =
   'https://us-central1-recent-chat-7fd34.cloudfunctions.net/api';
 
 class Api {
@@ -10,23 +10,39 @@ class Api {
     body?: any,
   ): Promise<T> {
     const idToken = await auth().currentUser?.getIdToken();
-
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    const json = await response.json();
-
-    if (!response.ok || json.success === false) {
-      throw new Error(json.message || json.error || 'Something went wrong');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+      const responseText = await response.text();
+      let json: any;
+      try {
+        json = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        throw new Error('The server returned an invalid response.');
+      }
+      if (!response.ok || json.success === false) {
+        throw new Error(
+          json.message || json.error || `Request failed (${response.status})`,
+        );
+      }
+      return json as T;
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        throw new Error('The request timed out. Please check your connection.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return json;
   }
 
   post<T>(endpoint: string, body?: any) {
@@ -100,6 +116,20 @@ class Api {
     return this.get<RechargePack[]>('/rechargePacks');
   }
 
+  initiatePayment(packId: number) {
+    return this.post<InitiatePaymentResponse>('/payments/initiate', { packId });
+  }
+
+  verifyPayment(transactionId: string) {
+    return this.post<PaymentResponse>(
+      `/payments/${encodeURIComponent(transactionId)}/verify`,
+    );
+  }
+
+  getPayments() {
+    return this.get<PaymentsResponse>('/payments');
+  }
+
   sendIncomingCallNotification(payload: {
     recipientUid: string;
     femaleUid: string;
@@ -164,6 +194,66 @@ export interface RechargePack {
   amount: number;
   bonus: number;
   tag: string;
+}
+
+export type PaymentStatus =
+  | 'initiated'
+  | 'pending'
+  | 'crediting'
+  | 'success'
+  | 'failed';
+
+export interface PaymentTransaction {
+  id: string;
+  transactionId: string;
+  amount: number;
+  bonus: number;
+  creditedAmount: number;
+  currency: 'INR';
+  status: PaymentStatus;
+  createdAt: number;
+  updatedAt: number;
+  creditedAt?: number | null;
+  payuId?: string | null;
+  bankReferenceNumber?: string | null;
+  paymentMode?: string | null;
+  failureReason?: string | null;
+}
+
+export interface PayUPaymentParams {
+  key: string;
+  transactionId: string;
+  amount: string;
+  productInfo: string;
+  firstName: string;
+  email: string;
+  phone: string;
+  android_surl: string;
+  android_furl: string;
+  ios_surl: string;
+  ios_furl: string;
+  environment: '0' | '1';
+  userCredential: string;
+  userToken: string;
+  additionalParam: Record<string, string>;
+}
+
+export interface InitiatePaymentResponse {
+  success: boolean;
+  data: {
+    transaction: PaymentTransaction;
+    paymentParams: PayUPaymentParams;
+  };
+}
+
+export interface PaymentResponse {
+  success: boolean;
+  data: PaymentTransaction;
+}
+
+export interface PaymentsResponse {
+  success: boolean;
+  data: PaymentTransaction[];
 }
 
 export default new Api();

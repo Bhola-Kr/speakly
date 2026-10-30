@@ -1,4 +1,5 @@
 import Colors from '../../constants/colors';
+import UI from '../../constants/ui';
 import { Dimensions, StyleSheet } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -14,7 +15,7 @@ export default StyleSheet.create({
   },
 
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: UI.spacing.lg,
     paddingTop: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -93,7 +94,7 @@ export default StyleSheet.create({
     marginTop: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 14,
+    borderRadius: UI.radius.card,
     backgroundColor: Colors.darkSurfaceCard,
     borderWidth: 1,
     borderColor: Colors.overlayGold18,
@@ -325,7 +326,8 @@ export default StyleSheet.create({
   },
 
   controls: {
-    paddingBottom: 24,
+    paddingHorizontal: UI.spacing.xl,
+    paddingBottom: UI.spacing.lg,
   },
 
   controlsCompact: {
@@ -334,8 +336,9 @@ export default StyleSheet.create({
 
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginBottom: 24,
+    justifyContent: 'center',
+    columnGap: UI.spacing.xl,
+    marginBottom: UI.spacing.lg,
   },
 
   rowCompact: {
@@ -344,6 +347,7 @@ export default StyleSheet.create({
 
   controlItem: {
     alignItems: 'center',
+    width: 96,
   },
 
   controlButton: {
@@ -363,14 +367,16 @@ export default StyleSheet.create({
 
   controlText: {
     color: Colors.white,
-    marginTop: 10,
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '600',
   },
 
   endButton: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: Colors.danger,
     justifyContent: 'center',
     alignItems: 'center',
@@ -378,16 +384,18 @@ export default StyleSheet.create({
   },
 
   endButtonCompact: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
   },
 
   endText: {
     color: Colors.white,
     fontWeight: '700',
+    fontSize: 13,
+    lineHeight: 18,
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
 
   notesModalRoot: {
@@ -407,11 +415,15 @@ export default StyleSheet.create({
   notesSheet: {
     maxHeight: '88%',
     backgroundColor: Colors.background,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: UI.radius.alert,
+    borderTopRightRadius: UI.radius.alert,
     paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 28,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: Colors.border,
+    ...UI.shadow.modal,
   },
 
   notesHandle: {
@@ -425,7 +437,8 @@ export default StyleSheet.create({
 
   notesTitle: {
     color: Colors.text,
-    fontSize: 27,
+    fontSize: 25,
+    lineHeight: 32,
     fontWeight: '800',
   },
 
@@ -481,8 +494,8 @@ export default StyleSheet.create({
   },
 
   saveNoteButton: {
-    height: 56,
-    borderRadius: 28,
+    height: UI.size.primaryButtonHeight,
+    borderRadius: UI.radius.button,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',

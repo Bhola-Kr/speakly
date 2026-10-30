@@ -9,6 +9,7 @@ import { femaleAvatars } from '../../constants/constants';
 
 import RoomService, { CallHistory } from '../../firebase/RoomService';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
+import SurfaceCard from '../../components/SurfaceCard';
 
 interface Props {
   item: CallHistory;
@@ -81,7 +82,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
   };
 
   return (
-    <View style={styles.card}>
+    <SurfaceCard style={styles.card}>
       <View style={styles.row}>
         <Image source={avatar.image} style={styles.avatar} />
 
@@ -96,18 +97,13 @@ const RecentCallCard = ({ item, navigation }: Props) => {
 
       <View style={styles.divider} />
 
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-        }}
-      >
-        <View>
+      <View style={styles.metricsRow}>
+        <View style={styles.metric}>
           <Text style={styles.label}>Date</Text>
           <Text style={styles.value}>{formatDate(item.startedAt)}</Text>
         </View>
 
-        <View>
+        <View style={styles.metric}>
           <Text style={styles.label}>Duration</Text>
           <Text style={styles.value}>{formatDuration(item.duration)}</Text>
         </View>
@@ -126,43 +122,32 @@ const RecentCallCard = ({ item, navigation }: Props) => {
         </View> */}
       </View>
 
-      <View
-        style={{
-          marginTop: 20,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
+      <View style={styles.cardFooter}>
         <View
-          style={{
-            backgroundColor: `${statusColor}20`,
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderRadius: 16,
-          }}
+          style={[styles.statusChip, { backgroundColor: `${statusColor}18` }]}
         >
-          <Text
-            style={{
-              color: statusColor,
-              fontWeight: '700',
-            }}
-          >
+          <Text style={[styles.statusText, { color: statusColor }]}>
             {item.status}
           </Text>
         </View>
 
-        <TouchableOpacity onPress={handleCall} style={styles.callButton}>
+        <TouchableOpacity
+          disabled={calling}
+          onPress={handleCall}
+          style={[styles.callButton, calling && styles.callButtonDisabled]}
+        >
           <MaterialCommunityIcons
             name="phone"
             size={18}
             color={Colors.secondary}
           />
 
-          <Text style={styles.callText}>Call Again</Text>
+          <Text style={styles.callText}>
+            {calling ? 'Calling...' : 'Call Again'}
+          </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SurfaceCard>
   );
 };
 

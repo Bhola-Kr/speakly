@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 import {
-  SafeAreaView,
   ScrollView,
   View,
   Text,
@@ -9,6 +8,7 @@ import {
   Image,
   Share,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Alert, Linking } from 'react-native';
 import auth from '@react-native-firebase/auth';
@@ -284,7 +284,7 @@ ${PLAY_STORE_URL}`,
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -367,6 +367,11 @@ ${PLAY_STORE_URL}`,
                 })
               }
             >
+              <MaterialCommunityIcons
+                name="account-edit-outline"
+                size={20}
+                color={Colors.primary}
+              />
               <Text style={styles.outlineText}>Edit Profile</Text>
             </TouchableOpacity>
 
@@ -376,6 +381,11 @@ ${PLAY_STORE_URL}`,
                 style={styles.primaryButton}
                 onPress={() => navigation.navigate('Wallet')}
               >
+                <MaterialCommunityIcons
+                  name="wallet-plus-outline"
+                  size={20}
+                  color={Colors.white}
+                />
                 <Text style={styles.primaryText}>Add Balance</Text>
               </TouchableOpacity>
             )}

@@ -16,6 +16,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import Colors from '../constants/colors';
+import UI from '../constants/ui';
 import { getMaleAvatar } from '../constants/constants';
 import RoomService, { CallHistory } from '../firebase/RoomService';
 
@@ -132,10 +133,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <View style={styles.amountRow}>
-            <Image
-              source={require('../assets/coin.png')}
-              style={styles.coin}
-            />
+            <Image source={require('../assets/coin.png')} style={styles.coin} />
 
             <Text style={styles.amount}>{item.amount}</Text>
           </View>
@@ -291,7 +289,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    marginHorizontal: 20,
+    marginHorizontal: UI.spacing.lg,
     marginTop: 12,
     marginBottom: 18,
     flexDirection: 'row',
@@ -300,8 +298,8 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 30,
-    fontWeight: '700',
+    fontSize: UI.typography.screenTitle,
+    fontWeight: '600',
     color: Colors.text,
   },
 
@@ -333,7 +331,7 @@ const styles = StyleSheet.create({
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
+    marginHorizontal: UI.spacing.lg,
     marginTop: 8,
     marginBottom: 18,
   },
@@ -359,23 +357,17 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    marginHorizontal: 20,
+    marginHorizontal: UI.spacing.lg,
     marginBottom: 16,
     backgroundColor: Colors.white,
-    borderRadius: 22,
-    padding: 18,
+    borderRadius: UI.radius.card,
+    padding: UI.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
 
-    shadowColor: Colors.black,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-
-    elevation: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...UI.shadow.card,
   },
 
   avatar: {
@@ -449,18 +441,10 @@ const styles = StyleSheet.create({
   popup: {
     width: 220,
     backgroundColor: Colors.white,
-    borderRadius: 22,
+    borderRadius: UI.radius.alert,
     overflow: 'hidden',
 
-    shadowColor: Colors.black,
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-
-    elevation: 10,
+    ...UI.shadow.modal,
   },
 
   popupItem: {
