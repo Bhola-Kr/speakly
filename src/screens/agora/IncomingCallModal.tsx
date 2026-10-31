@@ -120,7 +120,7 @@ const IncomingCallModal = ({
             ]}
           >
             <LinearGradient
-              colors={Colors.goldGradient}
+              colors={Colors.gradient}
               style={styles.avatarBorder}
             >
               <Image
@@ -176,7 +176,7 @@ const IncomingCallModal = ({
 
             <TouchableOpacity activeOpacity={0.9} onPress={handleAccept}>
               <LinearGradient
-                colors={Colors.goldGradient}
+                colors={Colors.gradient}
                 style={styles.acceptButton}
               >
                 <MaterialCommunityIcons
@@ -208,8 +208,8 @@ const styles = StyleSheet.create({
 
   container: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: UI.radius.alert,
-    borderTopRightRadius: UI.radius.alert,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 18,
     paddingBottom: 34,

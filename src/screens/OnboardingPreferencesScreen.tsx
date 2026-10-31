@@ -73,7 +73,9 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
                 <Text style={[styles.roleTitle, selected && styles.whiteText]}>
                   {item.title}
                 </Text>
-                <Text style={[styles.roleDetail, selected && styles.whiteMuted]}>
+                <Text
+                  style={[styles.roleDetail, selected && styles.whiteMuted]}
+                >
                   {item.detail}
                 </Text>
               </TouchableOpacity>
@@ -149,7 +151,7 @@ export default OnboardingPreferencesScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20, paddingBottom: 36 },
+  content: { paddingHorizontal: 24, paddingTop: 18, paddingBottom: 42 },
   step: {
     marginTop: 12,
     color: Colors.secondary,
@@ -157,21 +159,46 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.4,
   },
-  title: { marginTop: 6, fontSize: 29, fontWeight: '900', color: Colors.text },
-  subtitle: { marginTop: 8, color: Colors.subText, fontSize: 15, lineHeight: 21 },
-  heading: { marginTop: 26, marginBottom: 12, fontSize: 17, fontWeight: '800', color: Colors.text },
+  title: {
+    marginTop: 8,
+    fontSize: 31,
+    fontWeight: '900',
+    color: Colors.text,
+    letterSpacing: -0.8,
+  },
+  subtitle: {
+    marginTop: 8,
+    color: Colors.subText,
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  heading: {
+    marginTop: 26,
+    marginBottom: 12,
+    fontSize: 17,
+    fontWeight: '800',
+    color: Colors.text,
+  },
   roleRow: { flexDirection: 'row', gap: 12 },
   roleCard: {
     flex: 1,
     minHeight: 132,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
   },
-  selectedCard: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  roleTitle: { marginTop: 12, color: Colors.text, fontSize: 17, fontWeight: '800' },
+  selectedCard: {
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
+  },
+  roleTitle: {
+    marginTop: 12,
+    color: Colors.text,
+    fontSize: 17,
+    fontWeight: '800',
+  },
   roleDetail: { marginTop: 4, color: Colors.subText, fontSize: 13 },
   whiteText: { color: Colors.white },
   whiteMuted: { color: Colors.overlayWhite90 },
@@ -179,7 +206,7 @@ const styles = StyleSheet.create({
   languageCard: {
     width: '31%',
     minHeight: 76,
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
@@ -187,14 +214,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 8,
   },
-  selectedLanguage: { borderColor: Colors.secondary, backgroundColor: Colors.screenTint },
+  selectedLanguage: {
+    borderColor: Colors.secondary,
+    backgroundColor: Colors.screenTint,
+  },
   nativeLanguage: { color: Colors.text, fontSize: 17, fontWeight: '800' },
   languageName: { marginTop: 3, color: Colors.subText, fontSize: 11 },
   selectedLanguageText: { color: Colors.secondary },
   infoCard: {
     marginVertical: 24,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 18,
     backgroundColor: Colors.screenTint,
     flexDirection: 'row',
     gap: 10,

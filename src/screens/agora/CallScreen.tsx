@@ -8,7 +8,6 @@ import {
   Image,
   Alert,
   StatusBar,
-  AppState,
   BackHandler,
   KeyboardAvoidingView,
   Modal,
@@ -79,20 +78,23 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const { user } = useUser();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const compactLayout = screenHeight < 700 || screenWidth < 360;
+
+  useEffect(() => {
+    InCallManager.start({ media: 'audio', auto: true });
+
+    return () => {
+      InCallManager.stop();
+    };
+  }, []);
+
   useEffect(() => {
     if (!visible) return;
-    InCallManager.setKeepScreenOn(AppState.currentState === 'active');
-    const subscription = AppState.addEventListener('change', state => {
-      InCallManager.setKeepScreenOn(state === 'active');
-    });
     const back = BackHandler.addEventListener('hardwareBackPress', () => {
       onMinimize();
       return true;
     });
     return () => {
-      subscription.remove();
       back.remove();
-      InCallManager.setKeepScreenOn(false);
     };
   }, [visible, onMinimize]);
 
@@ -143,7 +145,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
   const [muted, setMuted] = useState(false);
 
-  const [speaker, setSpeaker] = useState(true);
+  const [speaker, setSpeaker] = useState(false);
 
   const [safetyActionLoading, setSafetyActionLoading] = useState(false);
 
@@ -470,7 +472,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
     rtcEngine.setClientRole(ClientRoleType.ClientRoleBroadcaster);
 
-    rtcEngine.setEnableSpeakerphone(true);
+    rtcEngine.setEnableSpeakerphone(false);
 
     rtcEngine.registerEventHandler({
       onJoinChannelSuccess: () => {
@@ -598,6 +600,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     const value = !speaker;
 
     setSpeaker(value);
+
+    InCallManager.setForceSpeakerphoneOn(value);
 
     engine.current?.setEnableSpeakerphone(value);
   };

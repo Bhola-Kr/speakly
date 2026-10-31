@@ -5,24 +5,43 @@ import {
   Image,
   Modal,
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import Colors from '../constants/colors';
-import UI from '../constants/ui';
 import { getMaleAvatar } from '../constants/constants';
 import RoomService, { CallHistory } from '../firebase/RoomService';
+
+const COLORS = {
+  background: '#F7FFFE',
+  navy: '#071A2D',
+  teal: '#08AA91',
+  tealDark: '#078A7D',
+  tealPale: '#DFF9F4',
+  body: '#747A90',
+  white: '#FFFFFF',
+  border: '#E4F0EF',
+  line: '#DCECEA',
+  purple: '#7655F5',
+  successSurface: '#DDF9F2',
+  danger: '#E76666',
+  dangerSurface: '#FFE9E9',
+  shadow: '#225C55',
+};
 
 interface Props {
   navigation: any;
 }
+
+type HistoryListItem =
+  | { type: 'header'; title: string; key: string }
+  | ({ type: 'item' } & CallHistory);
 
 const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
@@ -30,12 +49,11 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     const unsubscribe = RoomService.listenCallHistory(setHistory);
-
     return unsubscribe;
   }, []);
 
-  const groupedData = useMemo(() => {
-    const list: any[] = [];
+  const groupedData = useMemo<HistoryListItem[]>(() => {
+    const list: HistoryListItem[] = [];
     let lastDate = '';
 
     history.forEach(item => {
@@ -49,15 +67,12 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
         list.push({
           type: 'header',
           title: date,
+          key: `header-${date}`,
         });
-
         lastDate = date;
       }
 
-      list.push({
-        type: 'item',
-        ...item,
-      });
+      list.push({ type: 'item', ...item });
     });
 
     return list;
@@ -65,23 +80,20 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
   const formatDuration = (duration: number) => {
     const totalSeconds = Math.floor(duration / 1000);
-
     const min = Math.floor(totalSeconds / 60);
     const sec = totalSeconds % 60;
-
     return `${min}m ${sec}s`;
   };
 
-  const renderItem = ({ item }: any) => {
+  const renderItem = ({ item }: { item: HistoryListItem }) => {
     if (item.type === 'header') {
       return (
         <View style={styles.dateContainer}>
           <View style={styles.line} />
-
           <View style={styles.dateChip}>
+            <Ionicons name="calendar-outline" size={15} color={COLORS.body} />
             <Text style={styles.dateText}>{item.title}</Text>
           </View>
-
           <View style={styles.line} />
         </View>
       );
@@ -91,116 +103,109 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
       hour: '2-digit',
       minute: '2-digit',
     });
-
-    const statusColor =
-      item.status === 'Completed' ? Colors.success : Colors.danger;
+    const completed = item.status === 'Completed';
 
     return (
       <View style={styles.card}>
+        <View style={styles.cardGlow} />
         <Image
           source={getMaleAvatar(item.maleInfo?.avatarId)}
           style={styles.avatar}
         />
 
         <View style={styles.info}>
-          <Text style={styles.name}>{item.maleInfo.name}</Text>
-
-          <View style={styles.bottomRow}>
+          <Text numberOfLines={1} style={styles.name}>
+            {item.maleInfo?.name || 'Learner'}
+          </Text>
+          <View style={styles.durationRow}>
+            <Ionicons name="call-outline" size={16} color={COLORS.purple} />
             <Text style={styles.duration}>{formatDuration(item.duration)}</Text>
-
-            <Text style={styles.time}>{time}</Text>
           </View>
+          <Text style={styles.time}>{time}</Text>
         </View>
 
         <View style={styles.cardActions}>
           <View
-            style={{
-              backgroundColor: `${statusColor}20`,
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-              borderRadius: 12,
-            }}
+            style={[styles.statusChip, !completed && styles.statusChipMissed]}
           >
+            <Ionicons
+              name={completed ? 'checkmark' : 'close'}
+              size={16}
+              color={completed ? COLORS.teal : COLORS.danger}
+            />
             <Text
-              style={{
-                color: statusColor,
-                fontWeight: '700',
-                fontSize: 12,
-              }}
+              style={[styles.statusText, !completed && styles.statusTextMissed]}
             >
               {item.status}
             </Text>
           </View>
 
           <View style={styles.amountRow}>
-            <Image source={require('../assets/coin.png')} style={styles.coin} />
-
+            <MaterialCommunityIcons
+              name="message-processing-outline"
+              size={18}
+              color={COLORS.teal}
+            />
             <Text style={styles.amount}>{item.amount}</Text>
           </View>
         </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={24}
+          color="#B8BDC8"
+          style={styles.chevron}
+        />
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor={COLORS.background} barStyle="dark-content" />
+
+      <View style={styles.backgroundGlowOne} pointerEvents="none" />
+      <View style={styles.backgroundGlowTwo} pointerEvents="none" />
 
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Call History</Text>
-
           <Text style={styles.subtitle}>
             View your recent voice call history.
           </Text>
         </View>
 
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Call history options"
+          activeOpacity={0.82}
           style={styles.menuButton}
           onPress={() => setMenuVisible(true)}
         >
-          <Ionicons name="ellipsis-vertical" size={20} color={Colors.text} />
+          <Ionicons name="ellipsis-vertical" size={21} color={COLORS.navy} />
         </TouchableOpacity>
       </View>
 
       <FlatList
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
-        ListEmptyComponent={() => (
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingHorizontal: 30,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: '600',
-                color: Colors.subText,
-                textAlign: 'center',
-              }}
-            >
-              No Call History Found
-            </Text>
-
-            <Text
-              style={{
-                marginTop: 8,
-                fontSize: 14,
-                color: Colors.placeholder,
-                textAlign: 'center',
-              }}
-            >
+        data={groupedData}
+        keyExtractor={item => (item.type === 'header' ? item.key : item.callId)}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.listContent,
+          groupedData.length === 0 && styles.emptyListContent,
+        ]}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="time-outline" size={38} color={COLORS.teal} />
+            </View>
+            <Text style={styles.emptyTitle}>No call history yet</Text>
+            <Text style={styles.emptyDescription}>
               Your completed and missed calls will appear here.
             </Text>
           </View>
-        )}
-        data={groupedData}
-        keyExtractor={(item, index) => item.callId ?? index.toString()}
-        renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
+        }
       />
 
       <Modal transparent visible={menuVisible} animationType="fade">
@@ -209,15 +214,11 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity
               onPress={() => {
                 setMenuVisible(false);
-
-                navigation.navigate('EditProfile', {
-                  gender: 'female',
-                });
+                navigation.navigate('EditProfile', { gender: 'female' });
               }}
               style={styles.popupItem}
             >
-              <Ionicons name="person-outline" size={20} color={Colors.text} />
-
+              <Ionicons name="person-outline" size={20} color={COLORS.navy} />
               <Text style={styles.popupText}>My Profile</Text>
             </TouchableOpacity>
 
@@ -227,21 +228,16 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.popupItem}
               onPress={() => {
                 setMenuVisible(false);
-
                 Alert.alert(
                   'Archive Call History',
                   'Older calls will be hidden from this list but safely retained. New calls will continue to appear here.',
                   [
-                    {
-                      text: 'Cancel',
-                      style: 'cancel',
-                    },
+                    { text: 'Cancel', style: 'cancel' },
                     {
                       text: 'Archive',
                       onPress: async () => {
                         try {
                           await RoomService.clearCallHistory();
-
                           Alert.alert(
                             'History Archived',
                             'Older calls have been hidden from this list.',
@@ -261,17 +257,9 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
               <Ionicons
                 name="archive-outline"
                 size={20}
-                color={Colors.secondary}
+                color={COLORS.tealDark}
               />
-
-              <Text
-                style={[
-                  styles.popupText,
-                  {
-                    color: Colors.secondary,
-                  },
-                ]}
-              >
+              <Text style={[styles.popupText, styles.archiveText]}>
                 Archive History
               </Text>
             </TouchableOpacity>
@@ -285,186 +273,261 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    overflow: 'hidden',
+    backgroundColor: COLORS.background,
   },
-
+  backgroundGlowOne: {
+    position: 'absolute',
+    width: 330,
+    height: 330,
+    top: -150,
+    right: -170,
+    borderRadius: 165,
+    backgroundColor: 'rgba(210,250,243,0.55)',
+  },
+  backgroundGlowTwo: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    left: -190,
+    bottom: 80,
+    borderRadius: 140,
+    backgroundColor: 'rgba(228,251,247,0.38)',
+  },
   header: {
-    marginHorizontal: UI.spacing.lg,
-    marginTop: 12,
-    marginBottom: 18,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 30,
+    marginTop: 20,
+    marginBottom: 22,
   },
-
   title: {
-    fontSize: UI.typography.screenTitle,
-    fontWeight: '600',
-    color: Colors.text,
+    color: COLORS.navy,
+    fontSize: 30,
+    lineHeight: 35,
+    fontWeight: '900',
+    letterSpacing: -0.8,
   },
-
   subtitle: {
-    marginTop: 6,
-    fontSize: 15,
-    color: Colors.subText,
+    marginTop: 4,
+    color: COLORS.body,
+    fontSize: 14.5,
   },
-
   menuButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.white,
-    justifyContent: 'center',
     alignItems: 'center',
-
-    shadowColor: Colors.black,
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    elevation: 5,
+    shadowRadius: 12,
+    elevation: 4,
   },
-
+  listContent: {
+    paddingBottom: 120,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+  },
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: UI.spacing.lg,
-    marginTop: 8,
-    marginBottom: 18,
+    marginHorizontal: 18,
+    marginTop: 5,
+    marginBottom: 16,
   },
-
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.border,
+    backgroundColor: COLORS.line,
   },
-
   dateChip: {
-    marginHorizontal: 12,
-    backgroundColor: Colors.surface,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-  },
-
-  dateText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.subText,
-  },
-
-  card: {
-    marginHorizontal: UI.spacing.lg,
-    marginBottom: 16,
-    backgroundColor: Colors.white,
-    borderRadius: UI.radius.card,
-    padding: UI.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...UI.shadow.card,
-  },
-
-  avatar: {
-    width: 60,
-    height: 60,
+    marginHorizontal: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 18,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#EFF7F6',
   },
-
+  dateText: {
+    marginLeft: 8,
+    color: COLORS.body,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  card: {
+    minHeight: 106,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+    marginHorizontal: 18,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#EDF3F3',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 15,
+    elevation: 3,
+  },
+  cardGlow: {
+    position: 'absolute',
+    width: 170,
+    height: 170,
+    right: 25,
+    bottom: -105,
+    borderRadius: 85,
+    backgroundColor: 'rgba(218,249,243,0.32)',
+  },
+  avatar: {
+    width: 68,
+    height: 68,
+    borderRadius: 17,
+    backgroundColor: COLORS.tealPale,
+  },
   info: {
     flex: 1,
-    marginLeft: 16,
-    marginRight: 12,
+    minWidth: 0,
+    marginLeft: 17,
   },
-
-  cardActions: {
-    alignItems: 'flex-end',
-  },
-
-  amountRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  coin: {
-    width: 18,
-    height: 18,
-    marginRight: 4,
-  },
-
-  amount: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.secondary,
-  },
-
   name: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 10,
+    color: COLORS.navy,
+    fontSize: 17,
+    fontWeight: '800',
   },
-
-  bottomRow: {
+  durationRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 4,
   },
-
   duration: {
+    marginLeft: 6,
+    color: COLORS.purple,
     fontSize: 15,
-    fontWeight: '600',
-    color: Colors.secondary,
+    fontWeight: '800',
   },
-
   time: {
-    fontSize: 14,
-    color: Colors.subText,
+    marginTop: 3,
+    color: COLORS.body,
+    fontSize: 13,
   },
-
+  cardActions: {
+    width: 108,
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  statusChip: {
+    minWidth: 106,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 18,
+    backgroundColor: COLORS.successSurface,
+  },
+  statusChipMissed: {
+    backgroundColor: COLORS.dangerSurface,
+  },
+  statusText: {
+    marginLeft: 5,
+    color: COLORS.teal,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  statusTextMissed: {
+    color: COLORS.danger,
+  },
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 11,
+  },
+  amount: {
+    marginLeft: 7,
+    color: COLORS.purple,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  chevron: {
+    position: 'absolute',
+    right: 10,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    paddingBottom: 90,
+  },
+  emptyIcon: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.tealPale,
+  },
+  emptyTitle: {
+    marginTop: 18,
+    color: COLORS.navy,
+    fontSize: 19,
+    fontWeight: '800',
+  },
+  emptyDescription: {
+    marginTop: 7,
+    color: COLORS.body,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
   overlay: {
     flex: 1,
-    backgroundColor: Colors.overlayBlack15,
     alignItems: 'flex-end',
     justifyContent: 'flex-start',
-    paddingTop: 90,
+    paddingTop: 105,
     paddingRight: 20,
+    backgroundColor: 'rgba(7,26,45,0.16)',
   },
-
   popup: {
     width: 220,
-    backgroundColor: Colors.white,
-    borderRadius: UI.radius.alert,
     overflow: 'hidden',
-
-    ...UI.shadow.modal,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.navy,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 10,
   },
-
   popupItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 18,
     paddingVertical: 18,
   },
-
   popupText: {
     marginLeft: 14,
+    color: COLORS.navy,
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text,
   },
-
+  archiveText: {
+    color: COLORS.tealDark,
+  },
   divider: {
     height: 1,
-    backgroundColor: Colors.border,
     marginHorizontal: 18,
+    backgroundColor: COLORS.border,
   },
 });
 

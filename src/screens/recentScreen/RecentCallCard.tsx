@@ -136,11 +136,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
           onPress={handleCall}
           style={[styles.callButton, calling && styles.callButtonDisabled]}
         >
-          <MaterialCommunityIcons
-            name="phone"
-            size={18}
-            color={Colors.secondary}
-          />
+          <MaterialCommunityIcons name="phone" size={18} color={Colors.white} />
 
           <Text style={styles.callText}>
             {calling ? 'Calling...' : 'Call Again'}

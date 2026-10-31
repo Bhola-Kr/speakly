@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -13,17 +12,26 @@ import {
   Image,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import LinearGradient from 'react-native-linear-gradient';
-
-import Colors from '../constants/colors';
-import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
 import { hasValidUsername } from '../utils/profileValidation';
 import { useUser } from '../hooks/UserContext';
 import { resendMSGOtp, verifyMSGOtp } from '../api/calls';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+const COLORS = {
+  background: '#F2FFFC',
+  navy: '#071A2D',
+  teal: '#08A98F',
+  tealDark: '#078A78',
+  tealPale: '#E2F9F4',
+  body: '#747A91',
+  border: '#C9EEE7',
+  white: '#FFFFFF',
+};
 
 interface Props {
   navigation: any;
@@ -32,6 +40,9 @@ interface Props {
 
 const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const phoneNumber = route?.params?.phone ?? '';
+  const displayPhoneNumber = phoneNumber.startsWith('+')
+    ? phoneNumber
+    : `+${phoneNumber}`;
   const [requestId, setRequestId] = useState(route?.params?.reqId ?? '');
   const { refreshUser } = useUser();
 
@@ -205,13 +216,13 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}
       >
         <StatusBar
-          backgroundColor={Colors.background}
+          backgroundColor={COLORS.background}
           barStyle="dark-content"
         />
 
@@ -226,13 +237,13 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
           >
             <MaterialCommunityIcons
               name="arrow-left"
-              size={23}
-              color={Colors.text}
+              size={24}
+              color={COLORS.tealDark}
             />
           </TouchableOpacity>
 
           <Image
-            source={require('../assets/otp-verification-v2.png')}
+            source={require('../assets/otp-verification-teal.png')}
             resizeMode="contain"
             style={styles.image}
           />
@@ -243,7 +254,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <Text style={styles.description}>
             Enter the 4-digit code sent to{' '}
-            <Text style={styles.bold}>{phoneNumber}</Text>
+            <Text style={styles.bold}>{displayPhoneNumber}</Text>
           </Text>
 
           <TouchableOpacity
@@ -262,8 +273,6 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
             onPress={() => otpInputRef.current?.focus()}
             style={styles.otpSection}
           >
-            <Text style={styles.otpLabel}>ONE-TIME PASSWORD</Text>
-
             <View style={styles.pinRow}>
               <TextInput
                 ref={otpInputRef}
@@ -284,17 +293,16 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
                 style={styles.hiddenInput}
               />
 
-              {[0, 1, 2, 3].map(index => (
-                <LinearGradient
-                  colors={
-                    otp[index] || (isOtpFocused && index === activeOtpIndex)
-                      ? Colors.gradient
-                      : [Colors.gray236, Colors.gray236]
-                  }
-                  key={index}
-                  style={styles.pinBorder}
-                >
-                  <View style={styles.pinCell}>
+              {[0, 1, 2, 3].map(index => {
+                const isActive =
+                  Boolean(otp[index]) ||
+                  (isOtpFocused && index === activeOtpIndex);
+
+                return (
+                  <View
+                    key={index}
+                    style={[styles.pinCell, isActive && styles.pinCellActive]}
+                  >
                     <Text style={styles.pinDigit}>{otp[index] ?? ''}</Text>
                     {isOtpFocused &&
                       !otp[index] &&
@@ -304,18 +312,44 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
                         />
                       )}
                   </View>
-                </LinearGradient>
-              ))}
+                );
+              })}
             </View>
 
             <Text style={styles.pinHint}>{otp.length}/4 digits entered</Text>
           </TouchableOpacity>
 
-          <GradientButton
-            title={loading ? 'Verifying...' : 'Verify & Continue'}
+          <TouchableOpacity
+            activeOpacity={0.88}
             disabled={!isValid || loading}
             onPress={() => verifyOtp()}
-          />
+            accessibilityRole="button"
+            accessibilityState={{
+              disabled: !isValid || loading,
+              busy: loading,
+            }}
+            style={[
+              styles.verifyButton,
+              isValid && !loading && styles.verifyButtonActive,
+            ]}
+          >
+            {loading ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <>
+                <Text style={styles.verifyButtonText}>
+                  Verify &amp; Continue
+                </Text>
+                <View style={styles.verifyArrowCircle}>
+                  <MaterialCommunityIcons
+                    name="arrow-right"
+                    size={21}
+                    color={COLORS.white}
+                  />
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
 
           <View style={styles.timerContainer}>
             {timer === 0 ? (
@@ -344,97 +378,90 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: COLORS.background,
   },
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 100,
+    paddingBottom: 40,
   },
 
   keyboardAvoidingView: {
     flex: 1,
+    minHeight: 760,
   },
 
   backButton: {
     marginLeft: 20,
-    marginTop: 14,
+    marginTop: 16,
     width: 44,
     height: 44,
-    borderRadius: 15,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: COLORS.tealPale,
   },
 
   image: {
-    width: 210,
-    height: 210,
+    width: 218,
+    height: 218,
     alignSelf: 'center',
-    marginTop: 2,
-    marginBottom: 2,
+    marginTop: 4,
+    marginBottom: 8,
   },
 
   eyebrow: {
-    color: Colors.secondary,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.5,
+    color: COLORS.tealDark,
+    fontSize: 11.5,
+    fontWeight: '900',
+    letterSpacing: 2.2,
     textAlign: 'center',
-    marginBottom: 7,
+    marginBottom: 14,
   },
 
   title: {
-    color: Colors.text,
-    fontSize: 29,
+    color: COLORS.navy,
+    fontSize: 30,
+    lineHeight: 35,
     fontWeight: '900',
     textAlign: 'center',
-    marginBottom: 10,
+    letterSpacing: -0.8,
+    marginBottom: 12,
   },
 
   description: {
-    fontSize: 17,
-    color: Colors.subText,
+    fontSize: 16,
+    color: COLORS.body,
     textAlign: 'center',
-    marginHorizontal: 28,
-    lineHeight: 24,
+    marginHorizontal: 22,
+    lineHeight: 22,
   },
 
   bold: {
-    color: Colors.text,
+    color: COLORS.tealDark,
     fontWeight: '800',
   },
 
   changeText: {
-    marginTop: 8,
+    marginTop: 10,
     fontSize: 15,
     textAlign: 'center',
-    color: Colors.subText,
+    color: COLORS.body,
   },
 
   changeLink: {
-    color: Colors.secondary,
+    color: COLORS.tealDark,
     fontWeight: '800',
   },
 
   otpSection: {
-    marginTop: 30,
+    marginTop: 43,
     alignItems: 'center',
-  },
-
-  otpLabel: {
-    color: Colors.subText,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1.4,
-    marginBottom: 15,
   },
 
   pinRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     position: 'relative',
   },
 
@@ -446,25 +473,29 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
 
-  pinBorder: {
-    width: 60,
-    height: 66,
-    borderRadius: 18,
-    padding: 1.5,
-  },
-
   pinCell: {
-    flex: 1,
+    width: 66,
+    height: 69,
     borderRadius: 17,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.otpInputSurface,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: COLORS.tealDark,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 7,
+    elevation: 1,
+  },
+
+  pinCellActive: {
+    borderColor: COLORS.teal,
+    borderWidth: 2,
   },
 
   pinDigit: {
-    color: Colors.text,
+    color: COLORS.navy,
     fontSize: 25,
     fontWeight: '800',
   },
@@ -474,35 +505,73 @@ const styles = StyleSheet.create({
     width: 2,
     height: 26,
     borderRadius: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: COLORS.teal,
   },
 
   pinHint: {
-    color: Colors.subText,
+    color: COLORS.body,
     fontSize: 13,
-    marginTop: 12,
+    marginTop: 15,
+  },
+
+  verifyButton: {
+    height: 59,
+    marginHorizontal: 28,
+    marginTop: 37,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.teal,
+    shadowColor: COLORS.tealDark,
+    shadowOffset: { width: 0, height: 9 },
+    shadowOpacity: 0.14,
+    shadowRadius: 15,
+    elevation: 4,
+  },
+
+  verifyButtonActive: {
+    shadowOpacity: 0.2,
+    elevation: 5,
+  },
+
+  verifyButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  verifyArrowCircle: {
+    position: 'absolute',
+    right: 13,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
 
   timerContainer: {
-    marginTop: 32,
+    marginTop: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   timerText: {
-    fontSize: 15,
-    color: Colors.gray59,
+    fontSize: 14,
+    color: COLORS.body,
   },
 
   timer: {
-    color: Colors.gray141,
-    fontWeight: '500',
+    color: COLORS.tealDark,
+    fontWeight: '700',
   },
 
   resend: {
-    fontSize: 16,
-    color: Colors.primary,
-    fontWeight: '700',
+    fontSize: 15,
+    color: COLORS.tealDark,
+    fontWeight: '800',
   },
 });
 

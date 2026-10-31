@@ -78,40 +78,61 @@ export const EditProfileScreen = ({ navigation }: any) => {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
       >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={styles.avatarContainer}
-          onPress={() =>
-            navigation.navigate('Avatar', {
-              isEditMode: true,
-              gender,
-              selectedAvatar: profile?.avatarId,
-            })
-          }
-        >
-          <Image source={getUserAvatar(user)} style={styles.avatar} />
-
-          <View style={styles.cameraView}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            activeOpacity={0.82}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
             <MaterialCommunityIcons
-              name="camera"
-              size={18}
-              color={Colors.black}
+              name="arrow-left"
+              size={27}
+              color={Colors.text}
             />
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Edit Profile</Text>
+        </View>
 
-        <Text style={styles.changePhoto}>Tap to Change Avatar</Text>
+        <View style={styles.profileCard}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.avatarContainer}
+            onPress={() =>
+              navigation.navigate('Avatar', {
+                isEditMode: true,
+                gender,
+                selectedAvatar: profile?.avatarId,
+              })
+            }
+          >
+            <Image source={getUserAvatar(user)} style={styles.avatar} />
 
-        <Text style={styles.label}>Nickname</Text>
+            <View style={styles.cameraView}>
+              <MaterialCommunityIcons
+                name="camera"
+                size={18}
+                color={Colors.white}
+              />
+            </View>
+          </TouchableOpacity>
 
-        <TextInput
-          value={nickname}
-          onChangeText={setNickname}
-          placeholder="Nickname"
-          placeholderTextColor={Colors.placeholder}
-          style={styles.input}
-          maxLength={20}
-        />
+          <Text style={styles.changePhoto}>Tap to Change Avatar</Text>
+        </View>
+
+        <View style={styles.formCard}>
+          <Text style={styles.label}>Nickname</Text>
+
+          <TextInput
+            value={nickname}
+            onChangeText={setNickname}
+            placeholder="Nickname"
+            placeholderTextColor={Colors.placeholder}
+            style={styles.input}
+            maxLength={20}
+          />
+        </View>
         <View style={styles.spacer} />
 
         <GradientButton
@@ -134,8 +155,54 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 40,
+  },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+
+  backButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+
+  headerTitle: {
+    marginLeft: 18,
+    color: Colors.text,
+    fontSize: 27,
+    fontWeight: '900',
+    letterSpacing: -0.7,
+  },
+
+  profileCard: {
+    paddingVertical: 24,
+    borderRadius: 28,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+
+  formCard: {
+    marginTop: 22,
+    padding: 20,
+    paddingBottom: 0,
+    borderRadius: 24,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
 
   spacer: {
@@ -144,7 +211,7 @@ const styles = StyleSheet.create({
 
   avatarContainer: {
     alignSelf: 'center',
-    marginTop: 10,
+    marginTop: 0,
     marginBottom: 10,
   },
 
@@ -175,7 +242,7 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     fontSize: 15,
     fontWeight: '600',
-    marginBottom: 30,
+    marginBottom: 0,
   },
 
   label: {
@@ -183,7 +250,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.text,
     marginBottom: 12,
-    marginTop: 6,
+    marginTop: 0,
   },
 
   input: {
@@ -197,5 +264,4 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 24,
   },
-
 });

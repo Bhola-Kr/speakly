@@ -12,37 +12,37 @@ import {
   ScrollView,
   useWindowDimensions,
   Keyboard,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-
-import { Alert } from 'react-native';
-
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import LinearGradient from 'react-native-linear-gradient';
-
-import Carousel from 'react-native-reanimated-carousel';
-
 import CountryPicker, {
   Country,
   CountryCode,
 } from 'react-native-country-picker-modal';
-
-import { moderateScale, verticalScale } from 'react-native-size-matters';
-import GradientButton from '../components/GradientButton';
-import Colors from '../constants/colors';
-import { sendOtp } from '../api/calls';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const slides = [
-  {
-    image: require('../assets/onboarding2.png'),
-    title: 'Practice real conversations with language experts.',
-  },
-  {
-    title: 'Choose a language, pick a topic, and speak with confidence.',
-    image: require('../assets/onboarding1.png'),
-  },
-];
+import { sendOtp } from '../api/calls';
+
+const COLORS = {
+  background: '#F2FFFC',
+  card: '#FFFFFF',
+  navy: '#071A2D',
+  teal: '#08A98F',
+  tealDark: '#078A78',
+  tealPale: '#E2F9F4',
+  body: '#6D748B',
+  placeholder: '#9B9EAA',
+  border: '#D7DADF',
+  disabled: '#D9DBDE',
+  white: '#FFFFFF',
+};
+
+const benefits = [
+  { icon: 'message-text', label: 'Real people' },
+  { icon: 'waveform', label: 'Natural\nconversations' },
+  { icon: 'chart-bar', label: 'Flexible\npractice' },
+] as const;
 
 interface Props {
   navigation: any;
@@ -50,19 +50,13 @@ interface Props {
 }
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { width, height } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
-
   const [country, setCountry] = useState<CountryCode>('IN');
-
   const [callingCode, setCallingCode] = useState('91');
-
   const [pickerVisible, setPickerVisible] = useState(false);
-
-  const [activeSlide, setActiveSlide] = useState(0);
-
   const [acceptedPolicies, setAcceptedPolicies] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -81,10 +75,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   const isValid = mobile.length === 10;
+  const canContinue = isValid && acceptedPolicies && !loading;
 
   const onSelectCountry = (selectedCountry: Country) => {
     setCountry(selectedCountry.cca2);
-
     setCallingCode(selectedCountry.callingCode[0]);
   };
 
@@ -95,13 +89,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
     try {
       setLoading(true);
-
       const phone = `${callingCode}${mobile}`;
-
       const response = await sendOtp(phone);
 
       console.log('onGetOTP -> response', response);
-
       if (!response?.success) {
         throw new Error(
           response?.message || 'Failed to send OTP. Please try again.',
@@ -114,7 +105,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       });
     } catch (error: any) {
       console.error('onGetOTP -> error', error);
-
       Alert.alert('Unable to send OTP', error?.message || 'Please try again.');
     } finally {
       setLoading(false);
@@ -122,7 +112,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -130,82 +120,104 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           ref={scrollRef}
           automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            height > 860 && styles.tallScreenContent,
+          ]}
           keyboardDismissMode="none"
           keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.brandRow}>
-            <View style={styles.logoMark}>
-              <MaterialCommunityIcons
-                name="message-text-outline"
-                size={23}
-                color={Colors.white}
-              />
-            </View>
-            <Text style={styles.logo}>speakly</Text>
-          </View>
-
           {!keyboardVisible && (
-            <>
-              <Carousel
-                loop
-                autoPlay
-                autoPlayInterval={3000}
-                width={width}
-                height={Math.min(verticalScale(260), height * 0.34)}
-                data={slides}
-                scrollAnimationDuration={800}
-                onSnapToItem={index => setActiveSlide(index)}
-                renderItem={({ item }) => (
-                  <View style={styles.slide}>
-                    <Image
-                      source={item.image}
-                      resizeMode="contain"
-                      style={styles.image}
-                    />
-                    <Text style={styles.heading}>{item.title}</Text>
-                  </View>
-                )}
-              />
+            <View style={styles.hero}>
+              <View style={styles.heroGlowOne} />
+              <View style={styles.heroGlowTwo} />
 
-              <View style={styles.dots}>
-                {slides.map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.dot,
-                      activeSlide === index && styles.activeDot,
-                    ]}
+              <View style={styles.brandRow}>
+                <View style={styles.logoMark}>
+                  <MaterialCommunityIcons
+                    name="message-processing"
+                    size={22}
+                    color={COLORS.white}
                   />
+                </View>
+                <Text style={styles.logo}>speakly</Text>
+              </View>
+
+              <View style={styles.heroCopyRow}>
+                <Text style={styles.heading}>
+                  Practice{`\n`}
+                  <Text style={styles.headingAccent}>real conversations</Text>
+                  {`\n`}with language{`\n`}experts
+                </Text>
+
+                <View style={styles.heroArtwork} pointerEvents="none">
+                  <View style={styles.manPortraitCard}>
+                    <Image
+                      source={require('../assets/onboarding2.png')}
+                      resizeMode="contain"
+                      style={styles.manPortraitImage}
+                    />
+                  </View>
+
+                  <View style={styles.womanPortraitCard}>
+                    <Image
+                      source={require('../assets/onboarding2.png')}
+                      resizeMode="contain"
+                      style={styles.womanPortraitImage}
+                    />
+                  </View>
+
+                  <View style={styles.artworkWaveform}>
+                    <MaterialCommunityIcons
+                      name="waveform"
+                      size={39}
+                      color={COLORS.teal}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <Text style={styles.heroSubtitle}>
+                Speak naturally, get real-time{`\n`}feedback and build
+                confidence{`\n`}
+                one conversation at a time.
+              </Text>
+
+              <View style={styles.benefitsRow}>
+                {benefits.map(benefit => (
+                  <View key={benefit.label} style={styles.benefitItem}>
+                    <View style={styles.benefitIcon}>
+                      <MaterialCommunityIcons
+                        name={benefit.icon}
+                        size={25}
+                        color={COLORS.teal}
+                      />
+                    </View>
+                    <Text style={styles.benefitLabel}>{benefit.label}</Text>
+                  </View>
                 ))}
               </View>
-            </>
+            </View>
           )}
 
-          <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>Start speaking today</Text>
-            <Text style={styles.formSubtitle}>
-              Enter your mobile number to continue securely.
-            </Text>
-          </View>
-
-          <LinearGradient
-            colors={Colors.buttonGradient}
-            start={{
-              x: 0,
-              y: 0,
-            }}
-            end={{
-              x: 1,
-              y: 0,
-            }}
-            style={styles.gradientBorder}
+          <View
+            style={[styles.formCard, keyboardVisible && styles.keyboardCard]}
           >
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>Start speaking today</Text>
+              <Text style={styles.formSubtitle}>
+                Enter your mobile number to continue securely.
+              </Text>
+            </View>
+
             <View style={styles.inputBox}>
               <TouchableOpacity
                 style={styles.countryContainer}
+                activeOpacity={0.75}
                 onPress={() => setPickerVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Choose country"
               >
                 <CountryPicker
                   countryCode={country}
@@ -217,23 +229,24 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                   onSelect={onSelectCountry}
                   onClose={() => setPickerVisible(false)}
                 />
-
                 <Text style={styles.callingCode}>+{callingCode}</Text>
-
-                <Text style={styles.arrow}>▼</Text>
+                <MaterialCommunityIcons
+                  name="menu-down"
+                  size={18}
+                  color={COLORS.navy}
+                  style={styles.countryArrow}
+                />
               </TouchableOpacity>
 
               <View style={styles.divider} />
 
               <TextInput
                 value={mobile}
-                onChangeText={text => {
-                  setMobile(text.replace(/[^0-9]/g, ''));
-                }}
+                onChangeText={text => setMobile(text.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
                 maxLength={10}
                 placeholder="Your Mobile Number"
-                placeholderTextColor={Colors.gray153}
+                placeholderTextColor={COLORS.placeholder}
                 style={styles.input}
                 returnKeyType="done"
                 onFocus={() => {
@@ -241,69 +254,90 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 }}
               />
             </View>
-          </LinearGradient>
 
-          <View
-            style={[
-              styles.consentCard,
-              acceptedPolicies && styles.consentCardSelected,
-            ]}
-          >
+            <View style={styles.consentRow}>
+              <TouchableOpacity
+                accessibilityLabel="Agree to the Terms of Use and Privacy Policy"
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: acceptedPolicies }}
+                activeOpacity={0.8}
+                onPress={() => setAcceptedPolicies(value => !value)}
+                style={[
+                  styles.checkbox,
+                  acceptedPolicies && styles.checkboxSelected,
+                ]}
+              >
+                {acceptedPolicies && (
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={17}
+                    color={COLORS.white}
+                  />
+                )}
+              </TouchableOpacity>
+
+              <Text style={styles.consentText}>
+                I have read and agree to Speakly&apos;s{' '}
+                <Text
+                  style={styles.link}
+                  onPress={() => navigation.navigate('TermsAndConditions')}
+                >
+                  Terms of Use
+                </Text>{' '}
+                and{' '}
+                <Text
+                  style={styles.link}
+                  onPress={() => navigation.navigate('PrivacyPolicy')}
+                >
+                  Privacy Policy
+                </Text>
+                {'.'}
+              </Text>
+            </View>
+
             <TouchableOpacity
-              accessibilityLabel="Agree to the Terms of Use and Privacy Policy"
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: acceptedPolicies }}
-              activeOpacity={0.8}
-              onPress={() => setAcceptedPolicies(value => !value)}
+              activeOpacity={0.88}
+              disabled={!canContinue}
+              onPress={onGetOTP}
+              accessibilityRole="button"
+              accessibilityLabel="Send verification code"
+              accessibilityState={{ disabled: !canContinue, busy: loading }}
               style={[
-                styles.checkbox,
-                acceptedPolicies && styles.checkboxSelected,
+                styles.nextButton,
+                canContinue && styles.nextButtonActive,
               ]}
             >
-              {acceptedPolicies && (
-                <MaterialCommunityIcons
-                  name="check"
-                  size={17}
-                  color={Colors.white}
-                />
+              {loading ? (
+                <ActivityIndicator color={COLORS.white} />
+              ) : (
+                <>
+                  <Text style={styles.nextText}>Send verification code</Text>
+                  <View style={styles.nextArrowCircle}>
+                    <MaterialCommunityIcons
+                      name="arrow-right"
+                      size={18}
+                      color={COLORS.white}
+                    />
+                  </View>
+                </>
               )}
             </TouchableOpacity>
 
-            <Text style={styles.consentText}>
-              I have read and agree to Speakly&apos;s{' '}
-              <Text
-                style={styles.link}
-                onPress={() => navigation.navigate('TermsAndConditions')}
-              >
-                Terms of Use
-              </Text>{' '}
-              and{' '}
-              <Text
-                style={styles.link}
-                onPress={() => navigation.navigate('PrivacyPolicy')}
-              >
-                Privacy Policy
+            {!acceptedPolicies && (
+              <Text style={styles.consentHint}>
+                Please agree before continuing.
               </Text>
-              {'.'}
-            </Text>
+            )}
+
+            <View style={styles.disclaimerRow}>
+              <View style={styles.disclaimerLine} />
+              <Text style={styles.safeText}>
+                Language practice only. Speakly is not a dating{`\n`}or
+                matchmaking app.
+              </Text>
+              <View style={styles.disclaimerLine} />
+            </View>
           </View>
-
-          <GradientButton
-            title={loading ? 'Please wait...' : 'Next'}
-            onPress={onGetOTP}
-            disabled={!isValid || !acceptedPolicies || loading}
-            loading={loading}
-          />
-
-          {!acceptedPolicies && (
-            <Text style={styles.consentHint}>
-              Please agree before continuing.
-            </Text>
-          )}
-
-          <Text style={styles.safeText}>
-            Language practice only. Speakly is not a dating or matchmaking app.
-          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -315,235 +349,306 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: COLORS.background,
   },
-
-  keyboardView: {
-    flex: 1,
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: 10 },
+  tallScreenContent: { justifyContent: 'space-between' },
+  hero: {
+    minHeight: 500,
+    paddingHorizontal: 28,
+    overflow: 'hidden',
   },
-
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 32,
+  heroGlowOne: {
+    position: 'absolute',
+    width: 310,
+    height: 310,
+    borderRadius: 155,
+    right: -118,
+    top: 30,
+    backgroundColor: 'rgba(190, 250, 238, 0.58)',
   },
-
-  logo: {
-    marginLeft: 9,
-    fontSize: moderateScale(24),
-    fontWeight: '900',
-    color: Colors.primary,
-    letterSpacing: -1,
+  heroGlowTwo: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    left: -160,
+    bottom: -70,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
   },
-
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: verticalScale(12),
+    marginTop: 16,
+    zIndex: 2,
   },
-
   logoMark: {
-    width: moderateScale(38),
-    height: moderateScale(38),
-    borderRadius: moderateScale(13),
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary,
-  },
-
-  slide: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  image: {
-    width: moderateScale(300),
-    height: verticalScale(210),
-  },
-
-  heading: {
-    textAlign: 'center',
-    fontSize: moderateScale(17),
-    color: Colors.text,
-    fontWeight: '700',
-  },
-
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: verticalScale(12),
-    marginBottom: verticalScale(22),
-  },
-
-  dot: {
-    width: moderateScale(7),
-    height: moderateScale(8),
+    width: 30,
+    height: 30,
     borderRadius: 10,
-    backgroundColor: Colors.gray214,
-    marginHorizontal: moderateScale(4),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.teal,
   },
-
-  activeDot: {
-    width: moderateScale(22),
-    height: moderateScale(8),
-    backgroundColor: Colors.blueBrand,
+  logo: {
+    marginLeft: 10,
+    fontSize: 25,
+    lineHeight: 29,
+    fontWeight: '900',
+    color: COLORS.navy,
+    letterSpacing: -1.3,
   },
-
-  gradientBorder: {
-    marginHorizontal: moderateScale(16),
-    padding: moderateScale(1.5),
-    borderRadius: moderateScale(18),
+  heroCopyRow: {
+    height: 218,
+    marginTop: 37,
+    zIndex: 1,
   },
-
+  heading: {
+    position: 'absolute',
+    left: 0,
+    top: 13,
+    width: 270,
+    color: COLORS.navy,
+    fontSize: 29,
+    lineHeight: 34,
+    fontWeight: '900',
+    letterSpacing: -1.15,
+    zIndex: 3,
+  },
+  headingAccent: { color: COLORS.teal },
+  heroArtwork: {
+    position: 'absolute',
+    width: 198,
+    height: 218,
+    right: -17,
+    top: -3,
+    zIndex: 2,
+  },
+  manPortraitCard: {
+    position: 'absolute',
+    width: 142,
+    height: 106,
+    top: 0,
+    left: 48,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    borderRadius: 19,
+    backgroundColor: COLORS.white,
+  },
+  manPortraitImage: {
+    position: 'absolute',
+    width: 350,
+    height: 233,
+    left: -3,
+    top: -39,
+  },
+  womanPortraitCard: {
+    position: 'absolute',
+    width: 147,
+    height: 112,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    borderRadius: 19,
+    backgroundColor: COLORS.white,
+  },
+  womanPortraitImage: {
+    position: 'absolute',
+    width: 350,
+    height: 233,
+    left: -204,
+    top: -36,
+  },
+  artworkWaveform: {
+    position: 'absolute',
+    width: 67,
+    height: 67,
+    left: 78,
+    top: 75,
+    zIndex: 4,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.tealDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.09,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  heroSubtitle: {
+    marginTop: -4,
+    color: COLORS.body,
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '400',
+  },
+  benefitsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: 28,
+    marginHorizontal: 10,
+  },
+  benefitItem: { width: 92, alignItems: 'center' },
+  benefitIcon: {
+    width: 49,
+    height: 49,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.tealPale,
+  },
+  benefitLabel: {
+    marginTop: 9,
+    textAlign: 'center',
+    color: '#445169',
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  formCard: {
+    marginHorizontal: 12,
+    marginTop: 5,
+    paddingHorizontal: 24,
+    paddingTop: 34,
+    paddingBottom: 27,
+    borderRadius: 22,
+    backgroundColor: COLORS.card,
+    shadowColor: '#3C8C7E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 18,
+    elevation: 2,
+  },
+  keyboardCard: { marginTop: 12 },
+  formHeader: { marginBottom: 20 },
+  formTitle: {
+    color: COLORS.navy,
+    fontSize: 27,
+    lineHeight: 32,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+  },
+  formSubtitle: {
+    marginTop: 5,
+    color: COLORS.body,
+    fontSize: 15,
+    lineHeight: 20,
+  },
   inputBox: {
-    height: verticalScale(52),
-    backgroundColor: Colors.white,
-    borderRadius: moderateScale(17),
+    height: 64,
+    borderRadius: 15,
+    borderWidth: 1.3,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: moderateScale(15),
+    paddingHorizontal: 13,
   },
-
-  countryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
+  countryContainer: { flexDirection: 'row', alignItems: 'center' },
   callingCode: {
-    fontSize: moderateScale(18),
-    fontWeight: '600',
-    color: Colors.text,
-    marginLeft: moderateScale(4),
+    marginLeft: 2,
+    color: COLORS.navy,
+    fontSize: 16,
+    fontWeight: '800',
   },
-
-  arrow: {
-    fontSize: moderateScale(10),
-    color: Colors.gray119,
-    marginLeft: moderateScale(5),
-  },
-
+  countryArrow: { marginLeft: 3 },
   divider: {
     width: 1,
-    height: verticalScale(32),
-    backgroundColor: Colors.gray227,
-    marginHorizontal: moderateScale(15),
+    height: 38,
+    marginHorizontal: 14,
+    backgroundColor: '#E2E3E5',
   },
-
   input: {
     flex: 1,
-    fontSize: moderateScale(18),
-    color: Colors.text,
     padding: 0,
+    color: COLORS.navy,
+    fontSize: 15,
   },
-
-  formHeader: {
-    marginHorizontal: moderateScale(16),
-    marginBottom: verticalScale(14),
-  },
-
-  formTitle: {
-    fontSize: moderateScale(23),
-    fontWeight: '900',
-    color: Colors.text,
-    letterSpacing: -0.5,
-  },
-
-  formSubtitle: {
-    marginTop: verticalScale(4),
-    color: Colors.subText,
-    fontSize: moderateScale(14),
-    lineHeight: verticalScale(19),
-  },
-
-  button: {
-    height: verticalScale(45),
-    marginHorizontal: moderateScale(60),
-    marginTop: verticalScale(28),
-    borderRadius: moderateScale(30),
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    shadowColor: Colors.blueBrand,
-
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-
-    shadowOpacity: 0.25,
-
-    shadowRadius: 10,
-
-    elevation: 6,
-  },
-
-  buttonText: {
-    color: Colors.white,
-    fontSize: moderateScale(19),
-    fontWeight: '700',
-  },
-
-  consentCard: {
+  consentRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginHorizontal: moderateScale(16),
-    marginTop: verticalScale(18),
-    padding: moderateScale(14),
-    borderWidth: 1,
-    borderColor: Colors.gray214,
-    borderRadius: moderateScale(16),
-    backgroundColor: Colors.white,
+    marginTop: 20,
+    paddingHorizontal: 5,
   },
-
-  consentCardSelected: {
-    borderColor: Colors.tealDark,
-  },
-
   checkbox: {
-    width: moderateScale(24),
-    height: moderateScale(24),
-    marginTop: verticalScale(1),
-    marginRight: moderateScale(11),
-    borderWidth: 2,
-    borderColor: Colors.gray153,
-    borderRadius: moderateScale(7),
+    width: 25,
+    height: 25,
+    marginTop: 1,
+    marginRight: 15,
+    borderWidth: 1.6,
+    borderColor: '#8E96A4',
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: COLORS.white,
   },
-
   checkboxSelected: {
-    borderColor: Colors.tealDark,
-    backgroundColor: Colors.tealDark,
+    borderColor: COLORS.teal,
+    backgroundColor: COLORS.teal,
   },
-
   consentText: {
     flex: 1,
-    color: Colors.subText,
-    fontSize: moderateScale(14),
-    lineHeight: verticalScale(20),
+    color: COLORS.body,
+    fontSize: 13.5,
+    lineHeight: 20,
   },
-
   link: {
-    color: Colors.tealDark,
-    fontWeight: '700',
+    color: COLORS.tealDark,
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
-
-  consentHint: {
-    marginTop: verticalScale(10),
-    textAlign: 'center',
-    color: Colors.subText,
-    fontSize: moderateScale(12),
+  nextButton: {
+    height: 51,
+    marginTop: 24,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.disabled,
   },
-
-  safeText: {
-    marginTop: verticalScale(8),
+  nextButtonActive: { backgroundColor: COLORS.teal },
+  nextText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  nextArrowCircle: {
+    position: 'absolute',
+    right: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  consentHint: {
+    marginTop: 9,
     textAlign: 'center',
-    color: Colors.subText,
-    fontSize: moderateScale(13),
+    color: '#9195A6',
+    fontSize: 12,
+  },
+  disclaimerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 27,
+    paddingHorizontal: 20,
+  },
+  disclaimerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E1E4E6',
+  },
+  safeText: {
+    marginHorizontal: 12,
+    textAlign: 'center',
+    color: '#9296A8',
+    fontSize: 10.5,
+    lineHeight: 14,
   },
 });

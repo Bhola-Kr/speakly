@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {
-  SafeAreaView,
-  FlatList,
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { FlatList, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
@@ -111,7 +105,12 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
+      <View pointerEvents="none" style={styles.backgroundArt}>
+        <View style={styles.backgroundGlowTop} />
+        <View style={styles.backgroundWaveLeft} />
+        <View style={styles.backgroundWaveRight} />
+      </View>
       <Header />
 
       {history.length === 0 ? (

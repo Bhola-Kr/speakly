@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { BackHandler } from 'react-native';
+import { BackHandler, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,25 +7,48 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import HomeScreen from './home/HomeScreen';
 import ManHistoryScreen from './recentScreen/ManHistoryScreen';
-import Colors from '../constants/colors';
 
 const Tab = createBottomTabNavigator();
 
+const TAB_COLORS = {
+  teal: '#08AA91',
+  tealDark: '#078A7D',
+  mint: '#E1FAF5',
+  gray: '#96999F',
+  white: '#FFFFFF',
+  border: '#E1ECEA',
+};
+
 const HomeTabIcon = ({ focused }: { focused: boolean }) => (
-  <Ionicons
-    name={focused ? 'home' : 'home-outline'}
-    size={24}
-    color={focused ? Colors.secondary : Colors.gray143}
-  />
+  <View style={focused && tabIconStyles.activePill}>
+    <Ionicons
+      name={focused ? 'home' : 'home-outline'}
+      size={focused ? 29 : 25}
+      color={focused ? TAB_COLORS.teal : TAB_COLORS.gray}
+    />
+  </View>
 );
 
 const RecentsTabIcon = ({ focused }: { focused: boolean }) => (
-  <Ionicons
-    name={focused ? 'time' : 'time-outline'}
-    size={24}
-    color={focused ? Colors.secondary : Colors.gray143}
-  />
+  <View style={focused && tabIconStyles.activePill}>
+    <Ionicons
+      name={focused ? 'time' : 'time-outline'}
+      size={focused ? 29 : 25}
+      color={focused ? TAB_COLORS.teal : TAB_COLORS.gray}
+    />
+  </View>
 );
+
+const tabIconStyles = {
+  activePill: {
+    width: 58,
+    height: 39,
+    borderRadius: 20,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: TAB_COLORS.mint,
+  },
+};
 
 const BottomTabs = () => {
   const insets = useSafeAreaInsets();
@@ -57,26 +80,26 @@ const BottomTabs = () => {
         tabBarStyle: {
           position: 'absolute',
 
-          left: 12,
-          right: 12,
+          left: 0,
+          right: 0,
           bottom: 0,
 
-          height: 68 + insets.bottom,
-          paddingTop: 8,
+          height: 76 + insets.bottom,
+          paddingTop: 9,
           paddingBottom: Math.max(insets.bottom, 8),
 
-          backgroundColor: Colors.white,
+          backgroundColor: TAB_COLORS.white,
 
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
 
           borderTopWidth: 0,
 
           borderWidth: 1,
-          borderColor: Colors.border,
+          borderColor: TAB_COLORS.border,
           elevation: 6,
 
-          shadowColor: Colors.primary,
+          shadowColor: TAB_COLORS.tealDark,
           shadowOffset: {
             width: 0,
             height: 8,
@@ -91,15 +114,15 @@ const BottomTabs = () => {
           paddingVertical: 2,
         },
 
-        tabBarActiveTintColor: Colors.tealDark,
+        tabBarActiveTintColor: TAB_COLORS.tealDark,
 
-        tabBarInactiveTintColor: Colors.gray143,
+        tabBarInactiveTintColor: TAB_COLORS.gray,
 
         tabBarLabelStyle: {
-          fontSize: 11,
-          lineHeight: 14,
-          fontWeight: '700',
-          marginTop: 2,
+          fontSize: 12,
+          lineHeight: 15,
+          fontWeight: '800',
+          marginTop: 3,
         },
         tabBarIconStyle: {
           marginTop: 2,

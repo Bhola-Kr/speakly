@@ -6,7 +6,7 @@ const { width } = Dimensions.get('window');
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.navy,
+    backgroundColor: Colors.background,
     paddingHorizontal: 24,
   },
 
@@ -24,14 +24,14 @@ export default StyleSheet.create({
 
   title: {
     marginTop: 12,
-    color: Colors.white,
+    color: Colors.text,
     fontSize: 24,
     fontWeight: '700',
   },
 
   subTitle: {
     marginTop: 8,
-    color: Colors.slate,
+    color: Colors.subText,
     fontSize: 15,
   },
 
@@ -53,7 +53,7 @@ export default StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: Colors.overlayGold15,
+    backgroundColor: Colors.surface,
   },
 
   avatarBorder: {
@@ -64,7 +64,7 @@ export default StyleSheet.create({
     borderColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.navySurface,
+    backgroundColor: Colors.white,
   },
 
   avatar: {
@@ -77,19 +77,19 @@ export default StyleSheet.create({
     marginTop: 22,
     fontSize: 34,
     fontWeight: '700',
-    color: Colors.white,
+    color: Colors.text,
   },
 
   city: {
     marginTop: 8,
     fontSize: 16,
-    color: Colors.slate,
+    color: Colors.subText,
   },
 
   secureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.navyCard,
+    backgroundColor: Colors.white,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 30,
@@ -136,21 +136,21 @@ export default StyleSheet.create({
 
   actionText: {
     marginTop: 12,
-    color: Colors.white,
+    color: Colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
 
   swipeCard: {
     marginTop: 35,
-    backgroundColor: Colors.navyCard,
+    backgroundColor: Colors.white,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
   },
 
   swipeText: {
-    color: Colors.secondary,
+    color: Colors.tealDark,
     fontWeight: '700',
     fontSize: 15,
   },

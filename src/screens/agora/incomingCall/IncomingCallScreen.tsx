@@ -96,7 +96,7 @@ export default function IncomingCallScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor={Colors.navy} barStyle="light-content" />
+      <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
       <View style={styles.header}>
         <Text style={styles.logo}>{strings.appName}</Text>
 

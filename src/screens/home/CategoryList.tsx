@@ -1,6 +1,14 @@
 import React, { memo, useCallback } from 'react';
-import { FlatList, TouchableOpacity, Text } from 'react-native';
-import Colors from '../../constants/colors';
+import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+
+const COLORS = {
+  teal: '#08AA91',
+  tealDark: '#078A7D',
+  body: '#71788E',
+  white: '#FFFFFF',
+  border: '#E1ECEA',
+};
 
 interface Props {
   categories: string[];
@@ -17,26 +25,20 @@ const CategoryList = ({ categories, selected, onSelect }: Props) => {
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => onSelect(item)}
-          style={{
-            height: 40,
-            paddingHorizontal: 18,
-            borderRadius: 14,
-            marginRight: 10,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: active ? Colors.secondary : Colors.white,
-            borderWidth: 1,
-            borderColor: active ? Colors.secondary : Colors.border,
-          }}
+          style={styles.chipTouch}
         >
-          <Text
-            style={{
-              fontWeight: '700',
-              color: active ? Colors.white : Colors.subText,
-            }}
+          <LinearGradient
+            colors={
+              active ? [COLORS.teal, COLORS.tealDark] : ['#FFFFFF', '#FFFFFF']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.chip, !active && styles.chipInactive]}
           >
-            {item}
-          </Text>
+            <Text style={[styles.label, active && styles.labelActive]}>
+              {item}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       );
     },
@@ -49,13 +51,41 @@ const CategoryList = ({ categories, selected, onSelect }: Props) => {
       data={categories}
       keyExtractor={item => item}
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{
-        paddingHorizontal: 20,
-        paddingBottom: 10,
-      }}
+      contentContainerStyle={styles.content}
       renderItem={renderItem}
     />
   );
 };
 
 export default memo(CategoryList);
+
+const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: 14,
+    paddingBottom: 13,
+  },
+  chipTouch: {
+    marginRight: 9,
+  },
+  chip: {
+    height: 44,
+    minWidth: 78,
+    paddingHorizontal: 18,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.teal,
+  },
+  chipInactive: {
+    borderColor: COLORS.border,
+  },
+  label: {
+    color: COLORS.body,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  labelActive: {
+    color: COLORS.white,
+  },
+});

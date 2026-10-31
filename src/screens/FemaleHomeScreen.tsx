@@ -1,31 +1,42 @@
-import { useActiveCall } from '../hooks/ActiveCallContext';
 import React, { useRef, useState } from 'react';
 import {
-  Dimensions,
+  ActivityIndicator,
+  Alert,
   FlatList,
   Image,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Alert,
   useWindowDimensions,
+  View,
 } from 'react-native';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import Colors from '../constants/colors';
-import UI from '../constants/ui';
-import { useUser } from '../hooks/UserContext';
 import { getUserAvatar } from '../constants/constants';
 import RoomService from '../firebase/RoomService';
+import { useActiveCall } from '../hooks/ActiveCallContext';
+import { useUser } from '../hooks/UserContext';
 
-const { width } = Dimensions.get('window');
-const BANNER_WIDTH = width - 40;
+const COLORS = {
+  background: '#F5FFFD',
+  navy: '#071A2D',
+  teal: '#08AA91',
+  tealDark: '#078A7D',
+  tealPale: '#DFF9F4',
+  mint: '#BDF4E8',
+  body: '#71788E',
+  white: '#FFFFFF',
+  border: '#DFF0ED',
+  coral: '#FF8B66',
+  coralPale: '#FFF3EB',
+  purple: '#7956F4',
+  purplePale: '#F1ECFF',
+  online: '#62D957',
+  offline: '#A2A8B5',
+};
 
 const tutorialData = [
   {
@@ -34,7 +45,6 @@ const tutorialData = [
     subtitle:
       'Become available and receive practice calls from language learners.',
     icon: 'radio',
-    colors: [Colors.inkBlue, Colors.slateDark],
   },
   {
     id: '2',
@@ -42,7 +52,6 @@ const tutorialData = [
     subtitle:
       'Help learners improve fluency through focused one-to-one conversation.',
     icon: 'chatbubbles',
-    colors: [Colors.goldDark, Colors.secondary],
   },
   {
     id: '3',
@@ -50,7 +59,6 @@ const tutorialData = [
     subtitle:
       'Block or report anyone at any time. Your privacy always comes first.',
     icon: 'shield-checkmark',
-    colors: [Colors.tealDark, Colors.teal],
   },
   {
     id: '4',
@@ -58,7 +66,6 @@ const tutorialData = [
     subtitle:
       'Choose useful topics and create a welcoming language-practice session.',
     icon: 'happy',
-    colors: [Colors.purpleDark, Colors.purple],
   },
 ];
 
@@ -66,30 +73,47 @@ interface Props {
   navigation: any;
 }
 
-const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
-  const { width: windowWidth } = useWindowDimensions();
-  const carouselHorizontalPadding = 20;
-  const tutorialCardGap = 10;
-  const tutorialCardWidth = Math.max(
-    1,
-    windowWidth -
-      UI.spacing.lg * 2 -
-      carouselHorizontalPadding * 2,
+const TutorialArtwork = ({ icon, first }: { icon: string; first: boolean }) => {
+  if (!first) {
+    return (
+      <View style={styles.secondaryArtwork}>
+        <Ionicons name={icon} size={50} color={COLORS.tealDark} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.toggleArtwork}>
+      <View style={styles.toggleGlow} />
+      <View style={styles.broadcastBubble}>
+        <Ionicons name="radio" size={31} color={COLORS.navy} />
+      </View>
+      <View style={styles.toggleTrack}>
+        <View style={styles.toggleKnob} />
+      </View>
+      <View style={styles.signalOne} />
+      <View style={styles.signalTwo} />
+      <View style={styles.signalThree} />
+    </View>
   );
-  const tutorialSnapWidth = tutorialCardWidth + tutorialCardGap;
+};
+
+const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
+  const { width } = useWindowDimensions();
+  const tutorialCardWidth = width - 40;
   const [page, setPage] = useState(0);
   const [goingOnline, setGoingOnline] = useState(false);
+  const bannerRef = useRef<FlatList>(null);
 
   const { user } = useUser();
   const { activeCall, showCall } = useActiveCall();
   const tamilName = String(user?.profile?.tamilName || '').trim();
   const englishName = String(user?.profile?.name || '').trim();
-  const displayName = tamilName || englishName || 'N/A';
+  const displayName = tamilName || englishName || 'Expert';
   const showEnglishName = Boolean(
     tamilName && englishName && tamilName !== englishName,
   );
-
-  const bannerRef = useRef<FlatList>(null);
+  const isOnline = user?.profile?.status === 'online';
 
   const goOnLine = async () => {
     if (activeCall) {
@@ -113,103 +137,98 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {/* ================= HEADER ================= */}
-
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerCopy}>
             <Text style={styles.greeting}>EXPERT DASHBOARD</Text>
-
             <Text numberOfLines={1} style={styles.userName}>
               {displayName}
             </Text>
-
             {showEnglishName && (
               <Text numberOfLines={1} style={styles.userEnglishName}>
                 {englishName}
               </Text>
             )}
-
             <Text style={styles.subtitle}>
               Choose when learners can reach you.
             </Text>
           </View>
 
           <TouchableOpacity
+            activeOpacity={0.82}
             onPress={() =>
-              navigation.navigate('ProfileSetting', {
-                gender: 'female',
-              })
+              navigation.navigate('ProfileSetting', { gender: 'female' })
             }
+            style={styles.avatarButton}
           >
             <Image source={getUserAvatar(user)} style={styles.avatar} />
+            <View
+              style={[
+                styles.avatarStatus,
+                !isOnline && styles.avatarStatusOffline,
+              ]}
+            />
           </TouchableOpacity>
         </View>
 
-        {/* ================= QUICK TIPS ================= */}
-
-        <View style={styles.card}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Make every session count</Text>
-          </View>
-
+        <View style={styles.tutorialShell}>
           <FlatList
             key={tutorialCardWidth}
             ref={bannerRef}
             horizontal
+            pagingEnabled
             data={tutorialData}
-            style={styles.tutorialList}
-            contentContainerStyle={{
-              paddingHorizontal: carouselHorizontalPadding,
-            }}
             keyExtractor={item => item.id}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={tutorialSnapWidth}
-            snapToAlignment="start"
-            disableIntervalMomentum
+            snapToInterval={tutorialCardWidth}
             decelerationRate="fast"
-            getItemLayout={(_, index) => ({
-              length: tutorialSnapWidth,
-              offset: tutorialSnapWidth * index,
-              index,
-            })}
-            onMomentumScrollEnd={e => {
-              const index = Math.max(
-                0,
-                Math.min(
-                  tutorialData.length - 1,
-                  Math.round(
-                    e.nativeEvent.contentOffset.x / tutorialSnapWidth,
-                  ),
-                ),
+            onMomentumScrollEnd={event => {
+              const index = Math.round(
+                event.nativeEvent.contentOffset.x / tutorialCardWidth,
               );
-
               setPage(index);
             }}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <LinearGradient
-                colors={item.colors}
+                colors={['#FFFFFF', '#EEFFFB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={[styles.tutorialCard, { width: tutorialCardWidth }]}
               >
-                <View style={styles.tutorialTop}>
-                  <View style={styles.iconCircle}>
-                    <Ionicons name={item.icon} size={30} color={Colors.white} />
-                  </View>
-
-                  <View style={styles.tipBadge}>
-                    <Text style={styles.tipBadgeText}>TIP</Text>
-                  </View>
+                <View style={styles.tipBadge}>
+                  <Ionicons
+                    name="bulb-outline"
+                    size={18}
+                    color={COLORS.tealDark}
+                  />
+                  <Text style={styles.tipBadgeText}>TIP</Text>
                 </View>
 
-                <View>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.sectionTitle}>
+                  MAKE EVERY SESSION COUNT
+                </Text>
+                <Text
+                  style={[
+                    styles.cardTitle,
+                    index > 0 && styles.cardTitleSecondary,
+                  ]}
+                >
+                  {item.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.cardSubtitle,
+                    index > 0 && styles.cardSubtitleSecondary,
+                  ]}
+                >
+                  {item.subtitle}
+                </Text>
 
-                  <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
-                </View>
+                <TutorialArtwork icon={item.icon} first={index === 0} />
               </LinearGradient>
             )}
           />
@@ -224,104 +243,98 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* ================= GO ONLINE ================= */}
-
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={goOnLine}
           disabled={goingOnline}
+          style={styles.onlineButtonTouch}
         >
           <LinearGradient
-            colors={Colors.buttonGradient}
+            colors={['#0B978A', '#08A98F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={[styles.onlineButton, goingOnline && styles.loadingButton]}
           >
             {goingOnline ? (
               <>
-                <ActivityIndicator size="small" color={Colors.white} />
+                <ActivityIndicator size="small" color={COLORS.white} />
                 <Text style={styles.onlineText}>Getting you ready…</Text>
               </>
             ) : (
               <>
                 <View style={styles.onlineDot} />
+                <Ionicons name="call-outline" size={24} color={COLORS.white} />
                 <Text style={styles.onlineText}>Start receiving calls</Text>
+                <View style={styles.onlineArrow}>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={23}
+                    color={COLORS.white}
+                  />
+                </View>
               </>
             )}
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* ================= DAILY REMINDER ================= */}
-
         <LinearGradient
-          colors={Colors.goldGradient}
+          colors={['#FFFDFB', COLORS.coralPale]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={styles.reminderCard}
         >
-          <View
-            style={{
-              flex: 1,
-            }}
-          >
-            <Text style={styles.reminderTitle}>You set the pace</Text>
-
+          <View style={styles.reminderCopy}>
+            <Text style={styles.reminderEyebrow}>YOU SET THE PACE</Text>
+            <Text style={styles.reminderTitle}>
+              Go online only{`\n`}when you’re ready
+            </Text>
             <Text style={styles.reminderDesc}>
-              Go online only when you have time for a focused conversation.
+              Take control of your availability for a focused conversation.
             </Text>
           </View>
-
-          <View style={styles.reminderIcon}>
-            <Ionicons name="sparkles" size={34} color={Colors.white} />
+          <View style={styles.calendarGlow}>
+            <Ionicons name="calendar-outline" size={72} color={COLORS.coral} />
+            <View style={styles.clockBadge}>
+              <Ionicons name="time" size={22} color={COLORS.coral} />
+            </View>
           </View>
         </LinearGradient>
-
-        {/* ================= ACCOUNT STATUS ================= */}
 
         <View style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <View style={styles.statusIndicator} />
+          <View style={styles.statusCopy}>
+            <View style={styles.statusHeader}>
+              <View
+                style={[
+                  styles.statusIndicator,
+                  !isOnline && styles.statusIndicatorOffline,
+                ]}
+              />
+              <Text style={styles.statusTitle}>ACCOUNT STATUS</Text>
+            </View>
 
-            <Text style={styles.statusTitle}>Account Status</Text>
-          </View>
-
-          <Text style={styles.statusValue}>
-            {user?.profile?.status === 'online' ? 'Online' : 'Offline'}
-          </Text>
-
-          <Text style={styles.statusDescription}>
-            Learners currently see your profile as{' '}
             <Text
-              style={{
-                fontWeight: '700',
-              }}
+              style={[styles.statusValue, isOnline && styles.statusValueOnline]}
             >
-              {user?.profile?.status === 'online' ? 'visible' : 'hidden'}
+              {isOnline ? 'Online' : 'Offline'}
             </Text>
-            . Use the button above whenever you're ready to receive calls.
-          </Text>
+
+            <Text style={styles.statusDescription}>
+              Learners currently see your profile as{' '}
+              <Text style={styles.statusEmphasis}>
+                {isOnline ? 'visible' : 'hidden'}
+              </Text>
+              . Use the button above whenever you're ready to receive calls.
+            </Text>
+          </View>
+
+          <View style={styles.visibilityIcon}>
+            <Ionicons
+              name={isOnline ? 'eye-outline' : 'eye-off-outline'}
+              size={34}
+              color={isOnline ? COLORS.teal : COLORS.purple}
+            />
+          </View>
         </View>
-
-        <View
-          style={{
-            height: 40,
-          }}
-        />
-
-        <LinearGradient
-          colors={Colors.buttonGradient}
-          style={styles.reminderCard}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.reminderTitle}>Private by design</Text>
-
-            <Text style={styles.reminderDesc}>
-              Connect with people through private voice conversations. Your
-              identity stays hidden, making every chat comfortable, safe and
-              pressure-free.
-            </Text>
-          </View>
-
-          <View style={styles.reminderIcon}>
-            <Ionicons name="heart" size={34} color={Colors.white} />
-          </View>
-        </LinearGradient>
       </ScrollView>
     </SafeAreaView>
   );
@@ -330,427 +343,427 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: COLORS.background,
   },
-
-  tutorialCard: {
-    marginRight: 10,
-    borderRadius: UI.radius.card,
-    padding: 22,
-    overflow: 'hidden',
+  content: {
+    paddingBottom: 120,
   },
-
-  tutorialList: { width: '100%' },
-
-  tutorialTop: {
+  header: {
+    minHeight: 136,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginHorizontal: 28,
+    paddingTop: 18,
   },
-
-  iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.overlayWhite18,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerCopy: {
+    flex: 1,
+    paddingRight: 16,
   },
-
-  tipBadge: {
-    backgroundColor: Colors.overlayWhite18,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+  greeting: {
+    color: COLORS.tealDark,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2.1,
   },
-
-  tipBadgeText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 12,
-    letterSpacing: 1,
+  userName: {
+    marginTop: 6,
+    color: COLORS.navy,
+    fontSize: 31,
+    lineHeight: 36,
+    fontWeight: '900',
+    letterSpacing: -0.8,
   },
-
-  cardTitle: {
-    color: Colors.white,
-    fontSize: 26,
-    fontWeight: '700',
+  userEnglishName: {
+    marginTop: 1,
+    color: COLORS.body,
+    fontSize: 13,
   },
-
-  cardSubtitle: {
-    marginTop: 10,
-    color: Colors.overlayWhite90,
+  subtitle: {
+    marginTop: 7,
+    color: COLORS.body,
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 21,
   },
-
+  avatarButton: {
+    marginTop: -5,
+  },
+  avatar: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    borderWidth: 3,
+    borderColor: COLORS.white,
+    backgroundColor: COLORS.tealPale,
+  },
+  avatarStatus: {
+    position: 'absolute',
+    right: 1,
+    bottom: 3,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    backgroundColor: COLORS.online,
+  },
+  avatarStatusOffline: {
+    backgroundColor: COLORS.offline,
+  },
+  tutorialShell: {
+    height: 232,
+    marginHorizontal: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 28,
+    overflow: 'hidden',
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.tealDark,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    elevation: 2,
+  },
+  tutorialCard: {
+    height: 230,
+    paddingHorizontal: 30,
+    paddingTop: 25,
+  },
+  sectionTitle: {
+    color: COLORS.tealDark,
+    fontSize: 10.5,
+    lineHeight: 14,
+    fontWeight: '900',
+    letterSpacing: 2.2,
+  },
+  cardTitle: {
+    width: '57%',
+    marginTop: 12,
+    color: COLORS.navy,
+    fontSize: 29,
+    lineHeight: 34,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+  },
+  cardSubtitle: {
+    width: '56%',
+    marginTop: 8,
+    color: COLORS.body,
+    fontSize: 15,
+    lineHeight: 23,
+  },
+  cardTitleSecondary: {
+    width: '61%',
+    marginTop: 10,
+    fontSize: 25,
+    lineHeight: 30,
+  },
+  cardSubtitleSecondary: {
+    width: '62%',
+    marginTop: 6,
+    fontSize: 13.5,
+    lineHeight: 19,
+  },
+  tipBadge: {
+    position: 'absolute',
+    right: 20,
+    top: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+  },
+  tipBadgeText: {
+    marginLeft: 7,
+    color: COLORS.tealDark,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+  },
+  toggleArtwork: {
+    position: 'absolute',
+    width: 138,
+    height: 140,
+    right: 9,
+    bottom: 22,
+  },
+  toggleGlow: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    right: -20,
+    bottom: -11,
+    borderRadius: 60,
+    backgroundColor: 'rgba(176,245,231,0.35)',
+  },
+  toggleTrack: {
+    position: 'absolute',
+    right: 0,
+    bottom: 18,
+    width: 116,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: COLORS.teal,
+    shadowColor: COLORS.tealDark,
+    shadowOffset: { width: 0, height: 9 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  toggleKnob: {
+    position: 'absolute',
+    right: 7,
+    top: 7,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: COLORS.white,
+  },
+  broadcastBubble: {
+    position: 'absolute',
+    left: 0,
+    top: 2,
+    zIndex: 3,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.mint,
+  },
+  signalOne: {
+    position: 'absolute',
+    width: 5,
+    height: 24,
+    right: 49,
+    top: -4,
+    borderRadius: 3,
+    backgroundColor: '#72E2CE',
+    transform: [{ rotate: '10deg' }],
+  },
+  signalTwo: {
+    position: 'absolute',
+    width: 5,
+    height: 18,
+    right: 27,
+    top: 3,
+    borderRadius: 3,
+    backgroundColor: '#72E2CE',
+    transform: [{ rotate: '34deg' }],
+  },
+  signalThree: {
+    position: 'absolute',
+    width: 5,
+    height: 14,
+    right: 10,
+    top: 19,
+    borderRadius: 3,
+    backgroundColor: '#72E2CE',
+    transform: [{ rotate: '70deg' }],
+  },
+  secondaryArtwork: {
+    position: 'absolute',
+    right: 28,
+    bottom: 67,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.tealPale,
+  },
   indicatorContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 11,
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
   },
-
   dot: {
     width: 8,
     height: 8,
+    marginHorizontal: 5,
     borderRadius: 4,
-    backgroundColor: Colors.disabled,
-    marginHorizontal: 4,
+    backgroundColor: '#DDE2E6',
   },
-
   activeDot: {
     width: 24,
-    backgroundColor: Colors.secondary,
+    backgroundColor: COLORS.tealDark,
   },
-
+  onlineButtonTouch: {
+    marginHorizontal: 20,
+    marginTop: 18,
+    marginBottom: 20,
+  },
   onlineButton: {
-    height: UI.size.primaryButtonHeight,
-    marginHorizontal: UI.spacing.lg,
-    marginBottom: 22,
-    borderRadius: UI.radius.button,
-    justifyContent: 'center',
-    alignItems: 'center',
+    height: 56,
+    paddingHorizontal: 20,
+    borderRadius: 28,
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.tealDark,
+    shadowOffset: { width: 0, height: 9 },
+    shadowOpacity: 0.17,
+    shadowRadius: 14,
+    elevation: 5,
   },
-
   loadingButton: {
-    opacity: 0.75,
+    opacity: 0.78,
   },
-
   onlineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.online,
-    marginRight: 12,
+    width: 11,
+    height: 11,
+    marginRight: 15,
+    borderRadius: 6,
+    backgroundColor: COLORS.online,
   },
-
   onlineText: {
-    color: Colors.white,
-    fontWeight: '800',
+    marginLeft: 11,
+    color: COLORS.white,
     fontSize: 17,
-    letterSpacing: 0.2,
+    fontWeight: '800',
   },
-
-  noticeFooter: {
-    marginTop: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  onlineArrow: {
+    position: 'absolute',
+    right: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
-  },
-
-  rewardBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 18,
-  },
-
-  rewardBadgeText: {
-    marginLeft: 6,
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-
-  reminderCard: {
-    marginHorizontal: UI.spacing.lg,
-    marginBottom: 22,
-    borderRadius: UI.radius.card,
-    padding: 22,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  reminderTitle: {
-    color: Colors.white,
-    fontSize: 22,
-    fontWeight: '700',
-  },
-
-  reminderDesc: {
-    color: Colors.overlayWhite92,
-    marginTop: 10,
-    lineHeight: 22,
-    fontSize: 15,
-  },
-
-  reminderIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.overlayWhite15,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 20,
+    backgroundColor: 'rgba(255,255,255,0.13)',
   },
-
-  statusCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: UI.spacing.lg,
-    borderRadius: UI.radius.card,
+  reminderCard: {
+    minHeight: 180,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    paddingHorizontal: 30,
+    paddingVertical: 23,
     borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 22,
-
-    ...UI.shadow.card,
+    borderColor: '#F9E7DA',
+    borderRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-
+  reminderCopy: {
+    flex: 1,
+    zIndex: 2,
+  },
+  reminderEyebrow: {
+    color: COLORS.coral,
+    fontSize: 10.5,
+    fontWeight: '900',
+    letterSpacing: 2.2,
+  },
+  reminderTitle: {
+    marginTop: 11,
+    color: COLORS.navy,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  reminderDesc: {
+    marginTop: 7,
+    color: COLORS.body,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  calendarGlow: {
+    width: 94,
+    height: 94,
+    marginLeft: -18,
+    borderRadius: 47,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.55)',
+  },
+  clockBadge: {
+    position: 'absolute',
+    right: 7,
+    bottom: 7,
+    width: 39,
+    height: 39,
+    borderWidth: 4,
+    borderColor: COLORS.coral,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+  },
+  statusCard: {
+    minHeight: 180,
+    marginHorizontal: 20,
+    paddingHorizontal: 30,
+    paddingVertical: 25,
+    borderWidth: 1,
+    borderColor: '#EEF0F5',
+    borderRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.navy,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.035,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+  statusCopy: {
+    flex: 1,
+    zIndex: 2,
+  },
   statusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.online,
+    width: 11,
+    height: 11,
     marginRight: 10,
+    borderRadius: 6,
+    backgroundColor: COLORS.online,
   },
-
+  statusIndicatorOffline: {
+    backgroundColor: COLORS.online,
+  },
   statusTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-
-  statusValue: {
-    marginTop: 16,
-    fontSize: 32,
-    fontWeight: '700',
-    color: Colors.secondary,
-  },
-
-  statusDescription: {
-    marginTop: 10,
-    fontSize: 14,
-    color: Colors.subText,
-    lineHeight: 22,
-  },
-
-  content: {
-    paddingBottom: 120,
-  },
-
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: UI.spacing.lg,
-    marginTop: 12,
-    marginBottom: 25,
-  },
-
-  greeting: {
+    color: COLORS.body,
     fontSize: 11,
-    color: Colors.secondary,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
-
-  userName: {
-    fontSize: 30,
     fontWeight: '900',
-    color: Colors.text,
-    marginTop: 4,
+    letterSpacing: 1.8,
   },
-
-  userEnglishName: {
-    fontSize: 16,
-    color: Colors.subText,
-    marginTop: 2,
+  statusValue: {
+    marginTop: 14,
+    color: COLORS.purple,
+    fontSize: 33,
+    fontWeight: '900',
+    letterSpacing: -0.8,
   },
-
-  subtitle: {
-    fontSize: 14,
-    color: Colors.subText,
-    marginTop: 6,
+  statusValueOnline: {
+    color: COLORS.teal,
   },
-
-  rightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  notification: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-
-    shadowColor: Colors.black,
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 5,
-  },
-
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 17,
-    borderWidth: 2,
-    borderColor: Colors.secondary,
-  },
-
-  card: {
-    backgroundColor: Colors.white,
-    marginHorizontal: UI.spacing.lg,
-    marginBottom: 22,
-    borderRadius: UI.radius.card,
-    paddingVertical: 20,
-
-    ...UI.shadow.card,
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
-    paddingHorizontal: 20,
-  },
-
-  sectionTitle: {
-    fontSize: UI.typography.sectionHeading,
-    color: Colors.text,
-    fontWeight: '600',
-  },
-
-  viewAll: {
-    color: Colors.secondary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  bannerContainer: {
-    width: BANNER_WIDTH,
-    alignItems: 'center',
-  },
-
-  banner: {
-    width: BANNER_WIDTH,
-    height: 185,
-    borderRadius: 22,
-    resizeMode: 'cover',
-  },
-
-  playButton: {
-    position: 'absolute',
-    top: 65,
-
-    width: 62,
-    height: 62,
-
-    borderRadius: 31,
-
-    backgroundColor: Colors.overlayBlack45,
-
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  smallBannerCard: {
-    width: 240,
-    height: 170,
-
-    marginRight: 16,
-
-    borderRadius: 22,
-
-    overflow: 'hidden',
-  },
-
-  smallBanner: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-
-  bannerOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-
-    padding: 16,
-  },
-
-  bannerTitle: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-
-  bannerSubtitle: {
-    color: Colors.gray238,
-    marginTop: 4,
-    fontSize: 13,
-  },
-
-  noticeCard: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-
-    marginHorizontal: UI.spacing.lg,
-    marginBottom: 18,
-
-    borderRadius: UI.radius.card,
-
-    overflow: 'hidden',
-  },
-
-  noticeImage: {
-    width: 110,
-    height: 120,
-    resizeMode: 'cover',
-  },
-
-  noticeContent: {
-    flex: 1,
-    padding: 16,
-    justifyContent: 'space-between',
-  },
-
-  noticeTitle: {
-    color: Colors.text,
-    fontWeight: '700',
-    fontSize: 16,
-  },
-
-  noticeDesc: {
-    color: Colors.subText,
-    fontSize: 13,
-    marginTop: 6,
+  statusDescription: {
+    width: '92%',
+    marginTop: 7,
+    color: COLORS.body,
+    fontSize: 13.5,
     lineHeight: 20,
   },
-
-  noticeButton: {
-    alignSelf: 'flex-start',
-
-    marginTop: 12,
-
-    backgroundColor: Colors.secondary,
-
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-
-    borderRadius: UI.radius.button,
+  statusEmphasis: {
+    fontWeight: '800',
   },
-
-  noticeButtonText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 13,
+  visibilityIcon: {
+    width: 76,
+    height: 76,
+    marginLeft: -30,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.purplePale,
   },
 });
 

@@ -37,6 +37,15 @@ import {
 } from '../../firebase/signupOffer';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
+const HOME_COLORS = {
+  background: '#F5FFFD',
+  navy: '#071A2D',
+  tealDark: '#078A7D',
+  body: '#747B91',
+  white: '#FFFFFF',
+  border: '#DFF0ED',
+};
+
 interface Props {
   navigation: any;
 }
@@ -251,12 +260,18 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <StatusBar
-        backgroundColor={Colors.background}
+        backgroundColor={HOME_COLORS.background}
         barStyle="dark-content"
         translucent={false}
       />
 
+      <View pointerEvents="none" style={styles.backgroundArt}>
+        <View style={styles.backgroundGlowTop} />
+        <View style={styles.backgroundGlowMiddle} />
+      </View>
+
       <FlatList
+        style={styles.list}
         contentContainerStyle={styles.listContent}
         data={filtered}
         keyExtractor={keyExtractor}
@@ -303,26 +318,56 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: HOME_COLORS.background,
+  },
+  backgroundArt: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    overflow: 'hidden',
+  },
+  backgroundGlowTop: {
+    position: 'absolute',
+    top: 210,
+    right: -180,
+    width: 430,
+    height: 430,
+    borderRadius: 215,
+    backgroundColor: 'rgba(207,249,242,0.35)',
+  },
+  backgroundGlowMiddle: {
+    position: 'absolute',
+    top: 480,
+    left: -220,
+    width: 430,
+    height: 430,
+    borderRadius: 215,
+    backgroundColor: 'rgba(221,251,246,0.44)',
+  },
+  list: {
+    flex: 1,
   },
 
   heading: {
-    fontSize: UI.typography.screenTitle,
-    fontWeight: '600',
-    color: Colors.text,
-    marginHorizontal: UI.spacing.lg,
-    marginTop: 3,
+    fontSize: 25,
+    lineHeight: 31,
+    fontWeight: '900',
+    color: HOME_COLORS.navy,
+    marginHorizontal: 17,
+    marginTop: 5,
     marginBottom: 14,
-    letterSpacing: -0.5,
+    letterSpacing: -0.7,
   },
 
   eyebrow: {
-    color: Colors.secondary,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.3,
-    marginHorizontal: UI.spacing.lg,
-    marginTop: 24,
+    color: HOME_COLORS.tealDark,
+    fontSize: 10.5,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    marginHorizontal: 17,
+    marginTop: 25,
   },
 
   listContent: {

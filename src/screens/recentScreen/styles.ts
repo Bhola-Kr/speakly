@@ -5,8 +5,44 @@ import UI from '../../constants/ui';
 export default StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 16,
-    backgroundColor: Colors.background,
+    overflow: 'hidden',
+    backgroundColor: '#F7FFFE',
+  },
+  backgroundArt: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  backgroundGlowTop: {
+    position: 'absolute',
+    top: -150,
+    right: -150,
+    width: 350,
+    height: 350,
+    borderRadius: 175,
+    backgroundColor: 'rgba(219,250,245,0.40)',
+  },
+  backgroundWaveLeft: {
+    position: 'absolute',
+    bottom: -145,
+    left: -160,
+    width: 420,
+    height: 330,
+    borderRadius: 190,
+    backgroundColor: 'rgba(224,251,247,0.54)',
+    transform: [{ rotate: '24deg' }],
+  },
+  backgroundWaveRight: {
+    position: 'absolute',
+    bottom: -185,
+    right: -210,
+    width: 420,
+    height: 360,
+    borderRadius: 200,
+    backgroundColor: 'rgba(231,252,249,0.66)',
+    transform: [{ rotate: '-26deg' }],
   },
 
   content: {
@@ -35,8 +71,9 @@ export default StyleSheet.create({
     marginBottom: 18,
   },
   header: {
-    paddingHorizontal: UI.spacing.lg,
-    paddingBottom: 16,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 10,
   },
 
   headerRow: {
@@ -60,29 +97,37 @@ export default StyleSheet.create({
   },
 
   title: {
-    fontSize: UI.typography.screenTitle,
-    fontWeight: '600',
-    color: Colors.text,
+    fontSize: 28,
+    lineHeight: 35,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+    color: '#071A2D',
   },
 
   subtitle: {
-    marginTop: 6,
-    fontSize: 15,
-    color: Colors.subText,
+    marginTop: 4,
+    fontSize: 14,
+    color: '#747B91',
     lineHeight: 22,
   },
 
   count: {
-    marginTop: 14,
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.secondary,
+    alignSelf: 'flex-start',
+    marginTop: 13,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 15,
+    overflow: 'hidden',
+    backgroundColor: '#DFF9F4',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#078A7D',
   },
 
   card: {
     padding: 18,
-
     marginBottom: 18,
+    borderRadius: 24,
   },
 
   row: {
@@ -199,7 +244,7 @@ export default StyleSheet.create({
 
     borderRadius: UI.radius.button,
 
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
 
     justifyContent: 'center',
 
@@ -214,7 +259,7 @@ export default StyleSheet.create({
   },
 
   callText: {
-    color: Colors.secondary,
+    color: Colors.white,
 
     fontWeight: '700',
 

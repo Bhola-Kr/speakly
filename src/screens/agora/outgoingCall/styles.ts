@@ -7,7 +7,7 @@ const { width } = Dimensions.get('window');
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.navy,
+    backgroundColor: Colors.background,
     paddingHorizontal: UI.spacing.lg,
   },
 
@@ -30,7 +30,7 @@ export default StyleSheet.create({
 
   status: {
     marginTop: 12,
-    color: Colors.white,
+    color: Colors.text,
     fontSize: 21,
     lineHeight: 28,
     fontWeight: '700',
@@ -38,19 +38,19 @@ export default StyleSheet.create({
 
   statusSub: {
     marginTop: 6,
-    color: Colors.slate,
+    color: Colors.subText,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
   },
 
   statusTamilName: {
-    color: Colors.slateLight,
+    color: Colors.tealDark,
     fontWeight: '700',
   },
 
   statusEnglishName: {
-    color: Colors.slate,
+    color: Colors.subText,
     fontWeight: '400',
   },
 
@@ -83,7 +83,7 @@ export default StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: Colors.overlayGold12,
+    backgroundColor: Colors.surface,
   },
 
   avatarBorder: {
@@ -94,7 +94,7 @@ export default StyleSheet.create({
     borderColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.navySurface,
+    backgroundColor: Colors.white,
   },
 
   avatarBorderCompact: {
@@ -119,7 +119,7 @@ export default StyleSheet.create({
     marginTop: 28,
     fontSize: 30,
     lineHeight: 38,
-    color: Colors.white,
+    color: Colors.text,
     fontWeight: '700',
   },
 
@@ -133,14 +133,14 @@ export default StyleSheet.create({
     marginTop: 4,
     fontSize: 16,
     lineHeight: 22,
-    color: Colors.slate,
+    color: Colors.subText,
   },
 
   city: {
     marginTop: 6,
     fontSize: 15,
     lineHeight: 21,
-    color: Colors.slate,
+    color: Colors.subText,
   },
 
   waveContainer: {
@@ -174,25 +174,25 @@ export default StyleSheet.create({
 
   callingText: {
     marginTop: 22,
-    color: Colors.slateLight,
+    color: Colors.subText,
     fontSize: 16,
   },
 
   footer: {
-    backgroundColor: Colors.navyCard,
+    backgroundColor: Colors.white,
     borderRadius: UI.radius.card,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: Colors.overlayWhite15,
+    borderColor: Colors.border,
   },
 
   footerText: {
     flex: 1,
     marginLeft: 12,
-    color: Colors.white,
+    color: Colors.subText,
     fontSize: 14,
     lineHeight: 20,
   },

@@ -83,16 +83,16 @@ const SplashScreen = ({ navigation }: any) => {
 
   return (
     <LinearGradient
-      colors={[Colors.primary, Colors.purpleDark]}
+      colors={['#F7FFFE', '#E7FAF6', '#FFFFFF']}
       style={styles.container}
     >
-      <StatusBar backgroundColor={Colors.primary} barStyle={'light-content'} />
+      <StatusBar backgroundColor="#F7FFFE" barStyle="dark-content" />
       <View style={styles.content}>
         {/* Replace with your logo */}
         <View style={styles.logoMark}>
           <MaterialCommunityIcons
-            name="message-text-outline"
-            size={62}
+            name="waveform"
+            size={54}
             color={Colors.white}
           />
         </View>
@@ -105,7 +105,7 @@ const SplashScreen = ({ navigation }: any) => {
       </View>
 
       <View style={styles.bottom}>
-        <ActivityIndicator color={Colors.secondary} size={'large'} />
+        <ActivityIndicator color={Colors.secondary} size="large" />
 
         <Text style={styles.loading}>Loading...</Text>
 
@@ -130,10 +130,10 @@ const styles = StyleSheet.create({
   },
 
   logoMark: {
-    width: 112,
-    height: 112,
-    borderRadius: 36,
-    backgroundColor: Colors.overlayWhite18,
+    width: 104,
+    height: 104,
+    borderRadius: 32,
+    backgroundColor: Colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -142,15 +142,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 38,
     fontWeight: '900',
-    color: Colors.white,
+    color: Colors.text,
     letterSpacing: -1.5,
   },
 
   subtitle: {
     marginTop: 10,
     fontSize: 16,
-    color: Colors.white,
-    opacity: 0.85,
+    color: Colors.subText,
     letterSpacing: 0.5,
   },
 
@@ -161,13 +160,13 @@ const styles = StyleSheet.create({
   loading: {
     marginTop: 14,
     fontSize: 14,
-    color: Colors.white,
+    color: Colors.subText,
   },
 
   version: {
     marginTop: 20,
     fontSize: 13,
-    color: Colors.overlayWhite90,
+    color: Colors.subText,
   },
 });
 

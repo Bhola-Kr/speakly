@@ -11,13 +11,22 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
-import UI from '../../constants/ui';
 import SurfaceCard from '../../components/SurfaceCard';
 import {
   CALL_RATE_PER_MINUTE,
   getFemaleAvatar,
   getMaleAvatar,
 } from '../../constants/constants';
+
+const HOME_COLORS = {
+  navy: '#071A2D',
+  tealDark: '#078A7D',
+  body: '#747B91',
+  white: '#FFFFFF',
+  border: '#E0ECEA',
+  mint: '#E1FAF5',
+  amber: '#8A4B00',
+};
 
 interface Props {
   item: any;
@@ -129,7 +138,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
 
       <View style={styles.footer}>
         <LinearGradient
-          colors={[Colors.coinGradientStart, Colors.coinGradientEnd]}
+          colors={['#FFFDF5', '#FFF0CE']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.coinCard}
@@ -150,21 +159,28 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
           activeOpacity={0.9}
           onPress={() => onCall(item)}
           disabled={calling}
-          style={styles.callButton}
+          style={styles.callButtonTouch}
         >
-          {calling ? (
-            <ActivityIndicator size="small" color={Colors.white} />
-          ) : (
-            <>
-              <MaterialCommunityIcons
-                name="phone"
-                size={16}
-                color={Colors.white}
-              />
+          <LinearGradient
+            colors={['#10B49B', '#078A7D']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.callButton, calling && styles.callButtonDisabled]}
+          >
+            {calling ? (
+              <ActivityIndicator size="small" color={HOME_COLORS.white} />
+            ) : (
+              <>
+                <MaterialCommunityIcons
+                  name="phone"
+                  size={21}
+                  color={HOME_COLORS.white}
+                />
 
-              <Text style={styles.callText}>Practice</Text>
-            </>
-          )}
+                <Text style={styles.callText}>Practice</Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SurfaceCard>
@@ -175,130 +191,113 @@ export default memo(UserCard);
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: UI.spacing.lg,
-    marginBottom: 12,
-    padding: UI.spacing.lg,
+    marginHorizontal: 14,
+    marginBottom: 14,
+    padding: 15,
+    borderRadius: 24,
+    borderColor: HOME_COLORS.border,
+    shadowColor: HOME_COLORS.tealDark,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
   },
-
   row: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   avatarWrapper: {
     position: 'relative',
   },
-
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: UI.radius.card,
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    backgroundColor: HOME_COLORS.mint,
   },
-
   onlineDotOuter: {
     position: 'absolute',
-    right: 2,
-    bottom: 2,
-
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-
-    backgroundColor: Colors.white,
-
+    right: 0,
+    bottom: 3,
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    backgroundColor: HOME_COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   onlineDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: Colors.onlineStatus,
   },
-
   info: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 15,
   },
-
   name: {
-    fontSize: UI.typography.sectionHeading,
-    fontWeight: '600',
-    color: Colors.text,
+    fontSize: 23,
+    lineHeight: 27,
+    fontWeight: '900',
+    color: HOME_COLORS.navy,
   },
-
   subTitle: {
-    marginTop: 3,
-    fontSize: UI.typography.secondary,
-    lineHeight: 17,
-    color: Colors.subText,
+    marginTop: 2,
+    fontSize: 14,
+    lineHeight: 18,
+    color: HOME_COLORS.body,
   },
-
   location: {
     marginTop: 3,
     fontSize: 12,
     color: Colors.subText,
   },
-
   chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 8,
   },
-
   ratingChip: {
     flexDirection: 'row',
     alignItems: 'center',
-
     backgroundColor: Colors.coinSurface,
-
     paddingHorizontal: 8,
     paddingVertical: 3,
-
     borderRadius: 12,
   },
-
   ratingText: {
     marginLeft: 4,
     fontWeight: '700',
     fontSize: 12,
     color: Colors.coinText,
   },
-
   onlineChip: {
     flexDirection: 'row',
     alignItems: 'center',
-
     backgroundColor: Colors.onlineSurface,
-
-    marginTop: 8,
-
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-
+    marginTop: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
   },
-
   greenDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-
     backgroundColor: Colors.onlineStatus,
   },
-
   onlineText: {
-    marginLeft: 4,
+    marginLeft: 5,
     fontWeight: '700',
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.onlineStatus,
   },
-
   divider: {
     height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: 12,
+    backgroundColor: HOME_COLORS.border,
+    marginTop: 13,
+    marginBottom: 11,
   },
   statusWrapper: {
     alignSelf: 'flex-start',
@@ -311,68 +310,55 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-
   coinCard: {
     flexDirection: 'row',
     alignItems: 'center',
-
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-
-    borderRadius: UI.radius.button,
-
+    height: 53,
+    paddingHorizontal: 12,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: Colors.coinBorder,
-
-    minWidth: 105,
+    minWidth: 109,
   },
-
   coin: {
-    width: 22,
-    height: 22,
+    width: 27,
+    height: 27,
     resizeMode: 'contain',
   },
-
   price: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.coinHighlight,
-    lineHeight: 22,
+    fontSize: 23,
+    fontWeight: '900',
+    color: HOME_COLORS.amber,
+    lineHeight: 24,
   },
-
   perMinute: {
     marginTop: -1,
-    fontSize: 10,
-    fontWeight: '600',
-    color: Colors.coinDark,
+    fontSize: 12,
+    fontWeight: '700',
+    color: HOME_COLORS.amber,
   },
-
+  callButtonTouch: {
+    borderRadius: 16,
+    shadowColor: HOME_COLORS.tealDark,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 4,
+  },
   callButton: {
-    height: 48,
+    height: 49,
+    minWidth: 125,
     paddingHorizontal: 20,
-    borderRadius: UI.radius.button,
-
-    backgroundColor: Colors.secondary,
-
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-
-    elevation: 3,
   },
-
+  callButtonDisabled: { opacity: 0.65 },
   callText: {
-    marginLeft: 6,
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.white,
+    marginLeft: 9,
+    fontSize: 15,
+    fontWeight: '800',
+    color: HOME_COLORS.white,
   },
 });

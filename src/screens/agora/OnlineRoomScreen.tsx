@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  SafeAreaView,
   StatusBar,
   View,
   Text,
@@ -11,14 +10,16 @@ import {
   StyleSheet,
   Alert,
   AppState,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import InCallManager from 'react-native-incall-manager';
 
-import Colors from '../../constants/colors';
 import IncomingCallModal from './IncomingCallModal';
 import { getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
@@ -27,12 +28,25 @@ import authData from '../../firebase/authData';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
+const COLORS = {
+  background: '#F5FFFD',
+  navy: '#071A2D',
+  teal: '#08AA91',
+  tealDark: '#078A7D',
+  mint: '#C8F8EE',
+  mintSoft: '#E4FBF7',
+  body: '#7B8298',
+  white: '#FFFFFF',
+};
+
 type Props = {
   navigation: any;
 };
 
 const OnlineRoomScreen = ({ navigation }: Props) => {
   const { user } = useUser();
+  const { height } = useWindowDimensions();
+  const compactLayout = height < 700;
   const [incomingRoom, setIncomingRoom] = useState<Room | null>(null);
   const isFocused = useIsFocused();
   const pulse = useRef(new Animated.Value(0)).current;
@@ -41,7 +55,6 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
   const [timer, setTimer] = useState('00:00:00');
   const [showIncoming, setShowIncoming] = useState(false);
-  const [dots, setDots] = useState('.');
 
   const seconds = useRef(0);
 
@@ -128,29 +141,20 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       );
     }, 1000);
 
-    const dotInterval = setInterval(() => {
-      setDots(prev => {
-        if (prev === '.') return '..';
-        if (prev === '..') return '...';
-        return '.';
-      });
-    }, 500);
-
     return () => {
       pulseAnimation.stop();
       clearInterval(timerInterval);
-      clearInterval(dotInterval);
     };
   }, [pulse]);
 
   const avatarScale = pulse.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.05],
+    outputRange: [1, 1.035],
   });
 
   const glowOpacity = pulse.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.2, 0.8],
+    outputRange: [0.28, 0.58],
   });
 
   const acceptCall = async () => {
@@ -221,76 +225,117 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
   return (
     <>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={styles.container}
+        edges={['top', 'left', 'right', 'bottom']}
+      >
         <StatusBar
-          backgroundColor={Colors.background}
+          backgroundColor={COLORS.background}
           barStyle="dark-content"
         />
 
-        {/* Header */}
-
-        <View style={styles.header}>
-          <Text style={styles.title}>Online Room</Text>
-
-          <View style={styles.onlineBadge}>
-            <View style={styles.onlineDot} />
-
-            <Text style={styles.onlineText}>Online</Text>
-          </View>
+        <View pointerEvents="none" style={styles.backgroundArt}>
+          <View style={styles.backgroundBlobTop} />
+          <View style={styles.backgroundBlobLeft} />
+          <View style={styles.backgroundBlobRight} />
+          <View style={styles.backgroundBlobBottom} />
         </View>
 
-        {/* Avatar */}
+        <ScrollView
+          bounces={false}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.content,
+            compactLayout && styles.contentCompact,
+          ]}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Online Room</Text>
 
-        <View style={styles.avatarSection}>
-          <Animated.View
+            <View style={styles.onlineBadge}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.onlineText}>Online</Text>
+            </View>
+          </View>
+
+          <View
             style={[
-              styles.glow,
-              {
-                opacity: glowOpacity,
-                transform: [{ scale: avatarScale }],
-              },
+              styles.avatarStage,
+              compactLayout && styles.avatarStageCompact,
             ]}
-          />
-
-          <Animated.View
-            style={{
-              transform: [{ scale: avatarScale }],
-            }}
           >
-            <LinearGradient
-              colors={Colors.goldGradient}
-              style={styles.avatarBorder}
-            >
-              <Image source={getUserAvatar(user)} style={styles.avatar} />
-            </LinearGradient>
-          </Animated.View>
+            <Animated.View
+              style={[
+                styles.avatarOuterGlow,
+                {
+                  opacity: glowOpacity,
+                  transform: [{ scale: avatarScale }],
+                },
+              ]}
+            />
+            <View style={styles.avatarHalo} />
+            <Animated.View style={{ transform: [{ scale: avatarScale }] }}>
+              <LinearGradient
+                colors={['#58E4D0', '#14B8A1']}
+                style={styles.avatarBorder}
+              >
+                <View style={styles.avatarInnerBorder}>
+                  <Image source={getUserAvatar(user)} style={styles.avatar} />
+                </View>
+              </LinearGradient>
+            </Animated.View>
+          </View>
 
-          <Text style={styles.name}>You're available</Text>
+          <View
+            style={[
+              styles.availabilityCard,
+              compactLayout && styles.availabilityCardCompact,
+            ]}
+          >
+            <View style={styles.audioIconGlow}>
+              <View style={styles.audioIcon}>
+                {[22, 34, 47, 32, 20].map((barHeight, index) => (
+                  <View
+                    key={index}
+                    style={[styles.audioBar, { height: barHeight }]}
+                  />
+                ))}
+              </View>
+            </View>
 
-          <Text style={styles.subtitle}>Waiting for incoming voice calls</Text>
+            <Text style={styles.availableTitle}>You’re available</Text>
+            <Text style={styles.availableSubtitle}>
+              Waiting for incoming voice calls
+            </Text>
 
-          <Text style={styles.listening}>Listening{dots}</Text>
+            <View style={styles.listeningBadge}>
+              <View style={styles.listeningDot} />
+              <Text style={styles.listeningText}>Listening.</Text>
+            </View>
+          </View>
 
           <Text style={styles.timer}>{timer}</Text>
-        </View>
 
-        {/* Bottom */}
-
-        <View style={styles.bottom}>
           <TouchableOpacity
             onPress={goOffline}
             activeOpacity={0.9}
-            style={styles.offlineButton}
+            style={styles.offlineButtonTouch}
           >
-            <MaterialCommunityIcons
-              name="power"
-              color={Colors.white}
-              size={22}
-            />
-
-            <Text style={styles.offlineText}>Go Offline</Text>
+            <LinearGradient
+              colors={['#0CA895', '#07877D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.offlineButton}
+            >
+              <MaterialCommunityIcons
+                name="power"
+                color={COLORS.white}
+                size={29}
+              />
+              <Text style={styles.offlineText}>Go Offline</Text>
+            </LinearGradient>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </SafeAreaView>
 
       <IncomingCallModal
@@ -308,148 +353,270 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: COLORS.background,
+  },
+  backgroundArt: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    overflow: 'hidden',
+  },
+  backgroundBlobTop: {
+    position: 'absolute',
+    width: 330,
+    height: 230,
+    top: -125,
+    right: -92,
+    borderRadius: 160,
+    backgroundColor: 'rgba(221,250,246,0.68)',
+    transform: [{ rotate: '17deg' }],
+  },
+  backgroundBlobLeft: {
+    position: 'absolute',
+    width: 320,
+    height: 420,
+    top: 110,
+    left: -210,
+    borderRadius: 180,
+    backgroundColor: 'rgba(206,249,242,0.56)',
+    transform: [{ rotate: '-18deg' }],
+  },
+  backgroundBlobRight: {
+    position: 'absolute',
+    width: 300,
+    height: 420,
+    top: 245,
+    right: -220,
+    borderRadius: 170,
+    backgroundColor: 'rgba(212,250,244,0.48)',
+    transform: [{ rotate: '16deg' }],
+  },
+  backgroundBlobBottom: {
+    position: 'absolute',
+    width: 340,
+    height: 310,
+    bottom: -170,
+    left: -140,
+    borderRadius: 180,
+    backgroundColor: 'rgba(215,251,245,0.62)',
+    transform: [{ rotate: '28deg' }],
+  },
+  content: {
+    flexGrow: 1,
+    minHeight: 690,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 22,
+    justifyContent: 'space-between',
+  },
+  contentCompact: {
+    minHeight: 630,
+    paddingTop: 7,
+    paddingBottom: 14,
   },
 
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    minHeight: 58,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
 
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.text,
+    fontSize: 29,
+    lineHeight: 35,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+    color: COLORS.navy,
   },
 
   onlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-
-    shadowColor: Colors.black,
+    paddingHorizontal: 15,
+    height: 41,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#D7F5EF',
+    backgroundColor: 'rgba(255,255,255,0.76)',
+    shadowColor: COLORS.tealDark,
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-
-    elevation: 3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
 
   onlineDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.success,
-    marginRight: 8,
+    backgroundColor: COLORS.teal,
+    marginRight: 10,
   },
 
   onlineText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.success,
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.tealDark,
   },
 
-  avatarSection: {
-    flex: 1,
-    justifyContent: 'center',
+  avatarStage: {
+    height: 244,
     alignItems: 'center',
-    paddingHorizontal: 30,
+    justifyContent: 'center',
   },
-
-  glow: {
+  avatarStageCompact: {
+    height: 204,
+  },
+  avatarOuterGlow: {
     position: 'absolute',
-    width: 230,
-    height: 230,
-    borderRadius: 115,
-    backgroundColor: Colors.secondary,
-    opacity: 0.18,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(70,225,204,0.30)',
   },
-
+  avatarHalo: {
+    position: 'absolute',
+    width: 202,
+    height: 202,
+    borderRadius: 101,
+    borderWidth: 13,
+    borderColor: 'rgba(104,231,211,0.17)',
+  },
   avatarBorder: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+    width: 185,
+    height: 185,
+    borderRadius: 93,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 5,
   },
-
+  avatarInnerBorder: {
+    width: 175,
+    height: 175,
+    borderRadius: 88,
+    padding: 5,
+    backgroundColor: COLORS.white,
+  },
   avatar: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: Colors.surface,
+    width: 165,
+    height: 165,
+    borderRadius: 83,
+    backgroundColor: COLORS.mintSoft,
   },
-
-  name: {
-    marginTop: 35,
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.text,
+  availabilityCard: {
+    alignSelf: 'center',
+    width: '86%',
+    height: 177,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.95)',
+    alignItems: 'center',
+    paddingTop: 76,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    shadowColor: COLORS.tealDark,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 22,
+    elevation: 2,
   },
-
-  subtitle: {
-    marginTop: 10,
-    fontSize: 16,
-    color: Colors.subText,
+  availabilityCardCompact: {
+    height: 165,
+    paddingTop: 68,
+  },
+  audioIconGlow: {
+    position: 'absolute',
+    top: 16,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(211,250,243,0.82)',
+    borderWidth: 5,
+    borderColor: 'rgba(236,255,251,0.9)',
+  },
+  audioIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(239,255,252,0.95)',
+  },
+  audioBar: {
+    width: 3,
+    marginHorizontal: 2,
+    borderRadius: 2,
+    backgroundColor: COLORS.teal,
+  },
+  availableTitle: {
+    color: COLORS.navy,
+    fontSize: 23,
+    lineHeight: 28,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  availableSubtitle: {
+    marginTop: 4,
+    color: COLORS.body,
+    fontSize: 15,
+    lineHeight: 21,
     textAlign: 'center',
-    lineHeight: 24,
   },
-
-  listening: {
-    marginTop: 35,
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.secondary,
+  listeningBadge: {
+    marginTop: 10,
+    height: 32,
+    paddingHorizontal: 17,
+    borderRadius: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(222,250,245,0.88)',
   },
-
+  listeningDot: {
+    width: 10,
+    height: 10,
+    marginRight: 12,
+    borderRadius: 5,
+    backgroundColor: '#14BBA4',
+  },
+  listeningText: {
+    color: COLORS.tealDark,
+    fontSize: 15,
+    fontWeight: '800',
+  },
   timer: {
-    marginTop: 18,
-    fontSize: 34,
-    fontWeight: '700',
-    color: Colors.text,
-    letterSpacing: 1,
+    alignSelf: 'center',
+    color: COLORS.navy,
+    fontSize: 38,
+    lineHeight: 47,
+    fontWeight: '900',
+    letterSpacing: 1.2,
   },
-
-  bottom: {
-    paddingHorizontal: 24,
-    paddingBottom: 35,
+  offlineButtonTouch: {
+    width: '100%',
+    shadowColor: COLORS.tealDark,
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 7,
   },
-
   offlineButton: {
-    height: 58,
-    borderRadius: 18,
-    backgroundColor: Colors.primary,
-
+    height: 57,
+    borderRadius: 29,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-
-    shadowColor: Colors.black,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    elevation: 6,
   },
-
   offlineText: {
-    marginLeft: 10,
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 17,
+    marginLeft: 13,
+    color: COLORS.white,
+    fontWeight: '800',
+    fontSize: 18,
   },
 });
 

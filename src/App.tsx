@@ -101,6 +101,10 @@ function RootStack() {
       initialRouteName="Splash"
       screenOptions={{
         headerShown: false,
+        headerStyle: { backgroundColor: Colors.background },
+        headerTintColor: Colors.text,
+        headerTitleStyle: { fontWeight: '800' },
+        headerShadowVisible: false,
       }}
     >
       <Stack.Screen name="Splash" component={SplashScreen} />
@@ -133,16 +137,13 @@ function RootStack() {
         options={{
           headerShown: true,
           title: 'About Speakly',
-          headerStyle: { backgroundColor: Colors.background },
         }}
         name="About"
         component={AboutScreen}
       />
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: 'Edit Profile',
-          headerStyle: { backgroundColor: Colors.background },
+          headerShown: false,
         }}
         name="EditProfile"
         component={EditProfileScreen}
@@ -168,7 +169,6 @@ function RootStack() {
         options={{
           headerShown: true,
           title: 'Terms & Conditions',
-          headerStyle: { backgroundColor: Colors.background },
         }}
         name="TermsAndConditions"
         component={TermsAndConditionsScreen}
@@ -177,7 +177,6 @@ function RootStack() {
         options={{
           headerShown: true,
           title: 'Privacy Policy',
-          headerStyle: { backgroundColor: Colors.background },
         }}
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}
@@ -185,7 +184,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
-          headerStyle: { backgroundColor: Colors.background },
+          title: 'Help & FAQ',
         }}
         name="FAQ"
         component={FAQScreen}

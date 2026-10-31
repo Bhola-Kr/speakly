@@ -211,7 +211,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
-      <StatusBar backgroundColor={Colors.navy} barStyle="light-content" />
+      <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
       <View style={[styles.header, compactLayout && styles.headerCompact]}>
         <Text style={styles.logo}>{strings.appName}</Text>
 

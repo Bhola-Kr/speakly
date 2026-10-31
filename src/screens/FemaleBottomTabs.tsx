@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { BackHandler } from 'react-native';
+import { BackHandler, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,20 +11,27 @@ import FemaleHistoryScreen from './FemaleHistoryScreen';
 
 const Tab = createBottomTabNavigator();
 
+const ACTIVE_TEAL = '#08A98F';
+const ACTIVE_SURFACE = '#DFF9F4';
+
 const HomeTabIcon = ({ focused }: { focused: boolean }) => (
-  <Ionicons
-    name={focused ? 'home' : 'home-outline'}
-    size={24}
-    color={focused ? Colors.secondary : Colors.gray143}
-  />
+  <View style={[styles.iconWrap, focused && styles.activeIconWrap]}>
+    <Ionicons
+      name={focused ? 'home' : 'home-outline'}
+      size={25}
+      color={focused ? ACTIVE_TEAL : Colors.gray143}
+    />
+  </View>
 );
 
 const HistoryTabIcon = ({ focused }: { focused: boolean }) => (
-  <Ionicons
-    name={focused ? 'time' : 'time-outline'}
-    size={24}
-    color={focused ? Colors.secondary : Colors.gray143}
-  />
+  <View style={[styles.iconWrap, focused && styles.activeIconWrap]}>
+    <Ionicons
+      name={focused ? 'time' : 'time-outline'}
+      size={25}
+      color={focused ? ACTIVE_TEAL : Colors.gray143}
+    />
+  </View>
 );
 
 const FemaleBottomTabs = () => {
@@ -57,32 +64,31 @@ const FemaleBottomTabs = () => {
         tabBarStyle: {
           position: 'absolute',
 
-          left: 12,
-          right: 12,
+          left: 0,
+          right: 0,
           bottom: 0,
 
-          height: 68 + insets.bottom,
-          paddingTop: 8,
+          height: 78 + insets.bottom,
+          paddingTop: 7,
           paddingBottom: Math.max(insets.bottom, 8),
 
           backgroundColor: Colors.white,
 
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
 
           borderTopWidth: 0,
 
-          borderWidth: 1,
-          borderColor: Colors.border,
-          elevation: 6,
+          borderWidth: 0,
+          elevation: 10,
 
-          shadowColor: Colors.primary,
+          shadowColor: '#0B5E55',
           shadowOffset: {
             width: 0,
             height: 8,
           },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
+          shadowOpacity: 0.09,
+          shadowRadius: 18,
         },
 
         tabBarItemStyle: {
@@ -91,7 +97,7 @@ const FemaleBottomTabs = () => {
           paddingVertical: 2,
         },
 
-        tabBarActiveTintColor: Colors.secondary,
+        tabBarActiveTintColor: ACTIVE_TEAL,
 
         tabBarInactiveTintColor: Colors.gray143,
 
@@ -99,10 +105,10 @@ const FemaleBottomTabs = () => {
           fontSize: 11,
           lineHeight: 14,
           fontWeight: '700',
-          marginTop: 2,
+          marginTop: 5,
         },
         tabBarIconStyle: {
-          marginTop: 2,
+          marginTop: 0,
         },
       }}
     >
@@ -126,3 +132,16 @@ const FemaleBottomTabs = () => {
 };
 
 export default FemaleBottomTabs;
+
+const styles = StyleSheet.create({
+  iconWrap: {
+    width: 42,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeIconWrap: {
+    backgroundColor: ACTIVE_SURFACE,
+  },
+});
