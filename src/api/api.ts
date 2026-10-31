@@ -126,6 +126,13 @@ class Api {
     );
   }
 
+  confirmPayment(transactionId: string, payuResponse: unknown) {
+    return this.post<PaymentResponse>(
+      `/payments/${encodeURIComponent(transactionId)}/confirm`,
+      { payuResponse },
+    );
+  }
+
   getPayments() {
     return this.get<PaymentsResponse>('/payments');
   }

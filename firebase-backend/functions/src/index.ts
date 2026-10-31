@@ -6,6 +6,7 @@ import * as admin from 'firebase-admin';
 import { RECHARGE_PACKS } from './constants';
 import {
   generatePaymentHash,
+  confirmPayment,
   initiatePayment,
   listPayments,
   payuWebhook,
@@ -224,6 +225,7 @@ app.get('/rechargePacks', async (_req: Request, res: Response) => {
 
 app.post('/payments/initiate', initiatePayment);
 app.post('/payments/hash', generatePaymentHash);
+app.post('/payments/:transactionId/confirm', confirmPayment);
 app.post('/payments/:transactionId/verify', verifyPayment);
 app.get('/payments', listPayments);
 app.post('/payu/callback', payuWebhook);

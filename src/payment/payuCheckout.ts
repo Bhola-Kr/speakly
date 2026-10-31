@@ -3,12 +3,21 @@ import { NativeEventEmitter, Platform } from 'react-native';
 import PayUBizSdk from 'payu-non-seam-less-react';
 
 import { API_BASE_URL, PaymentTransaction } from '../api/api';
-import { initiateWalletPayment, verifyWalletPayment } from '../api/calls';
+import {
+  confirmWalletPayment,
+  initiateWalletPayment,
+  verifyWalletPayment,
+} from '../api/calls';
 
 type HashEvent = {
   hashString?: string;
   hashName?: string;
   postSalt?: string;
+};
+
+type PaymentSuccessEvent = {
+  payuResponse?: unknown;
+  merchantResponse?: unknown;
 };
 
 const FINAL_STATUSES = new Set(['success', 'failed']);
@@ -52,7 +61,11 @@ export const openPayUCheckout = async (
       let payment = transaction;
       let lastError: unknown;
 
-      for (let attempt = 0; attempt < PAYMENT_VERIFICATION_ATTEMPTS; attempt++) {
+      for (
+        let attempt = 0;
+        attempt < PAYMENT_VERIFICATION_ATTEMPTS;
+        attempt++
+      ) {
         try {
           const result = await verifyWalletPayment(transaction.transactionId);
           payment = result.data;
@@ -76,11 +89,26 @@ export const openPayUCheckout = async (
       return payment;
     };
 
-    const finishSuccessfulPayment = async () => {
+    const finishSuccessfulPayment = async (event?: PaymentSuccessEvent) => {
       if (settled) return;
       settled = true;
       cleanup();
       try {
+        if (event?.payuResponse) {
+          try {
+            const confirmed = await confirmWalletPayment(
+              transaction.transactionId,
+              event.payuResponse,
+            );
+            if (FINAL_STATUSES.has(confirmed.data.status)) {
+              resolve(confirmed.data);
+              return;
+            }
+          } catch {
+            // Verify API polling below remains the fallback if the SDK payload
+            // is missing, malformed, or has not reached PayU yet.
+          }
+        }
         resolve(await verifyUntilFinal());
       } catch (error) {
         reject(error);

@@ -153,6 +153,11 @@ export const initiateWalletPayment = (packId: number) =>
 export const verifyWalletPayment = (transactionId: string) =>
   Api.verifyPayment(transactionId);
 
+export const confirmWalletPayment = (
+  transactionId: string,
+  payuResponse: unknown,
+) => Api.confirmPayment(transactionId, payuResponse);
+
 export const fetchPaymentHistory = async () => {
   const response = await Api.getPayments();
   return response.data;

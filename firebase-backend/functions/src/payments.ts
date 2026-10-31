@@ -18,7 +18,6 @@ const PAYU_ENVIRONMENT = defineString('PAYU_ENVIRONMENT', {
 const DATA_ROOT = 'speakly';
 const PAYMENT_ROOT = `${DATA_ROOT}/payments`;
 const RECONCILE_LIMIT = 50;
-const CREDIT_LOCK_TIMEOUT_MS = 2 * 60 * 1000;
 
 type PaymentStatus =
   | 'initiated'
@@ -147,33 +146,9 @@ const verifyWithPayU = async (transactionId: string) => {
 };
 
 const creditVerifiedPayment = async (payment: PaymentRecord, detail: any) => {
-  const paymentRef = admin
-    .database()
-    .ref(`${PAYMENT_ROOT}/${payment.transactionId}`);
   const now = Date.now();
-  const claim = await paymentRef.transaction(
-    (current: PaymentRecord | null) => {
-      if (!current || current.status === 'success') return;
-      if (
-        current.status === 'crediting' &&
-        now - Number(current.creditingAt || 0) < CREDIT_LOCK_TIMEOUT_MS
-      ) {
-        return;
-      }
-      return {
-        ...current,
-        status: 'crediting',
-        creditingAt: now,
-        updatedAt: now,
-      };
-    },
-  );
-  if (!claim.committed) return false;
-
-  const claimedPayment = claim.snapshot.val() as PaymentRecord;
-
   const finalPayment: PaymentRecord = {
-    ...claimedPayment,
+    ...payment,
     status: 'success',
     creditedAt: now,
     updatedAt: now,
@@ -190,23 +165,23 @@ const creditVerifiedPayment = async (payment: PaymentRecord, detail: any) => {
   // history without ever incrementing the wallet a second time.
   await admin
     .database()
-    .ref(`${DATA_ROOT}/users/${claimedPayment.uid}/wallet`)
+    .ref(`${DATA_ROOT}/users/${payment.uid}/wallet`)
     .transaction((current: any) => {
       const wallet = current && typeof current === 'object' ? current : {};
       const creditedPayments =
         wallet.creditedPayments && typeof wallet.creditedPayments === 'object'
           ? wallet.creditedPayments
           : {};
-      if (creditedPayments[claimedPayment.transactionId]) return;
+      if (creditedPayments[payment.transactionId]) return;
       const currentBalance = Number(wallet.balance);
       return {
         ...wallet,
         balance:
           (Number.isFinite(currentBalance) ? currentBalance : 0) +
-          claimedPayment.creditedAmount,
+          payment.creditedAmount,
         creditedPayments: {
           ...creditedPayments,
-          [claimedPayment.transactionId]: now,
+          [payment.transactionId]: now,
         },
       };
     });
@@ -215,10 +190,10 @@ const creditVerifiedPayment = async (payment: PaymentRecord, detail: any) => {
     .database()
     .ref(DATA_ROOT)
     .update({
-      [`users/${claimedPayment.uid}/paymentHistory/${claimedPayment.transactionId}`]:
+      [`users/${payment.uid}/paymentHistory/${payment.transactionId}`]:
         publicPayment(finalPayment),
-      [`payments/${claimedPayment.transactionId}`]: finalPayment,
-      [`pendingPayments/${claimedPayment.transactionId}`]: null,
+      [`payments/${payment.transactionId}`]: finalPayment,
+      [`pendingPayments/${payment.transactionId}`]: null,
     });
   return true;
 };
@@ -237,7 +212,9 @@ const verifyAndFinalize = async (transactionId: string) => {
     await updatePaymentStatus(payment, { status: 'pending' });
     return { ...payment, status: 'pending' as const };
   }
-  const verifiedAmount = Number(detail.amt ?? detail.amount);
+  const verifiedAmount = Number(
+    detail.amt ?? detail.amount ?? detail.transaction_amount,
+  );
   if (!Number.isFinite(verifiedAmount) || verifiedAmount !== payment.amount) {
     logger.error('PayU amount mismatch', {
       transactionId,
@@ -491,13 +468,109 @@ const responseHashIsValid = (body: Record<string, any>) => {
   );
 };
 
+const parsePayuResponse = (value: unknown): Record<string, any> | null => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, any>;
+  }
+  if (typeof value !== 'string' || value.length > 20_000) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+const finalizeSignedPayuResponse = async (
+  payment: PaymentRecord,
+  body: Record<string, any>,
+) => {
+  const transactionId = String(body.txnid || body.transactionId || '');
+  const amount = Number(body.amount);
+  const status = String(body.status || '').toLowerCase();
+  if (
+    transactionId !== payment.transactionId ||
+    String(body.key || '') !== PAYU_MERCHANT_KEY ||
+    !Number.isFinite(amount) ||
+    amount !== payment.amount ||
+    !responseHashIsValid(body)
+  ) {
+    throw new Error('INVALID_PAYU_RESPONSE');
+  }
+  if (status === 'success') {
+    await creditVerifiedPayment(payment, body);
+  } else if (['failure', 'failed'].includes(status)) {
+    await updatePaymentStatus(payment, {
+      status: 'failed',
+      failureReason: String(
+        body.error_Message || body.field9 || 'Payment failed',
+      ),
+    });
+  }
+};
+
+export const confirmPayment = async (req: Request, res: Response) => {
+  try {
+    const uid = await getAuthenticatedUid(req);
+    const transactionId = String(req.params.transactionId || '');
+    const snapshot = await admin
+      .database()
+      .ref(`${PAYMENT_ROOT}/${transactionId}`)
+      .once('value');
+    const payment = snapshot.val() as PaymentRecord | null;
+    if (!payment || payment.uid !== uid) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Payment not found' });
+    }
+    if (payment.status !== 'success') {
+      const payuResponse = parsePayuResponse(req.body?.payuResponse);
+      if (!payuResponse) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid PayU payment response',
+        });
+      }
+      await finalizeSignedPayuResponse(payment, payuResponse);
+    }
+    const finalSnapshot = await admin
+      .database()
+      .ref(`${PAYMENT_ROOT}/${transactionId}`)
+      .once('value');
+    return res.json({
+      success: true,
+      data: publicPayment(finalSnapshot.val() as PaymentRecord),
+    });
+  } catch (error: any) {
+    logger.error('Confirm PayU payment failed', error);
+    const unauthenticated = error?.message === 'UNAUTHENTICATED';
+    const invalid = error?.message === 'INVALID_PAYU_RESPONSE';
+    return res.status(unauthenticated ? 401 : invalid ? 400 : 500).json({
+      success: false,
+      message: unauthenticated
+        ? 'Authentication required'
+        : invalid
+        ? 'PayU payment response could not be verified'
+        : 'Unable to confirm payment',
+    });
+  }
+};
+
 export const payuWebhook = async (req: Request, res: Response) => {
   const transactionId = String(req.body?.txnid || '');
   try {
     if (!transactionId || !responseHashIsValid(req.body || {})) {
       return res.status(400).send('Invalid PayU response');
     }
-    await verifyAndFinalize(transactionId);
+    const snapshot = await admin
+      .database()
+      .ref(`${PAYMENT_ROOT}/${transactionId}`)
+      .once('value');
+    const payment = snapshot.val() as PaymentRecord | null;
+    if (!payment) return res.status(404).send('Payment not found');
+    await finalizeSignedPayuResponse(payment, req.body);
     return res.status(200).send('OK');
   } catch (error) {
     logger.error('PayU webhook processing failed', { transactionId, error });
@@ -513,13 +586,17 @@ export const reconcilePayuPayments = onSchedule(
   },
   async () => {
     const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+    // Do not use orderByValue here: production databases without an explicit
+    // `.value` index reject that query, preventing every pending payment from
+    // being reconciled. Sort the small pending index in memory instead.
     const indexSnapshot = await admin
       .database()
       .ref(`${DATA_ROOT}/pendingPayments`)
-      .orderByValue()
-      .limitToFirst(RECONCILE_LIMIT)
       .once('value');
-    const transactionIds = Object.keys(indexSnapshot.val() || {});
+    const transactionIds = Object.entries(indexSnapshot.val() || {})
+      .sort(([, first], [, second]) => Number(first) - Number(second))
+      .slice(0, RECONCILE_LIMIT)
+      .map(([transactionId]) => transactionId);
     const payments = await Promise.all(
       transactionIds.map(async transactionId => {
         const snapshot = await admin
