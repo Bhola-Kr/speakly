@@ -14,6 +14,7 @@ import authData from '../firebase/authData';
 import { hasValidUsername } from '../utils/profileValidation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SplashScreen = ({ navigation }: any) => {
   const navigateTo = useCallback(
@@ -63,9 +64,11 @@ const SplashScreen = ({ navigation }: any) => {
       ) {
         navigateTo('AudioVerification', {
           language:
+            userInfo?.profile?.supportedLanguages?.[0] ||
             userInfo?.profile?.nativeLanguage ||
             userInfo?.profile?.practiceLanguage ||
             'English',
+          languages: userInfo?.profile?.supportedLanguages,
         });
         return;
       }
@@ -82,40 +85,46 @@ const SplashScreen = ({ navigation }: any) => {
   }, [initializeApp]);
 
   return (
-    <LinearGradient
-      colors={['#F7FFFE', '#E7FAF6', '#FFFFFF']}
-      style={styles.container}
-    >
-      <StatusBar backgroundColor="#F7FFFE" barStyle="dark-content" />
-      <View style={styles.content}>
-        {/* Replace with your logo */}
-        <View style={styles.logoMark}>
-          <MaterialCommunityIcons
-            name="waveform"
-            size={54}
-            color={Colors.white}
-          />
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={['#F7FFFE', '#E7FAF6', '#FFFFFF']}
+        style={styles.container}
+      >
+        <StatusBar backgroundColor="#F7FFFE" barStyle="dark-content" />
+        <View style={styles.content}>
+          {/* Replace with your logo */}
+          <View style={styles.logoMark}>
+            <MaterialCommunityIcons
+              name="waveform"
+              size={54}
+              color={Colors.white}
+            />
+          </View>
+
+          <Text style={styles.title}>speakly</Text>
+
+          <Text style={styles.subtitle}>
+            Real conversations. Real confidence.
+          </Text>
         </View>
 
-        <Text style={styles.title}>speakly</Text>
+        <View style={styles.bottom}>
+          <ActivityIndicator color={Colors.secondary} size="large" />
 
-        <Text style={styles.subtitle}>
-          Real conversations. Real confidence.
-        </Text>
-      </View>
+          <Text style={styles.loading}>Loading...</Text>
 
-      <View style={styles.bottom}>
-        <ActivityIndicator color={Colors.secondary} size="large" />
-
-        <Text style={styles.loading}>Loading...</Text>
-
-        <Text style={styles.version}>Version {DeviceInfo.getVersion()}</Text>
-      </View>
-    </LinearGradient>
+          <Text style={styles.version}>Version {DeviceInfo.getVersion()}</Text>
+        </View>
+      </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F7FFFE',
+  },
   container: {
     flex: 1,
     justifyContent: 'space-between',

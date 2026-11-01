@@ -4,7 +4,6 @@ import {
   Alert,
   PermissionsAndroid,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
@@ -44,6 +44,9 @@ type ApplicationStatus = 'idle' | 'recording' | 'uploading' | 'pending';
 
 const AudioVerificationScreen = ({ navigation, route }: any) => {
   const language = String(route.params?.language || 'English');
+  const supportedLanguages: string[] = Array.isArray(route.params?.languages)
+    ? route.params.languages.map((item: unknown) => String(item)).filter(Boolean)
+    : [language];
   const prompt = PROMPTS[language] || PROMPTS.English;
   const [status, setStatus] = useState<ApplicationStatus>('idle');
   const [seconds, setSeconds] = useState(0);
@@ -119,6 +122,8 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
       uid: currentUser.uid,
       status: 'pending',
       language,
+      verificationLanguage: language,
+      supportedLanguages,
       prompt,
       audioUrl,
       storagePath,
@@ -132,6 +137,8 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
       [`users/${currentUser.uid}/expertApplication`]: application,
       [`users/${currentUser.uid}/isExpert`]: false,
       [`users/${currentUser.uid}/verification/voiceVerified`]: false,
+      [`users/${currentUser.uid}/profile/supportedLanguages`]:
+        supportedLanguages,
     });
     setSubmittedAt(now);
     setReviewDueAt(dueAt);

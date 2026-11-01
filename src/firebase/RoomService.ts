@@ -2,7 +2,7 @@ import auth from '@react-native-firebase/auth';
 import { scopedDatabase as database } from './firebase';
 import {
   calculateCallAmount,
-  CALL_RATE_PER_MINUTE,
+  normalizeCallRate,
 } from '../constants/constants';
 import { fetchAgoraToken, sendIncomingCallPush } from '../api/calls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,6 +27,7 @@ export interface CallHistory {
   endedAt: number;
   duration: number; // milliseconds
   amount: number; // amount charged
+  callRatePerMinute?: number;
   status: CallStatus;
   maleInfo: UserInfo;
   femaleInfo: UserInfo;
@@ -38,6 +39,7 @@ export interface UserInfo {
   tamilName?: string;
   gender?: string;
   avatarId: number | string;
+  price?: number;
 }
 
 export interface Room {
@@ -60,6 +62,7 @@ export interface Room {
   updatedAt: number;
   callStartedAt?: number | null;
   chargedAmount?: number | null;
+  callRatePerMinute?: number;
   callSettled?: boolean | null;
 }
 
@@ -82,6 +85,26 @@ class RoomService {
     }
 
     return snapshot.val();
+  }
+
+  private async logExpertActivity(
+    expertUid: string,
+    status: 'online' | 'offline' | 'active',
+    callId?: string,
+  ) {
+    const user = await this.getUser(expertUid).catch(() => null);
+    const entryRef = database().ref(`expertActivity/${expertUid}`).push();
+    await entryRef.set({
+      id: entryRef.key,
+      expertUid,
+      expertName: String(
+        user?.profile?.name || user?.profile?.tamilName || 'Expert',
+      ),
+      phone: String(user?.phone || user?.profile?.phone || ''),
+      status,
+      callId: callId || '',
+      createdAt: Date.now(),
+    });
   }
 
   private async armOfflineOnDisconnect(uid: string) {
@@ -137,7 +160,9 @@ class RoomService {
         ...(tamilName ? { tamilName } : {}),
         gender: user.profile.gender,
         avatarId: user.profile.avatarId,
+        price: normalizeCallRate(user.profile.price),
       },
+      callRatePerMinute: normalizeCallRate(user.profile.price),
       male: null,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -158,6 +183,9 @@ class RoomService {
     try {
       await database().ref().update(updates);
       await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'true');
+      await this.logExpertActivity(firebaseUser.uid, 'online').catch(error =>
+        console.warn('Unable to record expert activity:', error),
+      );
     } catch (error) {
       await this.cancelOfflineOnDisconnect(firebaseUser.uid);
       throw error;
@@ -179,6 +207,9 @@ class RoomService {
     };
 
     await database().ref().update(updates);
+    await this.logExpertActivity(firebaseUser.uid, 'offline').catch(error =>
+      console.warn('Unable to record expert activity:', error),
+    );
     await this.cancelOfflineOnDisconnect(firebaseUser.uid);
   }
 
@@ -230,7 +261,11 @@ class RoomService {
     if (blocked) {
       throw new Error('You are blocked by this user.');
     }
-    const male = await this.getUser(firebaseUser.uid);
+    const [male, female] = await Promise.all([
+      this.getUser(firebaseUser.uid),
+      this.getUser(femaleUid),
+    ]);
+    const callRatePerMinute = normalizeCallRate(female?.profile?.price);
     const agoraRes = await fetchAgoraToken();
     const roomRef = database().ref(`rooms/${femaleUid}`);
 
@@ -285,6 +320,11 @@ class RoomService {
         gender: male.profile.gender,
         avatarId: male.profile.avatarId,
       };
+      room.female = {
+        ...room.female,
+        price: callRatePerMinute,
+      };
+      room.callRatePerMinute = callRatePerMinute;
       room.agora = {
         male: agoraRes.male,
         female: agoraRes.female,
@@ -407,11 +447,17 @@ class RoomService {
   }
 
   async callConnected(femaleUid: string) {
-    await database().ref(`rooms/${femaleUid}`).update({
+    const roomRef = database().ref(`rooms/${femaleUid}`);
+    const snapshot = await roomRef.once('value');
+    const room = snapshot.val() as Room | null;
+    await roomRef.update({
       status: 'active',
       callStartedAt: Date.now(),
       updatedAt: Date.now(),
     });
+    await this.logExpertActivity(femaleUid, 'active', room?.currentCallId).catch(
+      error => console.warn('Unable to record expert activity:', error),
+    );
   }
 
   async chargeCallMinute(femaleUid: string): Promise<boolean> {
@@ -427,17 +473,18 @@ class RoomService {
     ) {
       return false;
     }
+    const callRatePerMinute = normalizeCallRate(room.callRatePerMinute);
 
     const walletTransaction = await database()
       .ref(`users/${firebaseUser.uid}/wallet/balance`)
       .transaction(balance => {
         const currentBalance = Number(balance || 0);
 
-        if (currentBalance < CALL_RATE_PER_MINUTE) {
+        if (currentBalance < callRatePerMinute) {
           return;
         }
 
-        return currentBalance - CALL_RATE_PER_MINUTE;
+        return currentBalance - callRatePerMinute;
       });
 
     if (!walletTransaction.committed) {
@@ -456,7 +503,7 @@ class RoomService {
       return {
         ...currentRoom,
         chargedAmount:
-          Number(currentRoom.chargedAmount || 0) + CALL_RATE_PER_MINUTE,
+          Number(currentRoom.chargedAmount || 0) + callRatePerMinute,
         updatedAt: Date.now(),
       };
     });
@@ -464,7 +511,7 @@ class RoomService {
     if (!billingUpdate.committed) {
       await database()
         .ref(`users/${firebaseUser.uid}/wallet/balance`)
-        .transaction(balance => Number(balance || 0) + CALL_RATE_PER_MINUTE);
+        .transaction(balance => Number(balance || 0) + callRatePerMinute);
       return false;
     }
 
@@ -503,6 +550,13 @@ class RoomService {
     if (room.currentCallId) {
       await this.saveCallHistory(room, endedAt);
     }
+    await this.logExpertActivity(
+      femaleUid,
+      'online',
+      room.currentCallId,
+    ).catch(error =>
+      console.warn('Unable to record expert activity:', error),
+    );
 
     // Wait a moment so both users receive "ended"
     setTimeout(async () => {
@@ -532,7 +586,11 @@ class RoomService {
       typeof room.chargedAmount === 'number'
         ? room.chargedAmount
         : room.callStartedAt
-        ? calculateCallAmount(room.callStartedAt, endedAt)
+        ? calculateCallAmount(
+            room.callStartedAt,
+            endedAt,
+            room.callRatePerMinute,
+          )
         : 0;
 
     const history = {
@@ -541,6 +599,7 @@ class RoomService {
       endedAt,
       duration,
       amount,
+      callRatePerMinute: normalizeCallRate(room.callRatePerMinute),
       status: duration === 0 ? 'Missed' : 'Completed',
       maleInfo: room.male,
       femaleInfo: room.female,
@@ -555,6 +614,31 @@ class RoomService {
     updates[`callHistory/${room?.female?.uid}/${room.currentCallId}`] = history;
 
     await database().ref().update(updates);
+
+    if (amount > 0 && room.female?.uid && room.currentCallId) {
+      await database()
+        .ref(`users/${room.female.uid}/expertEarnings`)
+        .transaction(value => {
+          const earnings = value && typeof value === 'object' ? value : {};
+          const creditedCalls =
+            earnings.creditedCalls &&
+            typeof earnings.creditedCalls === 'object'
+              ? earnings.creditedCalls
+              : {};
+          if (creditedCalls[room.currentCallId]) return;
+          return {
+            ...earnings,
+            total: Number(earnings.total || 0) + amount,
+            available: Number(earnings.available || 0) + amount,
+            withdrawn: Number(earnings.withdrawn || 0),
+            creditedCalls: {
+              ...creditedCalls,
+              [room.currentCallId]: { amount, creditedAt: Date.now() },
+            },
+            updatedAt: Date.now(),
+          };
+        });
+    }
 
     if (
       amount > 0 &&
@@ -777,6 +861,9 @@ class RoomService {
       const user = userSnapshot.val();
 
       if (user?.profile?.status === 'online') {
+        const rate = normalizeCallRate(user?.profile?.price);
+        room.callRatePerMinute = rate;
+        room.female = { ...room.female, price: rate };
         return room;
       }
     }

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import { fetchFirebaseToken } from '../api/calls';
 import { Alert } from 'react-native';
-import { CALL_RATE_PER_MINUTE } from '../constants/constants';
+import { normalizeCallRate } from '../constants/constants';
 import { unregisterPushNotifications } from '../notifications/pushNotifications';
 import RoomService from './RoomService';
 import { databaseRef } from './firebase';
@@ -16,6 +16,7 @@ export type UpdateProfileData = {
   role?: 'learner' | 'expert';
   practiceLanguage?: string;
   nativeLanguage?: string;
+  supportedLanguages?: string[];
   birthYear?: number | string;
   avatarId?: number | string;
   avatarSelected?: boolean;
@@ -112,13 +113,15 @@ class AuthData {
           birthYear: '',
           age: '',
           ...profile,
-          price: CALL_RATE_PER_MINUTE,
+          price: normalizeCallRate(profile.price),
           uid,
           phone: profile.phone || phone,
           gender,
           role: existing.profile?.role || role,
           practiceLanguage: existing.profile?.practiceLanguage || language,
           nativeLanguage: existing.profile?.nativeLanguage || language,
+          supportedLanguages:
+            existing.profile?.supportedLanguages || [language],
         },
         verification: {
           phoneVerified: true,

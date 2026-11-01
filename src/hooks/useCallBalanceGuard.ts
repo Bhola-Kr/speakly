@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Alert } from 'react-native';
 
-import { CALL_RATE_PER_MINUTE } from '../constants/constants';
+import { normalizeCallRate } from '../constants/constants';
 import { useUser } from './UserContext';
 import { useActiveCall } from './ActiveCallContext';
 
@@ -12,21 +12,22 @@ export const useCallBalanceGuard = (navigation: any) => {
   const { user } = useUser();
   const { activeCall, showCall } = useActiveCall();
 
-  return useCallback(() => {
+  return useCallback((requestedRate?: number) => {
     if (activeCall) {
       showCall();
       return false;
     }
     const isRegularUser = user?.isExpert !== true;
     const balance = Number(user?.wallet?.balance || 0);
+    const callRate = normalizeCallRate(requestedRate);
 
-    if (!isRegularUser || balance >= CALL_RATE_PER_MINUTE) {
+    if (!isRegularUser || balance >= callRate) {
       return true;
     }
 
     Alert.alert(
       'Insufficient Balance',
-      `You need at least ₹${CALL_RATE_PER_MINUTE} in your wallet to start a call.`,
+      `You need at least ₹${callRate} in your wallet to start a call.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {

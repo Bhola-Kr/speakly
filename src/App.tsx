@@ -323,6 +323,7 @@ Thank you.`);
           maleUid: room.male?.uid,
           maleGender: room.male?.gender,
           femaleUid,
+          callRatePerMinute: room.callRatePerMinute,
           uid: room.roomId,
           agora: room.agora,
         });
@@ -365,6 +366,7 @@ Thank you.`);
       maleUid: room.male?.uid,
       maleGender: room.male?.gender,
       femaleUid,
+      callRatePerMinute: room.callRatePerMinute,
       uid: room.roomId,
       agora: room.agora,
     });

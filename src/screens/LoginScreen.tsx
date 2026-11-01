@@ -112,7 +112,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.container}
+      edges={['top', 'right', 'bottom', 'left']}
+    >
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -123,6 +126,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={[
             styles.scrollContent,
             height > 860 && styles.tallScreenContent,
+            keyboardVisible && styles.keyboardScrollContent,
           ]}
           keyboardDismissMode="none"
           keyboardShouldPersistTaps="always"
@@ -354,6 +358,10 @@ const styles = StyleSheet.create({
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingBottom: 10 },
   tallScreenContent: { justifyContent: 'space-between' },
+  keyboardScrollContent: {
+    justifyContent: 'flex-end',
+    paddingBottom: 4,
+  },
   hero: {
     minHeight: 500,
     paddingHorizontal: 28,

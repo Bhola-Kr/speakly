@@ -306,7 +306,7 @@ ${PLAY_STORE_URL}`,
 
   return (
     <SafeAreaView
-      edges={['top', 'left', 'right']}
+      edges={['top', 'right', 'bottom', 'left']}
       style={expertStyles.container}
     >
       <StatusBar

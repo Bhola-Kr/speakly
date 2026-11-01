@@ -13,9 +13,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Colors from '../../constants/colors';
 import SurfaceCard from '../../components/SurfaceCard';
 import {
-  CALL_RATE_PER_MINUTE,
   getFemaleAvatar,
   getMaleAvatar,
+  normalizeCallRate,
 } from '../../constants/constants';
 
 const HOME_COLORS = {
@@ -55,6 +55,16 @@ const statusConfig = {
 const UserCard = ({ item, onCall, calling = false }: Props) => {
   const tamilName = String(item?.profile?.tamilName || '').trim();
   const englishName = String(item?.profile?.name || '').trim();
+  const supportedLanguages: string[] = Array.isArray(
+    item?.profile?.supportedLanguages,
+  )
+    ? item.profile.supportedLanguages
+        .map((language: unknown) => String(language).trim())
+        .filter(Boolean)
+    : [];
+  const practiceLanguage =
+    supportedLanguages.join(', ') ||
+    String(item?.profile?.practiceLanguage || '').trim();
   const displayName = tamilName || englishName || 'N/A';
   const subtitle = [
     tamilName && tamilName !== englishName ? englishName : '',
@@ -69,6 +79,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
   const currentStatus =
     statusConfig[item?.profile?.status as keyof typeof statusConfig] ||
     statusConfig.offline;
+  const callRate = normalizeCallRate(item?.profile?.price);
 
   return (
     <SurfaceCard style={styles.card}>
@@ -101,10 +112,24 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
             📍 {item.city}, {item.state}
           </Text> */}
 
-          <View style={styles.statusWrapper}>
+          <View style={styles.chipRow}>
+            {Boolean(practiceLanguage) && (
+              <View style={styles.languageChip}>
+                <MaterialCommunityIcons
+                  name="translate"
+                  size={14}
+                  color={HOME_COLORS.tealDark}
+                />
+                <Text style={styles.languageText}>
+                  Supports: {practiceLanguage}
+                </Text>
+              </View>
+            )}
+
             <View
               style={[
                 styles.onlineChip,
+                Boolean(practiceLanguage) && styles.onlineChipSpaced,
                 {
                   backgroundColor: currentStatus.background,
                 },
@@ -149,7 +174,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
           />
 
           <View style={styles.priceCopy}>
-            <Text style={styles.price}>{CALL_RATE_PER_MINUTE}</Text>
+            <Text style={styles.price}>{callRate}</Text>
 
             <Text style={styles.perMinute}>₹ / min</Text>
           </View>
@@ -255,8 +280,26 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     marginTop: 8,
+  },
+  languageChip: {
+    minWidth: 0,
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: HOME_COLORS.mint,
+  },
+  languageText: {
+    flexShrink: 1,
+    marginLeft: 5,
+    color: HOME_COLORS.tealDark,
+    fontSize: 12,
+    fontWeight: '700',
   },
   ratingChip: {
     flexDirection: 'row',
@@ -276,10 +319,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.onlineSurface,
-    marginTop: 7,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+  onlineChipSpaced: {
+    marginLeft: 7,
   },
   greenDot: {
     width: 7,
@@ -298,9 +343,6 @@ const styles = StyleSheet.create({
     backgroundColor: HOME_COLORS.border,
     marginTop: 13,
     marginBottom: 11,
-  },
-  statusWrapper: {
-    alignSelf: 'flex-start',
   },
   priceCopy: {
     marginLeft: 6,

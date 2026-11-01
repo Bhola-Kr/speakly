@@ -51,7 +51,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
 
   const handleCall = async () => {
     console.log('handleCall -> item', item);
-    if (calling || !canStartCall()) {
+    if (calling || !canStartCall(item?.callRatePerMinute)) {
       return;
     }
 

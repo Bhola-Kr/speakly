@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
   Image,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
@@ -36,6 +36,9 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
   const selectedRole: 'learner' | 'expert' =
     route.params?.role === 'expert' ? 'expert' : 'learner';
   const selectedLanguage = String(route.params?.language || 'English');
+  const selectedLanguages: string[] = Array.isArray(route.params?.languages)
+    ? route.params.languages.map((item: unknown) => String(item)).filter(Boolean)
+    : [selectedLanguage];
 
   const [gender, setGender] = useState<Gender>(
     existingProfile?.gender === 'female' ? 'female' : 'male',
@@ -62,12 +65,7 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
       }
 
       setLoading(true);
-      await authData.createUser(
-        user,
-        gender,
-        selectedRole,
-        selectedLanguage,
-      );
+      await authData.createUser(user, gender, selectedRole, selectedLanguage);
       await authData.updateProfile({
         gender,
         name: nickname.trim(),
@@ -76,6 +74,8 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         role: selectedRole,
         practiceLanguage: selectedLanguage,
         nativeLanguage: selectedLanguage,
+        supportedLanguages:
+          selectedRole === 'expert' ? selectedLanguages : [selectedLanguage],
       });
 
       if (selectedRole === 'expert') {
@@ -84,7 +84,10 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
           routes: [
             {
               name: 'AudioVerification',
-              params: { language: selectedLanguage },
+              params: {
+                language: selectedLanguages[0] || selectedLanguage,
+                languages: selectedLanguages,
+              },
             },
           ],
         });

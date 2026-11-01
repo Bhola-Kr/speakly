@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../constants/colors';
@@ -16,7 +16,7 @@ const FAQScreen = () => {
   const [expanded, setExpanded] = useState<number | null>(1);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['right', 'bottom', 'left']} style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

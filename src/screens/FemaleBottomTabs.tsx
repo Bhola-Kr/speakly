@@ -8,6 +8,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Colors from '../constants/colors';
 import FemaleHomeScreen from './FemaleHomeScreen';
 import FemaleHistoryScreen from './FemaleHistoryScreen';
+import NoFeedbackTabButton from '../components/NoFeedbackTabButton';
 
 const Tab = createBottomTabNavigator();
 
@@ -60,6 +61,8 @@ const FemaleBottomTabs = () => {
         tabBarShowLabel: true,
 
         tabBarHideOnKeyboard: true,
+
+        tabBarButton: NoFeedbackTabButton,
 
         tabBarStyle: {
           position: 'absolute',

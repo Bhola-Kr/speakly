@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
   Easing,
@@ -12,6 +12,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import InCallManager from 'react-native-incall-manager';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '../../constants/colors';
 import UI from '../../constants/ui';
 
@@ -31,6 +32,11 @@ const IncomingCallModal = ({
   onAccept,
   onDecline,
 }: Props) => {
+  const insets = useSafeAreaInsets();
+  const bottomInsetStyle = useMemo(
+    () => ({ paddingBottom: 34 + insets.bottom }),
+    [insets.bottom],
+  );
   const slideAnim = useRef(new Animated.Value(500)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -100,6 +106,7 @@ const IncomingCallModal = ({
         <Animated.View
           style={[
             styles.container,
+            bottomInsetStyle,
             {
               transform: [{ translateY: slideAnim }],
             },
@@ -212,7 +219,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 18,
-    paddingBottom: 34,
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: Colors.border,

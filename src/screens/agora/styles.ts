@@ -14,6 +14,31 @@ export default StyleSheet.create({
     flex: 1,
   },
 
+  callerDecorations: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+
+  callerGlowTop: {
+    position: 'absolute',
+    width: 310,
+    height: 310,
+    borderRadius: 155,
+    right: -120,
+    top: 45,
+    backgroundColor: 'rgba(83, 226, 205, 0.16)',
+  },
+
+  callerGlowBottom: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    left: -150,
+    bottom: 80,
+    backgroundColor: 'rgba(91, 220, 201, 0.11)',
+  },
+
   header: {
     paddingHorizontal: UI.spacing.lg,
     paddingTop: 14,
@@ -28,6 +53,32 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
 
+  headerCaller: {
+    paddingTop: 10,
+  },
+
+  headerTitleCaller: {
+    color: '#071A2D',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+
+  headerActionCaller: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderWidth: 1,
+    borderColor: '#D9F0EC',
+    shadowColor: '#078A7D',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
+  },
+
   safetyPlaceholder: {
     width: 25,
     height: 25,
@@ -39,6 +90,12 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
 
+  avatarContainerCaller: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 14,
+  },
+
   avatarOuter: {
     width: 176,
     height: 176,
@@ -48,10 +105,82 @@ export default StyleSheet.create({
     backgroundColor: Colors.darkAvatarSurface,
   },
 
+  avatarOuterCaller: {
+    width: 204,
+    height: 204,
+    borderRadius: 102,
+    padding: 7,
+    borderWidth: 10,
+    borderColor: 'rgba(177,246,235,0.55)',
+    shadowColor: '#08A991',
+    shadowOpacity: 0.2,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 7,
+  },
+
   avatar: {
     width: 160,
     height: 160,
     borderRadius: 80,
+  },
+
+  avatarCaller: {
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    borderWidth: 5,
+    borderColor: Colors.white,
+  },
+
+  currentUserAvatarBadge: {
+    position: 'absolute',
+    right: -8,
+    bottom: 4,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 3,
+    borderColor: Colors.white,
+    shadowColor: '#071A2D',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 5,
+  },
+
+  currentUserAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+
+  currentUserOnlineDot: {
+    position: 'absolute',
+    right: 0,
+    bottom: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#19BE72',
+    borderWidth: 2,
+    borderColor: Colors.white,
+  },
+
+  callDetails: {
+    alignItems: 'center',
+  },
+
+  callDetailsCaller: {
+    width: '100%',
+    maxWidth: 430,
+    marginTop: 18,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
 
   name: {
@@ -62,6 +191,13 @@ export default StyleSheet.create({
     maxWidth: width - 48,
   },
 
+  nameCaller: {
+    color: '#071A2D',
+    marginTop: 0,
+    fontSize: 27,
+    fontWeight: '900',
+  },
+
   englishName: {
     color: Colors.darkTextMuted,
     fontSize: 14,
@@ -69,55 +205,8 @@ export default StyleSheet.create({
     maxWidth: width - 48,
   },
 
-  notesButton: {
-    marginTop: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: Colors.secondary,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  notesButtonText: {
-    color: Colors.secondary,
-    fontSize: 13,
-    fontWeight: '700',
-    marginLeft: 6,
-  },
-
-  savedNoteCard: {
-    width: width - 48,
-    maxWidth: 420,
-    marginTop: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: UI.radius.card,
-    backgroundColor: Colors.darkSurfaceCard,
-    borderWidth: 1,
-    borderColor: Colors.overlayGold18,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-
-  savedNoteCopy: {
-    flex: 1,
-    marginLeft: 9,
-  },
-
-  savedNoteTitle: {
-    color: Colors.white,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-
-  savedNoteDetails: {
-    color: Colors.darkTextMuted,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
+  englishNameCaller: {
+    color: '#727A90',
   },
 
   city: {
@@ -136,6 +225,13 @@ export default StyleSheet.create({
     borderRadius: 25,
   },
 
+  statusContainerCaller: {
+    marginTop: 9,
+    backgroundColor: '#E1FAF5',
+    paddingHorizontal: 15,
+    paddingVertical: 7,
+  },
+
   dot: {
     width: 10,
     height: 10,
@@ -147,6 +243,11 @@ export default StyleSheet.create({
   status: {
     color: Colors.white,
     fontWeight: '600',
+  },
+
+  statusCaller: {
+    color: '#078A7D',
+    fontWeight: '800',
   },
 
   callerBalance: {
@@ -185,6 +286,14 @@ export default StyleSheet.create({
     marginTop: 18,
   },
 
+  callDurationLabelCaller: {
+    color: '#727A90',
+    marginTop: 12,
+    fontSize: 12,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+
   callDurationLabelCompact: {
     marginTop: 8,
   },
@@ -194,6 +303,14 @@ export default StyleSheet.create({
     fontSize: 42,
     fontWeight: '700',
     marginTop: 22,
+  },
+
+  timerCaller: {
+    color: '#071A2D',
+    marginTop: 5,
+    fontSize: 40,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 
   headerCompact: {
@@ -330,6 +447,23 @@ export default StyleSheet.create({
     paddingBottom: UI.spacing.lg,
   },
 
+  controlsCaller: {
+    marginHorizontal: 18,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: '#DDF1ED',
+    shadowColor: '#078A7D',
+    shadowOpacity: 0.11,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
+  },
+
   controlsCompact: {
     paddingBottom: 10,
   },
@@ -359,6 +493,21 @@ export default StyleSheet.create({
     backgroundColor: Colors.darkSurfaceMuted,
   },
 
+  controlButtonCaller: {
+    backgroundColor: '#E1FAF5',
+    borderWidth: 1,
+    borderColor: '#D3F2EC',
+  },
+
+  controlButtonActive: {
+    backgroundColor: Colors.secondary,
+  },
+
+  controlButtonActiveCaller: {
+    backgroundColor: '#08A991',
+    borderColor: '#08A991',
+  },
+
   controlButtonCompact: {
     width: 54,
     height: 54,
@@ -371,6 +520,32 @@ export default StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600',
+  },
+
+  controlTextCaller: {
+    color: '#071A2D',
+    fontWeight: '700',
+  },
+
+  endButtonCaller: {
+    height: 56,
+    borderRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E4535E',
+    shadowColor: '#B83845',
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+
+  endButtonCallerText: {
+    marginLeft: 10,
+    color: Colors.white,
+    fontSize: 17,
+    fontWeight: '800',
   },
 
   endButton: {
@@ -396,118 +571,5 @@ export default StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
     marginTop: 8,
-  },
-
-  notesModalRoot: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-
-  notesBackdrop: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-
-  notesSheet: {
-    maxHeight: '88%',
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: UI.radius.alert,
-    borderTopRightRadius: UI.radius.alert,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 28,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: Colors.border,
-    ...UI.shadow.modal,
-  },
-
-  notesHandle: {
-    width: 72,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.secondary,
-    alignSelf: 'center',
-    marginBottom: 24,
-  },
-
-  notesTitle: {
-    color: Colors.text,
-    fontSize: 25,
-    lineHeight: 32,
-    fontWeight: '800',
-  },
-
-  notesDescription: {
-    color: Colors.gray74,
-    fontSize: 16,
-    lineHeight: 23,
-    marginTop: 8,
-    marginBottom: 24,
-  },
-
-  notesFieldLabel: {
-    color: Colors.text,
-    backgroundColor: Colors.background,
-    fontSize: 14,
-    fontWeight: '700',
-    alignSelf: 'flex-start',
-    marginLeft: 20,
-    marginBottom: -9,
-    paddingHorizontal: 8,
-    zIndex: 1,
-  },
-
-  quickNoteInput: {
-    height: 58,
-    borderWidth: 1,
-    borderColor: Colors.gray136,
-    borderRadius: 29,
-    color: Colors.text,
-    fontSize: 16,
-    paddingHorizontal: 20,
-  },
-
-  noteDetailsInput: {
-    height: 150,
-    borderWidth: 1,
-    borderColor: Colors.gray136,
-    borderRadius: 28,
-    color: Colors.text,
-    fontSize: 16,
-    lineHeight: 22,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-
-  notesCount: {
-    color: Colors.gray74,
-    fontSize: 14,
-    textAlign: 'right',
-    marginTop: 7,
-    marginBottom: 22,
-    marginRight: 8,
-  },
-
-  saveNoteButton: {
-    height: UI.size.primaryButtonHeight,
-    borderRadius: UI.radius.button,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  saveNoteButtonDisabled: {
-    backgroundColor: Colors.disabled,
-  },
-
-  saveNoteButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: '800',
   },
 });

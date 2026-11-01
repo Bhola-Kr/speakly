@@ -7,8 +7,15 @@ Tapping the notification returns to the existing app activity. Ending the call
 or unmounting its screen stops the service and releases the wake lock.
 
 Native one-second events drive the call timer and sequential minute billing
-while the screen is off. Billing still uses the shared call rate; locking the
-phone does not pause charges. Delayed billing events are processed sequentially.
+while the screen is off. Billing uses the host profile's admin-controlled
+per-minute rate, snapshotted when the call starts; missing or invalid rates use
+the ₹5/minute default. Locking the phone does not pause charges. Delayed billing
+events are processed sequentially.
+
+When a paid call is finalized, its charged amount is credited once to the
+expert earnings ledger using the call ID as an idempotency marker. Experts can
+request withdrawal of their full available balance; that amount is reserved
+until an admin records a manual payment or rejects and restores the request.
 
 The waiting-room background listener ignores call transitions and unfocused
 screens. `goOffline` also refuses to clear an accepted or active call using a

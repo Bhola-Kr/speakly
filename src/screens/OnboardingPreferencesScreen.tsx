@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -8,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../constants/colors';
@@ -25,12 +25,38 @@ export const ONBOARDING_LANGUAGES = [
 
 const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
   const existing = route.params?.existingProfile || {};
-  const [language, setLanguage] = useState(
-    String(existing.practiceLanguage || existing.nativeLanguage || 'English'),
+  const initialLanguages = Array.isArray(existing.supportedLanguages)
+    ? existing.supportedLanguages
+        .map((item: unknown) => String(item).trim())
+        .filter(Boolean)
+    : [];
+  const [languages, setLanguages] = useState<string[]>(
+    initialLanguages.length
+      ? initialLanguages
+      : [
+          String(
+            existing.practiceLanguage ||
+              existing.nativeLanguage ||
+              'English',
+          ),
+        ],
   );
   const [role, setRole] = useState<'learner' | 'expert'>(
     existing.role === 'expert' ? 'expert' : 'learner',
   );
+  const selectLanguage = (name: string) => {
+    if (role !== 'expert') {
+      setLanguages([name]);
+      return;
+    }
+    setLanguages(current =>
+      current.includes(name)
+        ? current.length > 1
+          ? current.filter(item => item !== name)
+          : current
+        : [...current, name],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,7 +65,7 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
         <Text style={styles.step}>STEP 2 OF 3</Text>
         <Text style={styles.title}>How will you use Speakly?</Text>
         <Text style={styles.subtitle}>
-          Choose your native language and how you want to participate.
+          Choose the languages you use and how you want to participate.
         </Text>
 
         <Text style={styles.heading}>I want to</Text>
@@ -62,7 +88,12 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
             return (
               <TouchableOpacity
                 key={item.value}
-                onPress={() => setRole(item.value)}
+                onPress={() => {
+                  setRole(item.value);
+                  if (item.value === 'learner') {
+                    setLanguages(current => [current[0] || 'English']);
+                  }
+                }}
                 style={[styles.roleCard, selected && styles.selectedCard]}
               >
                 <MaterialCommunityIcons
@@ -83,14 +114,22 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
           })}
         </View>
 
-        <Text style={styles.heading}>My native language</Text>
+        <Text style={styles.heading}>
+          {role === 'expert' ? 'Languages I support' : 'My native language'}
+        </Text>
+        {role === 'expert' ? (
+          <Text style={styles.languageHelp}>
+            Select one or more. You will record verification audio in your
+            first selected language: {languages[0]}.
+          </Text>
+        ) : null}
         <View style={styles.languageGrid}>
           {ONBOARDING_LANGUAGES.map(item => {
-            const selected = language === item.name;
+            const selected = languages.includes(item.name);
             return (
               <TouchableOpacity
                 key={item.name}
-                onPress={() => setLanguage(item.name)}
+                onPress={() => selectLanguage(item.name)}
                 style={[
                   styles.languageCard,
                   selected && styles.selectedLanguage,
@@ -125,8 +164,9 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
               color={Colors.secondary}
             />
             <Text style={styles.infoText}>
-              Experts submit a short recording in this language. Review usually
-              completes within 30 minutes. You remain a learner until approved.
+              Experts submit one short recording in their first selected
+              language. Review usually completes within 30 minutes. You remain
+              a learner until approved.
             </Text>
           </View>
         )}
@@ -138,7 +178,8 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
               user: route.params?.user,
               existingProfile: route.params?.existingProfile,
               role,
-              language,
+              language: languages[0],
+              languages,
             })
           }
         />
@@ -178,6 +219,13 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     color: Colors.text,
+  },
+  languageHelp: {
+    marginTop: -6,
+    marginBottom: 12,
+    color: Colors.subText,
+    fontSize: 13,
+    lineHeight: 19,
   },
   roleRow: { flexDirection: 'row', gap: 12 },
   roleCard: {

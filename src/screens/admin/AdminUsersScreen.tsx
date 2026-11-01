@@ -7,7 +7,6 @@ import {
   Linking,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -16,16 +15,25 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { scopedDatabase as database } from '../../firebase/firebase';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../../constants/colors';
 import { useUser } from '../../hooks/UserContext';
+import { CALL_RATE_PER_MINUTE } from '../../constants/constants';
+import {
+  processWithdrawalRequest,
+  WithdrawalRequest,
+} from '../../firebase/expertEarnings';
 
 type UserRecord = Record<string, any> & { uid?: string };
 type ExpertApplication = {
   uid: string;
+  applicantName?: string;
+  applicantPhone?: string;
   status: 'pending' | 'approved' | 'rejected';
   language?: string;
+  supportedLanguages?: string[];
   audioUrl?: string;
   prompt?: string;
   submittedAt?: number;
@@ -41,10 +49,68 @@ type EditableUserFields = {
   status: string;
   avatarId: string;
   balance: string;
+  callRatePerMinute: string;
+};
+type ExpertActivity = {
+  id: string;
+  expertUid: string;
+  expertName?: string;
+  phone?: string;
+  status: 'online' | 'offline' | 'active';
+  callId?: string;
+  createdAt: number;
+};
+type ExpertActivityGroup = {
+  expertUid: string;
+  expertName: string;
+  phone: string;
+  activities: ExpertActivity[];
+  latestActivity: ExpertActivity;
+};
+type ExpertCallHistory = {
+  id: string;
+  callId: string;
+  startedAt: number;
+  duration: number;
+  amount: number;
+  status: string;
+  maleInfo?: { name?: string };
+  archivedAt?: number;
 };
 
 const PAGE_SIZE = 25;
 const USER_STATUSES = ['online', 'offline', 'busy'] as const;
+const formatDuration = (duration: number) => {
+  const totalSeconds = Math.max(0, Math.floor(duration / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return hours > 0
+    ? `${hours}h ${minutes}m`
+    : minutes > 0
+    ? `${minutes}m ${seconds}s`
+    : `${seconds}s`;
+};
+const getOnlineDuration = (entries: ExpertActivity[]) => {
+  const sorted = [...entries].sort(
+    (a, b) => Number(a.createdAt) - Number(b.createdAt),
+  );
+  let onlineSince: number | null = null;
+  let total = 0;
+  const now = Date.now();
+
+  sorted.forEach(entry => {
+    if (entry.status === 'online' && onlineSince === null) {
+      onlineSince = Number(entry.createdAt);
+    } else if (entry.status === 'offline' && onlineSince !== null) {
+      total += Math.max(0, Number(entry.createdAt) - onlineSince);
+      onlineSince = null;
+    }
+  });
+
+  if (onlineSince !== null) total += Math.max(0, now - onlineSince);
+  return total;
+};
 const readableError = (error: any, fallback: string) =>
   typeof error?.message === 'string' && error.message.trim()
     ? error.message
@@ -56,6 +122,12 @@ const getUser = (snapshot: any): UserRecord | null => {
     : null;
 };
 const getPreferredLanguage = (user: UserRecord) =>
+  (Array.isArray(user.profile?.supportedLanguages)
+    ? user.profile.supportedLanguages
+        .map((language: unknown) => String(language).trim())
+        .filter(Boolean)
+        .join(', ')
+    : '') ||
   String(
     user.expertApplication?.language ||
       user.profile?.practiceLanguage ||
@@ -87,6 +159,16 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const [saving, setSaving] = useState(false);
   const [reviewingUid, setReviewingUid] = useState('');
   const [applications, setApplications] = useState<ExpertApplication[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [activities, setActivities] = useState<ExpertActivity[]>([]);
+  const [selectedExpert, setSelectedExpert] =
+    useState<ExpertActivityGroup | null>(null);
+  const [expertCallHistory, setExpertCallHistory] = useState<
+    ExpertCallHistory[]
+  >([]);
+  const [loadingExpertHistory, setLoadingExpertHistory] = useState(false);
+  const [expertHistoryError, setExpertHistoryError] = useState('');
+  const [processingWithdrawal, setProcessingWithdrawal] = useState('');
   const [error, setError] = useState('');
   const [selectedUid, setSelectedUid] = useState('');
   const [editingUser, setEditingUser] = useState<EditableUserFields | null>(
@@ -97,6 +179,42 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     () => (isSearching ? searchResults : users),
     [isSearching, searchResults, users],
   );
+  const expertGroups = useMemo<ExpertActivityGroup[]>(() => {
+    const groups = new Map<string, ExpertActivity[]>();
+    activities.forEach(activity => {
+      const entries = groups.get(activity.expertUid) || [];
+      entries.push(activity);
+      groups.set(activity.expertUid, entries);
+    });
+
+    return [...groups.entries()]
+      .map(([expertUid, entries]) => {
+        const sorted = [...entries].sort(
+          (a, b) => Number(b.createdAt) - Number(a.createdAt),
+        );
+        const latestActivity = sorted[0];
+        return {
+          expertUid,
+          expertName: String(
+            latestActivity.expertName ||
+              sorted.find(entry => entry.expertName)?.expertName ||
+              expertUid,
+          ),
+          phone: String(
+            latestActivity.phone ||
+              sorted.find(entry => entry.phone)?.phone ||
+              expertUid,
+          ),
+          activities: entries,
+          latestActivity,
+        };
+      })
+      .sort(
+        (a, b) =>
+          Number(b.latestActivity.createdAt) -
+          Number(a.latestActivity.createdAt),
+      );
+  }, [activities]);
 
   const loadUsers = useCallback(
     async (append = false) => {
@@ -155,8 +273,128 @@ export const AdminUsersScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (!allowed) return;
+    const withdrawalRef = database().ref('withdrawalRequests');
+    const withdrawalListener = withdrawalRef.on('value', snapshot => {
+      const requests: WithdrawalRequest[] = [];
+      snapshot.forEach((child: any) => {
+        const value = child.val();
+        if (value?.status === 'pending') {
+          requests.push({ ...value, id: child.key || value.id });
+        }
+        return false;
+      });
+      requests.sort(
+        (a, b) => Number(a.requestedAt || 0) - Number(b.requestedAt || 0),
+      );
+      setWithdrawals(requests);
+    });
+
+    const activityRef = database().ref('expertActivity');
+    const activityListener = activityRef.on('value', snapshot => {
+      const entries: ExpertActivity[] = [];
+      snapshot.forEach((expertSnapshot: any) => {
+        expertSnapshot.forEach((entrySnapshot: any) => {
+          const value = entrySnapshot.val();
+          if (value?.status && value?.createdAt) {
+            entries.push({
+              ...value,
+              id: entrySnapshot.key || value.id,
+              expertUid: value.expertUid || expertSnapshot.key,
+            });
+          }
+          return false;
+        });
+        return false;
+      });
+      entries.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+      setActivities(entries);
+    });
+
+    return () => {
+      withdrawalRef.off('value', withdrawalListener);
+      activityRef.off('value', activityListener);
+    };
+  }, [allowed]);
+
+  useEffect(() => {
+    if (!selectedExpert) {
+      setExpertCallHistory([]);
+      setExpertHistoryError('');
+      return;
+    }
+
+    let active = true;
+    const loadExpertHistory = async () => {
+      setLoadingExpertHistory(true);
+      setExpertHistoryError('');
+      try {
+        const snapshot = await database()
+          .ref(`callHistory/${selectedExpert.expertUid}`)
+          .once('value');
+        const history: ExpertCallHistory[] = [];
+        snapshot.forEach((child: any) => {
+          const value = child.val();
+          if (value && !value.archivedAt) {
+            history.push({
+              ...value,
+              id: child.key || value.callId,
+            });
+          }
+          return false;
+        });
+        history.sort(
+          (a, b) => Number(b.startedAt || 0) - Number(a.startedAt || 0),
+        );
+        if (active) setExpertCallHistory(history);
+      } catch (loadError: any) {
+        if (active) {
+          setExpertHistoryError(
+            readableError(
+              loadError,
+              'Unable to load this expert’s call history.',
+            ),
+          );
+        }
+      } finally {
+        if (active) setLoadingExpertHistory(false);
+      }
+    };
+
+    loadExpertHistory();
+    return () => {
+      active = false;
+    };
+  }, [selectedExpert]);
+
+  const processWithdrawal = async (
+    request: WithdrawalRequest,
+    decision: 'paid' | 'rejected',
+  ) => {
+    if (processingWithdrawal) return;
+    try {
+      setProcessingWithdrawal(request.id);
+      await processWithdrawalRequest(request, decision);
+      Alert.alert(
+        decision === 'paid' ? 'Payment Recorded' : 'Request Rejected',
+        decision === 'paid'
+          ? `₹${request.amount} was marked as manually paid.`
+          : `₹${request.amount} was restored to the expert's available earnings.`,
+      );
+    } catch (processError: any) {
+      Alert.alert(
+        'Unable to Process Request',
+        readableError(processError, 'Please try again.'),
+      );
+    } finally {
+      setProcessingWithdrawal('');
+    }
+  };
+
+  useEffect(() => {
+    if (!allowed) return;
+    let active = true;
     const ref = database().ref('expertApplications');
-    const listener = ref.on('value', snapshot => {
+    const listener = ref.on('value', async snapshot => {
       const pending: ExpertApplication[] = [];
       snapshot.forEach((child: any) => {
         const value = child.val();
@@ -165,12 +403,38 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         }
         return false;
       });
-      pending.sort(
+      const enriched = await Promise.all(
+        pending.map(async application => {
+          let user: UserRecord = {};
+          try {
+            const userSnapshot = await database()
+              .ref(`users/${application.uid}`)
+              .once('value');
+            user = userSnapshot.val() || {};
+          } catch {
+            // Keep the application visible with its UID if profile lookup fails.
+          }
+          return {
+            ...application,
+            applicantName: String(
+              user.profile?.name || user.profile?.tamilName || '',
+            ).trim(),
+            applicantPhone: String(
+              user.phone || user.profile?.phone || '',
+            ).trim(),
+          };
+        }),
+      );
+      if (!active) return;
+      enriched.sort(
         (a, b) => Number(a.submittedAt || 0) - Number(b.submittedAt || 0),
       );
-      setApplications(pending);
+      setApplications(enriched);
     });
-    return () => ref.off('value', listener);
+    return () => {
+      active = false;
+      ref.off('value', listener);
+    };
   }, [allowed]);
 
   useEffect(() => {
@@ -227,6 +491,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         : 'offline',
       avatarId: String(item.profile?.avatarId ?? ''),
       balance: String(item.wallet?.balance ?? ''),
+      callRatePerMinute: String(
+        item.profile?.price ?? CALL_RATE_PER_MINUTE,
+      ),
     });
     setError('');
   };
@@ -261,6 +528,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 ? Number(fields.avatarId)
                 : fields.avatarId.trim(),
               status: fields.status.trim(),
+              price: Number(fields.callRatePerMinute),
             },
             verification: {
               ...(user.verification || {}),
@@ -294,6 +562,12 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         : 0;
       if (!Number.isFinite(balance))
         throw new Error('Balance must be a valid number.');
+      const callRatePerMinute = Number(
+        editingUser.callRatePerMinute.trim(),
+      );
+      if (!Number.isFinite(callRatePerMinute) || callRatePerMinute <= 0) {
+        throw new Error('Call rate must be greater than zero.');
+      }
       const avatarText = editingUser.avatarId.trim();
       const avatarId =
         avatarText && Number.isFinite(Number(avatarText))
@@ -303,6 +577,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         ...editingUser,
         birthYear,
         balance: String(balance),
+        callRatePerMinute: String(callRatePerMinute),
         avatarId: String(avatarId),
       };
       await database()
@@ -315,6 +590,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           [`users/${selectedUid}/profile/birthYear`]: birthYear,
           [`users/${selectedUid}/profile/avatarId`]: avatarId,
           [`users/${selectedUid}/profile/status`]: editingUser.status.trim(),
+          [`users/${selectedUid}/profile/price`]: callRatePerMinute,
           [`users/${selectedUid}/isExpert`]: editingUser.isExpert,
           [`users/${selectedUid}/verification/voiceVerified`]:
             editingUser.voiceVerified,
@@ -430,7 +706,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         </View>
       </View>
       {applications.length === 0 ? (
-        <Text style={styles.noApplications}>No applications awaiting review.</Text>
+        <Text style={styles.noApplications}>
+          No applications awaiting review.
+        </Text>
       ) : (
         applications.map(application => {
           const overdue = Number(application.reviewDueAt || 0) < Date.now();
@@ -440,10 +718,15 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               <View style={styles.applicationTopRow}>
                 <View style={styles.userCopy}>
                   <Text style={styles.applicationUid} numberOfLines={1}>
-                    {application.uid}
+                    {application.applicantName || 'Unnamed applicant'}
+                  </Text>
+                  <Text style={styles.applicationPhone} numberOfLines={1}>
+                    {application.applicantPhone || application.uid}
                   </Text>
                   <Text style={styles.applicationMeta}>
-                    {application.language || 'Unknown language'} ·{' '}
+                    {(application.supportedLanguages || [
+                      application.language || 'Unknown language',
+                    ]).join(', ')} ·{' '}
                     {overdue ? 'Review overdue' : 'Within review window'}
                   </Text>
                 </View>
@@ -491,6 +774,116 @@ export const AdminUsersScreen = ({ navigation }: any) => {
             </View>
           );
         })
+      )}
+    </View>
+  );
+
+  const renderWithdrawals = () => (
+    <View style={styles.reviewSection}>
+      <View style={styles.reviewHeadingRow}>
+        <Text style={styles.reviewHeading}>Withdrawal requests</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{withdrawals.length}</Text>
+        </View>
+      </View>
+      {withdrawals.length === 0 ? (
+        <Text style={styles.noApplications}>No withdrawals awaiting payment.</Text>
+      ) : (
+        withdrawals.map(request => {
+          const busy = processingWithdrawal === request.id;
+          return (
+            <View key={request.id} style={styles.applicationCard}>
+              <Text style={styles.applicationUid}>{request.expertName}</Text>
+              <Text style={styles.applicationPhone}>
+                {request.phone || request.expertUid}
+              </Text>
+              <Text style={styles.withdrawalAmount}>₹{request.amount}</Text>
+              <Text style={styles.applicationMeta}>
+                Requested {new Date(request.requestedAt).toLocaleString('en-IN')}
+              </Text>
+              <View style={styles.reviewActions}>
+                <TouchableOpacity
+                  disabled={busy}
+                  style={styles.rejectButton}
+                  onPress={() => processWithdrawal(request, 'rejected')}
+                >
+                  <Text style={styles.rejectButtonText}>Reject & restore</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={busy}
+                  style={styles.approveButton}
+                  onPress={() => processWithdrawal(request, 'paid')}
+                >
+                  {busy ? (
+                    <ActivityIndicator color={Colors.white} />
+                  ) : (
+                    <Text style={styles.approveButtonText}>Mark paid</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })
+      )}
+    </View>
+  );
+
+  const renderExpertActivity = () => (
+    <View style={styles.reviewSection}>
+      <View style={styles.reviewHeadingRow}>
+        <Text style={styles.reviewHeading}>Expert activity history</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{expertGroups.length}</Text>
+        </View>
+      </View>
+      {expertGroups.length === 0 ? (
+        <Text style={styles.noApplications}>
+          No activity has been recorded yet.
+        </Text>
+      ) : (
+        expertGroups.map(expert => (
+          <TouchableOpacity
+            key={expert.expertUid}
+            accessibilityRole="button"
+            style={styles.activityRow}
+            onPress={() => setSelectedExpert(expert)}
+          >
+            <View
+              style={[
+                styles.activityDot,
+                expert.latestActivity.status === 'online' &&
+                  styles.activityOnline,
+                expert.latestActivity.status === 'active' &&
+                  styles.activityActive,
+              ]}
+            />
+            <View style={styles.activityCopy}>
+              <Text style={styles.activityName} numberOfLines={1}>
+                {expert.expertName}
+              </Text>
+              <Text style={styles.activityMeta} numberOfLines={1}>
+                {expert.phone} · {expert.latestActivity.status} ·{' '}
+                {expert.activities.length} events
+              </Text>
+            </View>
+            <Text style={styles.activityTime}>
+              {new Date(expert.latestActivity.createdAt).toLocaleString(
+                'en-IN',
+                {
+                  day: '2-digit',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                },
+              )}
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={20}
+              color={Colors.placeholder}
+            />
+          </TouchableOpacity>
+        ))
       )}
     </View>
   );
@@ -583,6 +976,8 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         onEndReachedThreshold={0.35}
         ListHeaderComponent={
           <>
+            {renderWithdrawals()}
+            {renderExpertActivity()}
             {renderApplications()}
             <TextInput
               value={query}
@@ -766,6 +1161,20 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   />
                 </View>
                 <Text style={styles.sectionTitle}>Wallet</Text>
+                <Text style={styles.label}>Call rate (₹ per minute)</Text>
+                <TextInput
+                  value={editingUser.callRatePerMinute}
+                  onChangeText={value =>
+                    updateField(
+                      'callRatePerMinute',
+                      value.replace(/[^0-9.]/g, ''),
+                    )
+                  }
+                  style={styles.input}
+                  placeholder={String(CALL_RATE_PER_MINUTE)}
+                  placeholderTextColor={Colors.placeholder}
+                  keyboardType="decimal-pad"
+                />
                 <Text style={styles.label}>Balance</Text>
                 <TextInput
                   value={editingUser.balance}
@@ -801,6 +1210,117 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               </ScrollView>
             ) : null}
           </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+      <Modal
+        visible={Boolean(selectedExpert)}
+        animationType="slide"
+        onRequestClose={() => setSelectedExpert(null)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setSelectedExpert(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Close expert history"
+            >
+              <MaterialCommunityIcons
+                name="arrow-left"
+                size={25}
+                color={Colors.text}
+              />
+            </TouchableOpacity>
+            <View style={styles.modalTitleCopy}>
+              <Text style={styles.editorTitle}>Expert history</Text>
+            </View>
+            <View style={styles.iconButton} />
+          </View>
+          {selectedExpert ? (
+            <ScrollView
+              contentContainerStyle={styles.expertHistoryContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.expertSummaryCard}>
+                <Text style={styles.expertSummaryName}>
+                  {selectedExpert.expertName}
+                </Text>
+                <Text style={styles.expertSummaryPhone}>
+                  {selectedExpert.phone}
+                </Text>
+                <View style={styles.expertStatsRow}>
+                  <View style={styles.expertStat}>
+                    <Text style={styles.expertStatValue}>
+                      {expertCallHistory.length}
+                    </Text>
+                    <Text style={styles.expertStatLabel}>Total calls</Text>
+                  </View>
+                  <View style={styles.expertStat}>
+                    <Text style={styles.expertStatValue}>
+                      {formatDuration(
+                        expertCallHistory.reduce(
+                          (total, call) => total + Number(call.duration || 0),
+                          0,
+                        ),
+                      )}
+                    </Text>
+                    <Text style={styles.expertStatLabel}>Call time</Text>
+                  </View>
+                  <View style={styles.expertStat}>
+                    <Text style={styles.expertStatValue}>
+                      {formatDuration(
+                        getOnlineDuration(selectedExpert.activities),
+                      )}
+                    </Text>
+                    <Text style={styles.expertStatLabel}>Online time</Text>
+                  </View>
+                </View>
+              </View>
+
+              <Text style={styles.expertHistoryHeading}>Call history</Text>
+              {loadingExpertHistory ? (
+                <ActivityIndicator
+                  color={Colors.secondary}
+                  style={styles.expertHistoryLoader}
+                />
+              ) : expertHistoryError ? (
+                <Text style={styles.error}>{expertHistoryError}</Text>
+              ) : expertCallHistory.length === 0 ? (
+                <Text style={styles.noApplications}>
+                  No call history is available for this expert.
+                </Text>
+              ) : (
+                expertCallHistory.map(call => (
+                  <View key={call.id} style={styles.expertCallCard}>
+                    <View style={styles.expertCallCopy}>
+                      <Text style={styles.expertCallName} numberOfLines={1}>
+                        {call.maleInfo?.name || 'Learner'}
+                      </Text>
+                      <Text style={styles.expertCallMeta}>
+                        {call.startedAt
+                          ? new Date(call.startedAt).toLocaleString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : 'Date unavailable'}
+                      </Text>
+                    </View>
+                    <View style={styles.expertCallDetails}>
+                      <Text style={styles.expertCallDuration}>
+                        {formatDuration(Number(call.duration || 0))}
+                      </Text>
+                      <Text style={styles.expertCallStatus}>
+                        {call.status || 'Unknown'}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          ) : null}
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -876,7 +1396,114 @@ const styles = StyleSheet.create({
   },
   applicationTopRow: { flexDirection: 'row', alignItems: 'center' },
   applicationUid: { color: Colors.text, fontSize: 14, fontWeight: '800' },
+  applicationPhone: {
+    marginTop: 2,
+    color: Colors.secondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   applicationMeta: { marginTop: 3, color: Colors.subText, fontSize: 12 },
+  withdrawalAmount: {
+    marginTop: 8,
+    color: Colors.text,
+    fontSize: 25,
+    fontWeight: '900',
+  },
+  activityRow: {
+    minHeight: 64,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  activityDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+    backgroundColor: Colors.placeholder,
+  },
+  activityOnline: { backgroundColor: Colors.success },
+  activityActive: { backgroundColor: Colors.secondary },
+  activityCopy: { flex: 1, minWidth: 0 },
+  activityName: { color: Colors.text, fontSize: 14, fontWeight: '800' },
+  activityMeta: { marginTop: 3, color: Colors.subText, fontSize: 12 },
+  activityTime: {
+    maxWidth: 88,
+    marginLeft: 8,
+    color: Colors.subText,
+    fontSize: 10,
+    textAlign: 'right',
+  },
+  expertHistoryContent: { padding: 16, paddingBottom: 40 },
+  expertSummaryCard: {
+    padding: 18,
+    borderRadius: 16,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  expertSummaryName: {
+    color: Colors.text,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  expertSummaryPhone: {
+    marginTop: 4,
+    color: Colors.subText,
+    fontSize: 14,
+  },
+  expertStatsRow: {
+    marginTop: 18,
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    paddingTop: 14,
+  },
+  expertStat: { flex: 1, alignItems: 'center', paddingHorizontal: 3 },
+  expertStatValue: {
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  expertStatLabel: {
+    marginTop: 4,
+    color: Colors.subText,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  expertHistoryHeading: {
+    marginTop: 22,
+    marginBottom: 10,
+    color: Colors.text,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  expertHistoryLoader: { marginVertical: 28 },
+  expertCallCard: {
+    minHeight: 70,
+    marginBottom: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  expertCallCopy: { flex: 1, minWidth: 0 },
+  expertCallName: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+  expertCallMeta: { marginTop: 4, color: Colors.subText, fontSize: 11 },
+  expertCallDetails: { alignItems: 'flex-end', marginLeft: 10 },
+  expertCallDuration: { color: Colors.text, fontSize: 13, fontWeight: '700' },
+  expertCallStatus: { marginTop: 3, color: Colors.subText, fontSize: 11 },
   listenButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   listenText: { color: Colors.secondary, fontSize: 13, fontWeight: '800' },
   applicationPrompt: {

@@ -19,6 +19,10 @@ import { getUserAvatar } from '../constants/constants';
 import RoomService from '../firebase/RoomService';
 import { useActiveCall } from '../hooks/ActiveCallContext';
 import { useUser } from '../hooks/UserContext';
+import {
+  MIN_EXPERT_WITHDRAWAL_AMOUNT,
+  requestExpertWithdrawal,
+} from '../firebase/expertEarnings';
 
 const COLORS = {
   background: '#F5FFFD',
@@ -103,6 +107,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const tutorialCardWidth = width - 40;
   const [page, setPage] = useState(0);
   const [goingOnline, setGoingOnline] = useState(false);
+  const [requestingWithdrawal, setRequestingWithdrawal] = useState(false);
   const bannerRef = useRef<FlatList>(null);
 
   const { user } = useUser();
@@ -114,6 +119,28 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     tamilName && englishName && tamilName !== englishName,
   );
   const isOnline = user?.profile?.status === 'online';
+  const totalEarnings = Number(user?.expertEarnings?.total || 0);
+  const availableEarnings = Number(user?.expertEarnings?.available || 0);
+  const pendingWithdrawal = user?.expertEarnings?.pendingWithdrawal;
+
+  const requestWithdrawal = async () => {
+    if (requestingWithdrawal) return;
+    try {
+      setRequestingWithdrawal(true);
+      const request = await requestExpertWithdrawal();
+      Alert.alert(
+        'Withdrawal Requested',
+        `₹${request.amount} is reserved for manual payment by the admin.`,
+      );
+    } catch (error: any) {
+      Alert.alert(
+        'Unable to Request Withdrawal',
+        error?.message || 'Please try again.',
+      );
+    } finally {
+      setRequestingWithdrawal(false);
+    }
+  };
 
   const goOnLine = async () => {
     if (activeCall) {
@@ -276,6 +303,55 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             )}
           </LinearGradient>
         </TouchableOpacity>
+
+        <View style={styles.earningsCard}>
+          <View style={styles.earningsHeader}>
+            <View>
+              <Text style={styles.earningsEyebrow}>YOUR EARNINGS</Text>
+              <Text style={styles.earningsTotal}>₹{totalEarnings}</Text>
+              <Text style={styles.earningsAvailable}>
+                ₹{availableEarnings} available
+              </Text>
+            </View>
+            <View style={styles.earningsIcon}>
+              <Ionicons name="wallet-outline" size={30} color={COLORS.tealDark} />
+            </View>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={
+              requestingWithdrawal ||
+              availableEarnings < MIN_EXPERT_WITHDRAWAL_AMOUNT ||
+              Boolean(pendingWithdrawal?.id)
+            }
+            onPress={requestWithdrawal}
+            style={[
+              styles.withdrawButton,
+              (availableEarnings < MIN_EXPERT_WITHDRAWAL_AMOUNT ||
+                pendingWithdrawal?.id) &&
+                styles.withdrawButtonDisabled,
+            ]}
+          >
+            {requestingWithdrawal ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <Text style={styles.withdrawButtonText}>
+                {pendingWithdrawal?.id
+                  ? `Withdrawal pending · ₹${Number(
+                      pendingWithdrawal.amount || 0,
+                    )}`
+                  : 'Request withdrawal'}
+              </Text>
+            )}
+          </TouchableOpacity>
+          {!pendingWithdrawal?.id &&
+            availableEarnings > 0 &&
+            availableEarnings < MIN_EXPERT_WITHDRAWAL_AMOUNT && (
+              <Text style={styles.withdrawalMinimum}>
+                Minimum withdrawal is ₹{MIN_EXPERT_WITHDRAWAL_AMOUNT}.
+              </Text>
+            )}
+        </View>
 
         <LinearGradient
           colors={['#FFFDFB', COLORS.coralPale]}
@@ -613,6 +689,57 @@ const styles = StyleSheet.create({
   },
   loadingButton: {
     opacity: 0.78,
+  },
+  earningsCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+  },
+  earningsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  earningsEyebrow: {
+    color: COLORS.tealDark,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+  },
+  earningsTotal: {
+    marginTop: 6,
+    color: COLORS.navy,
+    fontSize: 32,
+    fontWeight: '900',
+  },
+  earningsAvailable: { marginTop: 2, color: COLORS.body, fontSize: 14 },
+  earningsIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.tealPale,
+  },
+  withdrawButton: {
+    minHeight: 48,
+    marginTop: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.tealDark,
+  },
+  withdrawButtonDisabled: { opacity: 0.5 },
+  withdrawButtonText: { color: COLORS.white, fontSize: 15, fontWeight: '800' },
+  withdrawalMinimum: {
+    marginTop: 8,
+    color: COLORS.body,
+    fontSize: 12,
+    textAlign: 'center',
   },
   onlineDot: {
     width: 11,

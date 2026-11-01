@@ -173,23 +173,26 @@ export const calculateAge = (birthYear: number | string): string => {
   return age >= 0 ? age.toString() : '';
 };
 
-export const CALL_RATE_PER_MINUTE = 9;
+export const CALL_RATE_PER_MINUTE = 5;
+
+export const normalizeCallRate = (value: unknown): number => {
+  const rate = Number(value);
+  return Number.isFinite(rate) && rate > 0 ? rate : CALL_RATE_PER_MINUTE;
+};
 
 /**
- * Calculates call amount.
- * - Less than or equal to 1 minute = ₹9
- * - 1 min 1 sec = ₹18
- * - 2 min 0 sec = ₹18
- * - 2 min 1 sec = ₹27
+ * Calculates call amount using the host's snapshotted per-minute rate.
+ * With the ₹5 default: up to 1 minute = ₹5, and 1 min 1 sec = ₹10.
  */
 export const calculateCallAmount = (
   callStartedAt: number,
   callEndedAt: number = Date.now(),
+  ratePerMinute: number = CALL_RATE_PER_MINUTE,
 ): number => {
   const durationMs = Math.max(0, callEndedAt - callStartedAt);
 
   const durationMinutes = Math.ceil(durationMs / (60 * 1000));
 
   // Minimum charge is 1 minute
-  return Math.max(1, durationMinutes) * CALL_RATE_PER_MINUTE;
+  return Math.max(1, durationMinutes) * normalizeCallRate(ratePerMinute);
 };

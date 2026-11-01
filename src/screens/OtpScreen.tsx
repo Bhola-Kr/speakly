@@ -216,7 +216,10 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.container}
+      edges={['top', 'right', 'bottom', 'left']}
+    >
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}

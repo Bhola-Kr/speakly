@@ -15,6 +15,13 @@ server-maintained search index.
 Tapping any result opens an edit modal. Only the explicitly supported profile,
 verification, and wallet fields are updated, so unrelated record data is not
 replaced. Invalid field values, missing IDs, and Firebase failures are handled.
+Expert profiles include an admin-controlled call rate in rupees per minute.
+New and legacy experts default to ₹5/minute until an administrator assigns a
+different positive rate.
+The admin dashboard also shows the latest expert online, offline, and active-call
+events. Pending withdrawal requests show the expert name, phone, amount, and
+request time. After sending payment outside the app, an admin marks the request
+paid; rejecting a request restores the reserved amount to available earnings.
 Deletion requires confirmation and removes the user's Realtime Database user,
 room, and owned call-history nodes. It does not delete the Firebase
 Authentication account; that requires Firebase Admin SDK on a trusted backend.

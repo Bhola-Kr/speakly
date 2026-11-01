@@ -9,11 +9,6 @@ import {
   Alert,
   StatusBar,
   BackHandler,
-  KeyboardAvoidingView,
-  Modal,
-  ScrollView,
-  TextInput,
-  TouchableWithoutFeedback,
   Vibration,
   useWindowDimensions,
 } from 'react-native';
@@ -45,9 +40,10 @@ import {
 import Colors from '../../constants/colors';
 import RoomService from '../../firebase/RoomService';
 import {
-  CALL_RATE_PER_MINUTE,
   getFemaleAvatar,
   getMaleAvatar,
+  getUserAvatar,
+  normalizeCallRate,
 } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 
@@ -60,19 +56,6 @@ type Props = {
 
 const LOW_BALANCE_MINUTES = 3;
 const BILLING_INTERVAL_MS = 60 * 1000;
-const QUICK_NOTE_LIMIT = 30;
-const NOTE_DETAILS_LIMIT = 300;
-
-type MaleUserNote = {
-  quickNote: string;
-  details: string;
-  updatedAt?: number;
-};
-
-const EMPTY_NOTE: MaleUserNote = {
-  quickNote: '',
-  details: '',
-};
 
 const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const { user } = useUser();
@@ -108,11 +91,14 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     maleUid,
     maleGender,
     expertGender,
+    callRatePerMinute: routeCallRate,
     agora,
   } = route?.params ?? {};
+  const callRatePerMinute = normalizeCallRate(routeCallRate);
 
   const token = gender === 'male' ? agora?.male?.token : agora?.female?.token;
   const uid = gender === 'male' ? agora?.male?.uid : agora?.female?.uid;
+  const isCaller = gender === 'male';
   const tamilName = String(routeTamilName || '').trim();
   const englishName = String(userName || '').trim();
   const displayName =
@@ -151,16 +137,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
   const [callerBalance, setCallerBalance] = useState<number | null>(null);
 
-  const [maleUserNote, setMaleUserNote] = useState<MaleUserNote>(EMPTY_NOTE);
-
-  const [quickNote, setQuickNote] = useState('');
-
-  const [noteDetails, setNoteDetails] = useState('');
-
-  const [showNotes, setShowNotes] = useState(false);
-
-  const [savingNote, setSavingNote] = useState(false);
-
   const walletBalance = Number(user?.wallet?.balance);
   const countdownBalance = gender === 'male' ? walletBalance : callerBalance;
 
@@ -176,7 +152,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
     // The current minute is already paid. Two further payable minutes means
     // the call has three minutes remaining, including the current minute.
-    const countdownThreshold = CALL_RATE_PER_MINUTE * (LOW_BALANCE_MINUTES - 1);
+    const countdownThreshold = callRatePerMinute * (LOW_BALANCE_MINUTES - 1);
     if (countdownBalance > countdownThreshold) {
       countdownAlertedRef.current = false;
       return;
@@ -186,7 +162,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       countdownAlertedRef.current = true;
       Vibration.vibrate([0, 400, 200, 400]);
     }
-  }, [billingStarted, connected, countdownBalance]);
+  }, [billingStarted, callRatePerMinute, connected, countdownBalance]);
 
   useEffect(() => {
     if (gender !== 'female' || !maleUid) {
@@ -205,64 +181,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       balanceRef.off('value', listener);
     };
   }, [gender, maleUid]);
-
-  useEffect(() => {
-    const currentFemaleUid = auth().currentUser?.uid;
-
-    if (gender !== 'female' || !currentFemaleUid || !maleUid) {
-      setMaleUserNote(EMPTY_NOTE);
-      return;
-    }
-
-    setMaleUserNote(EMPTY_NOTE);
-    const noteRef = database().ref(`userNotes/${currentFemaleUid}/${maleUid}`);
-    const listener = noteRef.on('value', snapshot => {
-      const savedNote = snapshot.val();
-
-      setMaleUserNote({
-        quickNote: String(savedNote?.quickNote || ''),
-        details: String(savedNote?.details || ''),
-        updatedAt: Number(savedNote?.updatedAt) || undefined,
-      });
-    });
-
-    return () => noteRef.off('value', listener);
-  }, [gender, maleUid]);
-
-  const openNotes = useCallback(() => {
-    setQuickNote(maleUserNote.quickNote);
-    setNoteDetails(maleUserNote.details);
-    setShowNotes(true);
-  }, [maleUserNote]);
-
-  const saveNote = useCallback(async () => {
-    const currentFemaleUid = auth().currentUser?.uid;
-    const trimmedQuickNote = quickNote.trim();
-    const trimmedDetails = noteDetails.trim();
-
-    if (!currentFemaleUid || !maleUid || savingNote) {
-      return;
-    }
-
-    if (!trimmedQuickNote && !trimmedDetails) {
-      Alert.alert('Add a Note', 'Enter a quick note or more details first.');
-      return;
-    }
-
-    try {
-      setSavingNote(true);
-      await database().ref(`userNotes/${currentFemaleUid}/${maleUid}`).set({
-        quickNote: trimmedQuickNote,
-        details: trimmedDetails,
-        updatedAt: Date.now(),
-      });
-      setShowNotes(false);
-    } catch {
-      Alert.alert('Unable to Save Note', 'Please try again.');
-    } finally {
-      setSavingNote(false);
-    }
-  }, [maleUid, noteDetails, quickNote, savingNote]);
 
   const requestPermission = useCallback(async () => {
     if (Platform.OS !== 'android') {
@@ -320,7 +238,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const callerWalletSeconds =
     callerBalance === null
       ? 0
-      : Math.floor(Math.max(0, callerBalance) / CALL_RATE_PER_MINUTE) *
+      : Math.floor(Math.max(0, callerBalance) / callRatePerMinute) *
         (BILLING_INTERVAL_MS / 1000);
   const femaleRemainingSeconds = billingStarted
     ? callerWalletSeconds + paidMinuteSecondsRemaining
@@ -367,6 +285,20 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       }
     },
     [femaleUid, onFinished, stopBilling, stopTimer],
+  );
+
+  const finishCallFromRemote = useCallback(
+    (updateRoom: boolean, message: string) => {
+      if (callEndedRef.current) {
+        return;
+      }
+
+      finishCall(updateRoom);
+      if (gender === 'male') {
+        Alert.alert('Call Ended', message);
+      }
+    },
+    [finishCall, gender],
   );
 
   const endForInsufficientBalance = useCallback(async () => {
@@ -497,7 +429,10 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
       onUserOffline: (_connection, _remoteUid, reason) => {
         if (reason === UserOfflineReasonType.UserOfflineQuit) {
-          finishCall();
+          finishCallFromRemote(
+            true,
+            'The expert has disconnected from the call.',
+          );
         } else {
           setStatus('Waiting for the other user to reconnect...');
           if (!peerRecoveryRef.current) {
@@ -565,6 +500,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     channelName,
     femaleUid,
     finishCall,
+    finishCallFromRemote,
     requestPermission,
     startTimer,
     startBilling,
@@ -741,12 +677,15 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       if (
         gender === 'female' &&
         room?.status === 'active' &&
-        Number(room.chargedAmount || 0) >= CALL_RATE_PER_MINUTE
+        Number(room.chargedAmount || 0) >=
+          normalizeCallRate(room.callRatePerMinute)
       ) {
         setBillingStarted(true);
       }
 
-      if (
+      if (room?.status === 'ended' && gender === 'male') {
+        finishCallFromRemote(false, 'The call has ended.');
+      } else if (
         !room ||
         ['ended', 'waiting', 'offline', 'rejected', 'men_rejected'].includes(
           room.status,
@@ -755,36 +694,57 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         finishCall(false);
       }
     });
-  }, [femaleUid, finishCall, gender]);
+  }, [femaleUid, finishCall, finishCallFromRemote, gender]);
 
   return (
     <LinearGradient
-      colors={[Colors.darkBackground, Colors.darkBackgroundAlt]}
+      colors={
+        isCaller
+          ? ['#F7FFFE', '#E9FBF7']
+          : [Colors.darkBackground, Colors.darkBackgroundAlt]
+      }
       style={styles.container}
     >
       {visible && (
-        <StatusBar backgroundColor={Colors.primary} barStyle="light-content" />
+        <StatusBar
+          backgroundColor={isCaller ? '#F7FFFE' : Colors.primary}
+          barStyle={isCaller ? 'dark-content' : 'light-content'}
+        />
+      )}
+      {isCaller && (
+        <View pointerEvents="none" style={styles.callerDecorations}>
+          <View style={styles.callerGlowTop} />
+          <View style={styles.callerGlowBottom} />
+        </View>
       )}
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <View style={[styles.header, compactLayout && styles.headerCompact]}>
+        <View
+          style={[
+            styles.header,
+            isCaller && styles.headerCaller,
+            compactLayout && styles.headerCompact,
+          ]}
+        >
           <TouchableOpacity
             onPress={onMinimize}
             accessibilityLabel="Minimize call"
+            style={isCaller && styles.headerActionCaller}
           >
             <MaterialCommunityIcons
               name="arrow-left"
               size={26}
-              color={Colors.white}
+              color={isCaller ? '#071A2D' : Colors.white}
             />
           </TouchableOpacity>
 
           <Text
             style={[
               styles.headerTitle,
+              isCaller && styles.headerTitleCaller,
               compactLayout && styles.headerTitleCompact,
             ]}
           >
-            Encrypted Voice Call
+            {isCaller ? 'Ongoing Voice Call' : 'Encrypted Voice Call'}
           </Text>
 
           {connected ? (
@@ -793,11 +753,12 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               accessibilityRole="button"
               disabled={safetyActionLoading}
               onPress={showSafetyOptions}
+              style={isCaller && styles.headerActionCaller}
             >
               <MaterialCommunityIcons
                 name={safetyActionLoading ? 'loading' : 'shield-alert-outline'}
                 size={25}
-                color={Colors.secondary}
+                color={isCaller ? '#078A7D' : Colors.secondary}
               />
             </TouchableOpacity>
           ) : (
@@ -808,12 +769,19 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         <View
           style={[
             styles.avatarContainer,
+            isCaller && styles.avatarContainerCaller,
             compactLayout && styles.avatarContainerCompact,
           ]}
         >
-          <View
+          <LinearGradient
+            colors={
+              isCaller
+                ? ['#59E4D0', '#12AE98']
+                : [Colors.darkAvatarSurface, Colors.darkAvatarSurface]
+            }
             style={[
               styles.avatarOuter,
+              isCaller && styles.avatarOuterCaller,
               compactLayout && styles.avatarOuterCompact,
             ]}
           >
@@ -827,124 +795,106 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                   ? getFemaleAvatar(avatarId)
                   : getMaleAvatar(avatarId)
               }
-              style={[styles.avatar, compactLayout && styles.avatarCompact]}
+              style={[
+                styles.avatar,
+                isCaller && styles.avatarCaller,
+                compactLayout && styles.avatarCompact,
+              ]}
             />
-          </View>
 
-          <Text
-            numberOfLines={1}
-            style={[styles.name, compactLayout && styles.nameCompact]}
+            {isCaller && (
+              <View style={styles.currentUserAvatarBadge}>
+                <Image
+                  source={getUserAvatar(user)}
+                  style={styles.currentUserAvatar}
+                />
+                <View style={styles.currentUserOnlineDot} />
+              </View>
+            )}
+          </LinearGradient>
+
+          <View
+            style={[styles.callDetails, isCaller && styles.callDetailsCaller]}
           >
-            {displayName}
-          </Text>
-
-          {showEnglishName && (
             <Text
               numberOfLines={1}
               style={[
-                styles.englishName,
-                compactLayout && styles.englishNameCompact,
+                styles.name,
+                isCaller && styles.nameCaller,
+                compactLayout && styles.nameCompact,
               ]}
             >
-              {englishName}
+              {displayName}
             </Text>
-          )}
 
-          {gender === 'female' && (
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={
-                maleUserNote.quickNote || maleUserNote.details
-                  ? 'Edit notes about caller'
-                  : 'Add notes about caller'
-              }
-              activeOpacity={0.8}
-              style={styles.notesButton}
-              onPress={openNotes}
-            >
-              <MaterialCommunityIcons
-                name="pencil-outline"
-                size={16}
-                color={Colors.secondary}
-              />
-              <Text style={styles.notesButtonText}>
-                {maleUserNote.quickNote || maleUserNote.details
-                  ? 'Edit Notes'
-                  : 'Add Notes'}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {gender === 'female' &&
-            Boolean(maleUserNote.quickNote || maleUserNote.details) && (
-              <TouchableOpacity
-                accessibilityLabel={
-                  speaker ? 'Turn speaker off' : 'Turn speaker on'
-                }
-                accessibilityRole="button"
-                activeOpacity={0.8}
-                style={styles.savedNoteCard}
-                onPress={openNotes}
+            {showEnglishName && (
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.englishName,
+                  isCaller && styles.englishNameCaller,
+                  compactLayout && styles.englishNameCompact,
+                ]}
               >
-                <MaterialCommunityIcons
-                  name="note-text-outline"
-                  size={18}
-                  color={Colors.secondary}
-                />
-                <View style={styles.savedNoteCopy}>
-                  {Boolean(maleUserNote.quickNote) && (
-                    <Text numberOfLines={1} style={styles.savedNoteTitle}>
-                      {maleUserNote.quickNote}
-                    </Text>
-                  )}
-                  {Boolean(maleUserNote.details) && (
-                    <Text numberOfLines={2} style={styles.savedNoteDetails}>
-                      {maleUserNote.details}
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
+                {englishName}
+              </Text>
             )}
-          <View
-            style={[
-              styles.statusContainer,
-              compactLayout && styles.statusContainerCompact,
-            ]}
-          >
+
             <View
               style={[
-                styles.dot,
-                {
-                  backgroundColor: connected
-                    ? Colors.online
-                    : Colors.connectionWarning,
-                },
-              ]}
-            />
-
-            <Text style={styles.status}>{status}</Text>
-          </View>
-
-          {callTimerReady && (
-            <Text
-              style={[
-                styles.callDurationLabel,
-                compactLayout && styles.callDurationLabelCompact,
+                styles.statusContainer,
+                isCaller && styles.statusContainerCaller,
+                compactLayout && styles.statusContainerCompact,
               ]}
             >
-              {gender === 'female' ? 'Call time remaining' : 'Call duration'}
-            </Text>
-          )}
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: connected
+                      ? Colors.online
+                      : Colors.connectionWarning,
+                  },
+                ]}
+              />
 
-          {callTimerReady && (
-            <Text style={[styles.timer, compactLayout && styles.timerCompact]}>
-              {formatCallTime(displayedCallTime)}
-            </Text>
-          )}
+              <Text style={[styles.status, isCaller && styles.statusCaller]}>
+                {status}
+              </Text>
+            </View>
+
+            {callTimerReady && (
+              <Text
+                style={[
+                  styles.callDurationLabel,
+                  isCaller && styles.callDurationLabelCaller,
+                  compactLayout && styles.callDurationLabelCompact,
+                ]}
+              >
+                {gender === 'female' ? 'Call time remaining' : 'Call duration'}
+              </Text>
+            )}
+
+            {callTimerReady && (
+              <Text
+                style={[
+                  styles.timer,
+                  isCaller && styles.timerCaller,
+                  compactLayout && styles.timerCompact,
+                ]}
+              >
+                {formatCallTime(displayedCallTime)}
+              </Text>
+            )}
+          </View>
         </View>
 
         <View
-          style={[styles.controls, compactLayout && styles.controlsCompact]}
+          style={[
+            styles.controls,
+            isCaller && styles.controlsCaller,
+            compactLayout && styles.controlsCompact,
+          ]}
         >
           <View style={[styles.row, compactLayout && styles.rowCompact]}>
             {/* Speaker */}
@@ -957,10 +907,12 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 accessibilityRole="button"
                 style={[
                   styles.controlButton,
+                  isCaller && styles.controlButtonCaller,
                   compactLayout && styles.controlButtonCompact,
-                  speaker && {
-                    backgroundColor: Colors.secondary,
-                  },
+                  speaker &&
+                    (isCaller
+                      ? styles.controlButtonActiveCaller
+                      : styles.controlButtonActive),
                 ]}
                 activeOpacity={0.8}
                 onPress={toggleSpeaker}
@@ -968,11 +920,26 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 <MaterialCommunityIcons
                   name={speaker ? 'volume-high' : 'volume-off'}
                   size={compactLayout ? 22 : 24}
-                  color={speaker ? Colors.darkBackground : Colors.white}
+                  color={
+                    speaker
+                      ? isCaller
+                        ? Colors.white
+                        : Colors.darkBackground
+                      : isCaller
+                      ? '#078A7D'
+                      : Colors.white
+                  }
                 />
               </TouchableOpacity>
 
-              <Text style={styles.controlText}>Speaker</Text>
+              <Text
+                style={[
+                  styles.controlText,
+                  isCaller && styles.controlTextCaller,
+                ]}
+              >
+                Speaker
+              </Text>
             </View>
 
             {/* Mute */}
@@ -981,10 +948,12 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               <TouchableOpacity
                 style={[
                   styles.controlButton,
+                  isCaller && styles.controlButtonCaller,
                   compactLayout && styles.controlButtonCompact,
-                  muted && {
-                    backgroundColor: Colors.secondary,
-                  },
+                  muted &&
+                    (isCaller
+                      ? styles.controlButtonActiveCaller
+                      : styles.controlButtonActive),
                 ]}
                 activeOpacity={0.8}
                 onPress={toggleMute}
@@ -992,11 +961,24 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 <MaterialCommunityIcons
                   name={muted ? 'microphone-off' : 'microphone'}
                   size={compactLayout ? 22 : 24}
-                  color={muted ? Colors.darkBackground : Colors.white}
+                  color={
+                    muted
+                      ? isCaller
+                        ? Colors.white
+                        : Colors.darkBackground
+                      : isCaller
+                      ? '#078A7D'
+                      : Colors.white
+                  }
                 />
               </TouchableOpacity>
 
-              <Text style={styles.controlText}>
+              <Text
+                style={[
+                  styles.controlText,
+                  isCaller && styles.controlTextCaller,
+                ]}
+              >
                 {muted ? 'Unmute' : 'Mute'}
               </Text>
             </View>
@@ -1004,100 +986,45 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
           {/* End Call */}
 
-          <TouchableOpacity
-            accessibilityLabel="End call"
-            accessibilityRole="button"
-            activeOpacity={0.9}
-            style={[styles.endButton, compactLayout && styles.endButtonCompact]}
-            onPress={leaveCall}
-          >
-            <MaterialCommunityIcons
-              name="phone-hangup"
-              size={compactLayout ? 22 : 24}
-              color={Colors.white}
-            />
-          </TouchableOpacity>
+          {isCaller ? (
+            <TouchableOpacity
+              accessibilityLabel="End call"
+              accessibilityRole="button"
+              activeOpacity={0.9}
+              style={styles.endButtonCaller}
+              onPress={leaveCall}
+            >
+              <MaterialCommunityIcons
+                name="phone-hangup"
+                size={compactLayout ? 22 : 24}
+                color={Colors.white}
+              />
+              <Text style={styles.endButtonCallerText}>End Call</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                accessibilityLabel="End call"
+                accessibilityRole="button"
+                activeOpacity={0.9}
+                style={[
+                  styles.endButton,
+                  compactLayout && styles.endButtonCompact,
+                ]}
+                onPress={leaveCall}
+              >
+                <MaterialCommunityIcons
+                  name="phone-hangup"
+                  size={compactLayout ? 22 : 24}
+                  color={Colors.white}
+                />
+              </TouchableOpacity>
 
-          <Text style={styles.endText}>End Call</Text>
+              <Text style={styles.endText}>End Call</Text>
+            </>
+          )}
         </View>
       </SafeAreaView>
-
-      <Modal
-        animationType="slide"
-        transparent
-        visible={showNotes}
-        onRequestClose={() => setShowNotes(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.notesModalRoot}
-        >
-          <TouchableWithoutFeedback onPress={() => setShowNotes(false)}>
-            <View style={styles.notesBackdrop} />
-          </TouchableWithoutFeedback>
-
-          <View style={styles.notesSheet}>
-            <View style={styles.notesHandle} />
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={styles.notesTitle}>Remember {displayName}</Text>
-              <Text style={styles.notesDescription}>
-                Save a few details about this user. These notes will be shown
-                the next time they call you.
-              </Text>
-
-              <Text style={styles.notesFieldLabel}>Quick Note</Text>
-              <TextInput
-                autoFocus
-                maxLength={QUICK_NOTE_LIMIT}
-                placeholder="Eg. Cricket fan"
-                placeholderTextColor={Colors.gray143}
-                style={styles.quickNoteInput}
-                value={quickNote}
-                onChangeText={setQuickNote}
-              />
-              <Text style={styles.notesCount}>
-                {quickNote.length}/{QUICK_NOTE_LIMIT}
-              </Text>
-
-              <Text style={styles.notesFieldLabel}>More Details</Text>
-              <TextInput
-                maxLength={NOTE_DETAILS_LIMIT}
-                multiline
-                placeholder="Eg. Likes cricket. Lives in Chennai. Usually calls at night."
-                placeholderTextColor={Colors.gray143}
-                style={styles.noteDetailsInput}
-                textAlignVertical="top"
-                value={noteDetails}
-                onChangeText={setNoteDetails}
-              />
-              <Text style={styles.notesCount}>
-                {noteDetails.length}/{NOTE_DETAILS_LIMIT}
-              </Text>
-
-              <TouchableOpacity
-                accessibilityRole="button"
-                activeOpacity={0.85}
-                disabled={
-                  savingNote || (!quickNote.trim() && !noteDetails.trim())
-                }
-                style={[
-                  styles.saveNoteButton,
-                  (savingNote || (!quickNote.trim() && !noteDetails.trim())) &&
-                    styles.saveNoteButtonDisabled,
-                ]}
-                onPress={saveNote}
-              >
-                <Text style={styles.saveNoteButtonText}>
-                  {savingNote ? 'Saving...' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </LinearGradient>
   );
 };

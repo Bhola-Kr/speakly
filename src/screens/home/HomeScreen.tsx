@@ -150,7 +150,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleCall = useCallback(
     async (item: any) => {
-      if (callInProgressRef.current || !canStartCall()) {
+      if (
+        callInProgressRef.current ||
+        !canStartCall(Number(item?.profile?.price))
+      ) {
         return;
       }
 
@@ -186,15 +189,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const onRandomCall = useCallback(async () => {
-    if (callInProgressRef.current || !canStartCall()) {
-      return;
-    }
+    if (callInProgressRef.current) return;
 
     callInProgressRef.current = true;
 
     try {
       setRandomCalling(true);
       const randomRoom = await RoomService.getRandomFemaleRoom();
+      if (!canStartCall(Number(randomRoom?.callRatePerMinute))) return;
 
       await RoomService.callFemale(randomRoom?.female?.uid);
 

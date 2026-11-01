@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   Alert,
@@ -10,6 +9,7 @@ import {
   FlatList,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';

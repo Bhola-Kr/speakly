@@ -4,9 +4,9 @@ The app now creates payment attempts on the Firebase backend, opens PayU Checkou
 
 ## Firebase configuration
 
-The PayU merchant key and salt are currently configured directly in the Firebase backend source. They are not included in the React Native application bundle. Rotate both values before production and move the replacement values to Firebase Secret Manager when possible.
+The PayU merchant key and salt are configured directly in the Firebase backend source. They are not included in the React Native application bundle.
 
-`PAYU_ENVIRONMENT` defaults to `test`. Set it to `production` through the Firebase parameter prompt when deploying the production project.
+`PAYU_ENVIRONMENT` defaults to `production`. Override it through the Firebase parameter prompt only when deploying a test environment.
 
 Deploy both exported functions:
 

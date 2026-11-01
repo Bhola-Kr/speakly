@@ -6,12 +6,12 @@ import { defineString } from 'firebase-functions/params';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { RECHARGE_PACKS } from './constants';
 
-// PayU test credentials. Keep the salt in backend code only; never return it
+// PayU live credentials. Keep the salt in backend code only; never return it
 // to the mobile client or include it in the React Native bundle.
-export const PAYU_MERCHANT_KEY = 'l6GPzg';
-export const PAYU_MERCHANT_SALT = 'OQeSTO9g6bCBnWZcSkKI0iOWOB43dqqF';
+export const PAYU_MERCHANT_KEY = 'Rsdmix';
+export const PAYU_MERCHANT_SALT = 'MLzzjEiz2FCsqQqj0SUqXJ2gVn7u0RLp';
 const PAYU_ENVIRONMENT = defineString('PAYU_ENVIRONMENT', {
-  default: 'test',
+  default: 'production',
   description: 'PayU environment: test or production',
 });
 

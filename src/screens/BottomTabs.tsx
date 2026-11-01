@@ -7,6 +7,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import HomeScreen from './home/HomeScreen';
 import ManHistoryScreen from './recentScreen/ManHistoryScreen';
+import NoFeedbackTabButton from '../components/NoFeedbackTabButton';
 
 const Tab = createBottomTabNavigator();
 
@@ -76,6 +77,8 @@ const BottomTabs = () => {
         tabBarShowLabel: true,
 
         tabBarHideOnKeyboard: true,
+
+        tabBarButton: NoFeedbackTabButton,
 
         tabBarStyle: {
           position: 'absolute',
