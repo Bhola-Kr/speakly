@@ -23,6 +23,7 @@ import { fetchRechargePacks } from '../../api/calls';
 import type { RechargePack } from '../../api/api';
 import { useUser } from '../../hooks/UserContext';
 import { openPayUCheckout } from '../../payment/payuCheckout';
+import { openRazorpayCheckout } from '../../payment/razorpayCheckout';
 
 const WalletScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
@@ -32,6 +33,9 @@ const WalletScreen = ({ navigation }: any) => {
   const [loadingPacks, setLoadingPacks] = useState(true);
   const [packsError, setPacksError] = useState('');
   const [paying, setPaying] = useState(false);
+  const [paymentGateway, setPaymentGateway] = useState<'payu' | 'razorpay'>(
+    'payu',
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -85,7 +89,10 @@ const WalletScreen = ({ navigation }: any) => {
     if (!selectedPack || paying) return;
     try {
       setPaying(true);
-      const payment = await openPayUCheckout(selectedPack.id);
+      const payment =
+        paymentGateway === 'razorpay'
+          ? await openRazorpayCheckout(selectedPack.id)
+          : await openPayUCheckout(selectedPack.id);
       if (payment.status === 'success') {
         Alert.alert(
           'Recharge Successful',
@@ -99,7 +106,9 @@ const WalletScreen = ({ navigation }: any) => {
       } else {
         Alert.alert(
           'Payment Verification Pending',
-          'We are confirming this payment with PayU. Your wallet will update automatically after verification.',
+          `We are confirming this payment with ${
+            paymentGateway === 'razorpay' ? 'Razorpay' : 'PayU'
+          }. Your wallet will update automatically after verification.`,
         );
       }
     } catch (error) {
@@ -272,6 +281,38 @@ const WalletScreen = ({ navigation }: any) => {
             <Text style={styles.payAmount}>₹{selectedPack.amount}</Text>
           </View>
 
+          <View style={styles.gatewayRow}>
+            {(['payu', 'razorpay'] as const).map(gateway => {
+              const selected = paymentGateway === gateway;
+              return (
+                <TouchableOpacity
+                  key={gateway}
+                  activeOpacity={0.8}
+                  disabled={paying}
+                  onPress={() => setPaymentGateway(gateway)}
+                  style={[
+                    styles.gatewayOption,
+                    selected && styles.gatewayOptionSelected,
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name={selected ? 'radiobox-marked' : 'radiobox-blank'}
+                    size={18}
+                    color={selected ? Colors.secondary : Colors.subText}
+                  />
+                  <Text
+                    style={[
+                      styles.gatewayText,
+                      selected && styles.gatewayTextSelected,
+                    ]}
+                  >
+                    {gateway === 'payu' ? 'PayU' : 'Razorpay'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <GradientButton
             title={`Pay ₹${selectedPack.amount}`}
             onPress={onRecharge}
@@ -297,6 +338,38 @@ const styles = StyleSheet.create({
 
   paymentButton: {
     marginTop: 12,
+  },
+
+  gatewayRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+
+  gatewayOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+  },
+
+  gatewayOptionSelected: {
+    borderColor: Colors.secondary,
+  },
+
+  gatewayText: {
+    color: Colors.subText,
+    fontWeight: '600',
+  },
+
+  gatewayTextSelected: {
+    color: Colors.secondary,
   },
 
   header: {

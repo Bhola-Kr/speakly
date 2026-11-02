@@ -7,9 +7,12 @@ import { RECHARGE_PACKS } from './constants';
 import {
   generatePaymentHash,
   confirmPayment,
+  confirmRazorpayPayment,
   initiatePayment,
+  initiateRazorpayPayment,
   listPayments,
   payuWebhook,
+  razorpayWebhook,
   reconcilePayuPayments,
   verifyPayment,
 } from './payments';
@@ -224,11 +227,17 @@ app.get('/rechargePacks', async (_req: Request, res: Response) => {
 });
 
 app.post('/payments/initiate', initiatePayment);
+app.post('/payments/razorpay/initiate', initiateRazorpayPayment);
 app.post('/payments/hash', generatePaymentHash);
 app.post('/payments/:transactionId/confirm', confirmPayment);
+app.post(
+  '/payments/:transactionId/razorpay/confirm',
+  confirmRazorpayPayment,
+);
 app.post('/payments/:transactionId/verify', verifyPayment);
 app.get('/payments', listPayments);
 app.post('/payu/callback', payuWebhook);
+app.post('/razorpay/webhook', razorpayWebhook);
 
 // ============================================
 // MSG91 OTP WIDGET - SEND OTP

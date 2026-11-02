@@ -1,4 +1,9 @@
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from 'crypto';
 import { Request, Response } from 'express';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
@@ -14,6 +19,9 @@ const PAYU_ENVIRONMENT = defineString('PAYU_ENVIRONMENT', {
   default: 'production',
   description: 'PayU environment: test or production',
 });
+const RAZORPAY_KEY_ID = 'rzp_live_TvMDKDtzbCyqkh'
+const RAZORPAY_KEY_SECRET = 'uRC4PD65JKygZ6gFdPQucd3h'
+const RAZORPAY_WEBHOOK_SECRET = 'dc48bc67e925117c28d68cd5a799e3f4180f4410e5caa69a9007dd8a1298c06a'
 
 const DATA_ROOT = 'speakly';
 const PAYMENT_ROOT = `${DATA_ROOT}/payments`;
@@ -35,11 +43,14 @@ type PaymentRecord = {
   creditedAmount: number;
   currency: 'INR';
   status: PaymentStatus;
+  provider?: 'payu' | 'razorpay';
   createdAt: number;
   updatedAt: number;
   creditingAt?: number;
   creditedAt?: number;
   payuId?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
   bankReferenceNumber?: string;
   paymentMode?: string;
   failureReason?: string;
@@ -79,10 +90,13 @@ const publicPayment = (payment: PaymentRecord) => ({
   creditedAmount: payment.creditedAmount,
   currency: payment.currency,
   status: payment.status,
+  provider: payment.provider || 'payu',
   createdAt: payment.createdAt,
   updatedAt: payment.updatedAt,
   creditedAt: payment.creditedAt || null,
   payuId: payment.payuId || null,
+  razorpayOrderId: payment.razorpayOrderId || null,
+  razorpayPaymentId: payment.razorpayPaymentId || null,
   bankReferenceNumber: payment.bankReferenceNumber || null,
   paymentMode: payment.paymentMode || null,
   failureReason: payment.failureReason || null,
@@ -145,6 +159,38 @@ const verifyWithPayU = async (transactionId: string) => {
   return { response: data, detail };
 };
 
+const razorpayCredentials = () => {
+  const keyId = RAZORPAY_KEY_ID;
+  const keySecret = RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) throw new Error('RAZORPAY_NOT_CONFIGURED');
+  return { keyId, keySecret };
+};
+
+const razorpayRequest = async (path: string, init?: RequestInit) => {
+  const { keyId, keySecret } = razorpayCredentials();
+  const response = await fetch(`https://api.razorpay.com/v1${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`,
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
+  });
+  const text = await response.text();
+  let data: any = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    // The status-aware error below is safer than exposing a provider response.
+  }
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.description || `Razorpay request failed (${response.status})`,
+    );
+  }
+  return data;
+};
+
 const creditVerifiedPayment = async (payment: PaymentRecord, detail: any) => {
   const now = Date.now();
   const finalPayment: PaymentRecord = {
@@ -152,7 +198,13 @@ const creditVerifiedPayment = async (payment: PaymentRecord, detail: any) => {
     status: 'success',
     creditedAt: now,
     updatedAt: now,
-    payuId: String(detail?.mihpayid || detail?.mihpayId || ''),
+    payuId: String(detail?.mihpayid || detail?.mihpayId || payment.payuId || ''),
+    razorpayOrderId: String(
+      detail?.razorpayOrderId || payment.razorpayOrderId || '',
+    ),
+    razorpayPaymentId: String(
+      detail?.razorpayPaymentId || detail?.id || payment.razorpayPaymentId || '',
+    ),
     bankReferenceNumber: String(
       detail?.bank_ref_num || detail?.bankReferenceNumber || '',
     ),
@@ -206,6 +258,48 @@ const verifyAndFinalize = async (transactionId: string) => {
   const payment = snapshot.val() as PaymentRecord | null;
   if (!payment) throw new Error('Payment transaction was not found');
   if (payment.status === 'success') return payment;
+
+  if (payment.provider === 'razorpay') {
+    if (!payment.razorpayOrderId) throw new Error('Razorpay order was not found');
+    const payments = await razorpayRequest(
+      `/orders/${encodeURIComponent(payment.razorpayOrderId)}/payments`,
+    );
+    const captured = (payments?.items || []).find(
+      (item: any) =>
+        item.status === 'captured' &&
+        Number(item.amount) === Math.round(payment.amount * 100),
+    );
+    if (captured) {
+      await creditVerifiedPayment(payment, {
+        razorpayOrderId: payment.razorpayOrderId,
+        razorpayPaymentId: captured.id,
+        bankReferenceNumber:
+          captured.acquirer_data?.rrn ||
+          captured.acquirer_data?.bank_transaction_id,
+        mode: captured.method,
+      });
+    } else {
+      const failed = (payments?.items || []).find(
+        (item: any) => item.status === 'failed',
+      );
+      await updatePaymentStatus(
+        payment,
+        failed
+          ? {
+              status: 'failed',
+              failureReason: String(
+                failed.error_description || 'Payment failed',
+              ),
+            }
+          : { status: 'pending' },
+      );
+    }
+    const finalSnapshot = await admin
+      .database()
+      .ref(`${PAYMENT_ROOT}/${transactionId}`)
+      .once('value');
+    return finalSnapshot.val() as PaymentRecord;
+  }
 
   const { detail } = await verifyWithPayU(transactionId);
   if (!detail) {
@@ -296,6 +390,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
       creditedAmount: pack.amount + pack.bonus,
       currency: 'INR',
       status: 'initiated',
+      provider: 'payu',
       createdAt: now,
       updatedAt: now,
     };
@@ -346,6 +441,168 @@ export const initiatePayment = async (req: Request, res: Response) => {
       message: unauthenticated
         ? 'Authentication required'
         : 'Unable to start payment',
+    });
+  }
+};
+
+export const initiateRazorpayPayment = async (req: Request, res: Response) => {
+  try {
+    const uid = await getAuthenticatedUid(req);
+    const packId = Number(req.body?.packId);
+    const pack = RECHARGE_PACKS.find(item => item.id === packId);
+    if (!pack) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid recharge pack' });
+    }
+    const [userSnapshot, authUser] = await Promise.all([
+      admin.database().ref(`${DATA_ROOT}/users/${uid}`).once('value'),
+      admin.auth().getUser(uid),
+    ]);
+    const user = userSnapshot.val() || {};
+    const phone = String(
+      user.phone || user.profile?.phone || authUser.phoneNumber || '',
+    )
+      .replace(/\D/g, '')
+      .slice(-10);
+    if (phone.length !== 10) {
+      return res.status(422).json({
+        success: false,
+        message: 'A valid 10-digit phone number is required for payment',
+      });
+    }
+    const name = String(
+      user.profile?.name ||
+        user.profile?.tamilName ||
+        authUser.displayName ||
+        'Speakly User',
+    ).slice(0, 60);
+    const email = String(user.profile?.email || authUser.email || '').slice(
+      0,
+      100,
+    );
+    const transactionId = createTransactionId(uid);
+    const order = await razorpayRequest('/orders', {
+      method: 'POST',
+      body: JSON.stringify({
+        amount: Math.round(pack.amount * 100),
+        currency: 'INR',
+        receipt: transactionId,
+        payment_capture: 1,
+        notes: { uid, packId: String(pack.id), transactionId },
+      }),
+    });
+    const now = Date.now();
+    const payment: PaymentRecord = {
+      transactionId,
+      uid,
+      packId,
+      amount: pack.amount,
+      bonus: pack.bonus,
+      creditedAmount: pack.amount + pack.bonus,
+      currency: 'INR',
+      status: 'initiated',
+      provider: 'razorpay',
+      razorpayOrderId: String(order.id),
+      createdAt: now,
+      updatedAt: now,
+    };
+    await admin
+      .database()
+      .ref(DATA_ROOT)
+      .update({
+        [`payments/${transactionId}`]: payment,
+        [`pendingPayments/${transactionId}`]: now,
+        [`users/${uid}/paymentHistory/${transactionId}`]:
+          publicPayment(payment),
+      });
+    return res.status(201).json({
+      success: true,
+      data: {
+        transaction: publicPayment(payment),
+        checkoutOptions: {
+          key: razorpayCredentials().keyId,
+          order_id: order.id,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Speakly',
+          description: `Speakly Wallet Recharge ${pack.id}`,
+          prefill: { name, email, contact: phone },
+          notes: { transactionId },
+          theme: { color: '#7157F5' },
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error('Initiate Razorpay payment failed', error);
+    const unauthenticated = error?.message === 'UNAUTHENTICATED';
+    const unconfigured = error?.message === 'RAZORPAY_NOT_CONFIGURED';
+    return res.status(unauthenticated ? 401 : unconfigured ? 503 : 500).json({
+      success: false,
+      message: unauthenticated
+        ? 'Authentication required'
+        : unconfigured
+          ? 'Razorpay is not configured'
+          : 'Unable to start payment',
+    });
+  }
+};
+
+const safeSignatureEqual = (received: string, expected: string) =>
+  received.length === expected.length &&
+  timingSafeEqual(Buffer.from(received), Buffer.from(expected));
+
+export const confirmRazorpayPayment = async (req: Request, res: Response) => {
+  try {
+    const uid = await getAuthenticatedUid(req);
+    const transactionId = String(req.params.transactionId || '');
+    const snapshot = await admin
+      .database()
+      .ref(`${PAYMENT_ROOT}/${transactionId}`)
+      .once('value');
+    const payment = snapshot.val() as PaymentRecord | null;
+    if (!payment || payment.uid !== uid || payment.provider !== 'razorpay') {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+    if (payment.status !== 'success') {
+      const paymentId = String(req.body?.razorpay_payment_id || '');
+      const orderId = String(req.body?.razorpay_order_id || '');
+      const signature = String(req.body?.razorpay_signature || '');
+      const expected = createHmac('sha256', razorpayCredentials().keySecret)
+        .update(`${orderId}|${paymentId}`)
+        .digest('hex');
+      if (
+        !paymentId ||
+        orderId !== payment.razorpayOrderId ||
+        !safeSignatureEqual(signature, expected)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Razorpay payment response could not be verified',
+        });
+      }
+      await updatePaymentStatus(payment, {
+        status: 'pending',
+        razorpayPaymentId: paymentId,
+      });
+      await verifyAndFinalize(transactionId);
+    }
+    const finalSnapshot = await admin
+      .database()
+      .ref(`${PAYMENT_ROOT}/${transactionId}`)
+      .once('value');
+    return res.json({
+      success: true,
+      data: publicPayment(finalSnapshot.val() as PaymentRecord),
+    });
+  } catch (error: any) {
+    logger.error('Confirm Razorpay payment failed', error);
+    return res.status(error?.message === 'UNAUTHENTICATED' ? 401 : 502).json({
+      success: false,
+      message:
+        error?.message === 'UNAUTHENTICATED'
+          ? 'Authentication required'
+          : 'Unable to confirm payment',
     });
   }
 };
@@ -578,6 +835,43 @@ export const payuWebhook = async (req: Request, res: Response) => {
   }
 };
 
+export const razorpayWebhook = async (req: Request, res: Response) => {
+  try {
+    const secret = RAZORPAY_WEBHOOK_SECRET
+    const signature = String(req.headers['x-razorpay-signature'] || '');
+    const rawBody = (req as any).rawBody as Buffer | undefined;
+    if (!secret || !signature || !rawBody) {
+      return res.status(400).send('Invalid Razorpay webhook');
+    }
+    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+    if (!safeSignatureEqual(signature, expected)) {
+      return res.status(400).send('Invalid Razorpay webhook');
+    }
+    const entity = req.body?.payload?.payment?.entity;
+    const transactionId = String(entity?.notes?.transactionId || '');
+    if (!transactionId) return res.status(200).send('Ignored');
+    const snapshot = await admin
+      .database()
+      .ref(`${PAYMENT_ROOT}/${transactionId}`)
+      .once('value');
+    const payment = snapshot.val() as PaymentRecord | null;
+    if (!payment || payment.provider !== 'razorpay') {
+      return res.status(404).send('Payment not found');
+    }
+    if (entity?.id && !payment.razorpayPaymentId) {
+      await updatePaymentStatus(payment, {
+        status: 'pending',
+        razorpayPaymentId: String(entity.id),
+      });
+    }
+    await verifyAndFinalize(transactionId);
+    return res.status(200).send('OK');
+  } catch (error) {
+    logger.error('Razorpay webhook processing failed', error);
+    return res.status(500).send('Unable to process payment');
+  }
+};
+
 export const reconcilePayuPayments = onSchedule(
   {
     schedule: 'every 10 minutes',
@@ -621,12 +915,12 @@ export const reconcilePayuPayments = onSchedule(
           });
         }
       } catch (error) {
-        logger.error('Scheduled PayU reconciliation failed', {
+        logger.error('Scheduled payment reconciliation failed', {
           transactionId: payment.transactionId,
           error,
         });
       }
     }
-    logger.info('PayU reconciliation complete', { checked: pending.length });
+    logger.info('Payment reconciliation complete', { checked: pending.length });
   },
 );

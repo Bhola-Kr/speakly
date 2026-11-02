@@ -195,6 +195,13 @@ const TransactionScreen = ({ navigation }: any) => {
 
         <View style={styles.separator} />
 
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Payment Gateway</Text>
+          <Text style={styles.value}>
+            {item.provider === 'razorpay' ? 'Razorpay' : 'PayU'}
+          </Text>
+        </View>
+
         <View style={styles.txnRow}>
           <View style={styles.flex}>
             <Text style={styles.label}>Transaction ID</Text>

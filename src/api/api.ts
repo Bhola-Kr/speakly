@@ -120,6 +120,13 @@ class Api {
     return this.post<InitiatePaymentResponse>('/payments/initiate', { packId });
   }
 
+  initiateRazorpayPayment(packId: number) {
+    return this.post<InitiateRazorpayPaymentResponse>(
+      '/payments/razorpay/initiate',
+      { packId },
+    );
+  }
+
   verifyPayment(transactionId: string) {
     return this.post<PaymentResponse>(
       `/payments/${encodeURIComponent(transactionId)}/verify`,
@@ -130,6 +137,16 @@ class Api {
     return this.post<PaymentResponse>(
       `/payments/${encodeURIComponent(transactionId)}/confirm`,
       { payuResponse },
+    );
+  }
+
+  confirmRazorpayPayment(
+    transactionId: string,
+    response: RazorpayCheckoutResponse,
+  ) {
+    return this.post<PaymentResponse>(
+      `/payments/${encodeURIComponent(transactionId)}/razorpay/confirm`,
+      response,
     );
   }
 
@@ -218,10 +235,13 @@ export interface PaymentTransaction {
   creditedAmount: number;
   currency: 'INR';
   status: PaymentStatus;
+  provider?: 'payu' | 'razorpay';
   createdAt: number;
   updatedAt: number;
   creditedAt?: number | null;
   payuId?: string | null;
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
   bankReferenceNumber?: string | null;
   paymentMode?: string | null;
   failureReason?: string | null;
@@ -250,6 +270,32 @@ export interface InitiatePaymentResponse {
   data: {
     transaction: PaymentTransaction;
     paymentParams: PayUPaymentParams;
+  };
+}
+
+export interface RazorpayCheckoutResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+export interface RazorpayCheckoutOptions {
+  key: string;
+  order_id: string;
+  amount: number;
+  currency: 'INR';
+  name: string;
+  description: string;
+  prefill: { name: string; email: string; contact: string };
+  notes: { transactionId: string };
+  theme: { color: string };
+}
+
+export interface InitiateRazorpayPaymentResponse {
+  success: boolean;
+  data: {
+    transaction: PaymentTransaction;
+    checkoutOptions: RazorpayCheckoutOptions;
   };
 }
 

@@ -150,6 +150,9 @@ export const fetchRechargePacks = async () => {
 export const initiateWalletPayment = (packId: number) =>
   Api.initiatePayment(packId);
 
+export const initiateRazorpayWalletPayment = (packId: number) =>
+  Api.initiateRazorpayPayment(packId);
+
 export const verifyWalletPayment = (transactionId: string) =>
   Api.verifyPayment(transactionId);
 
@@ -157,6 +160,11 @@ export const confirmWalletPayment = (
   transactionId: string,
   payuResponse: unknown,
 ) => Api.confirmPayment(transactionId, payuResponse);
+
+export const confirmRazorpayWalletPayment = (
+  transactionId: string,
+  response: import('./api').RazorpayCheckoutResponse,
+) => Api.confirmRazorpayPayment(transactionId, response);
 
 export const fetchPaymentHistory = async () => {
   const response = await Api.getPayments();
