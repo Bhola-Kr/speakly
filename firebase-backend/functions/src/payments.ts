@@ -7,7 +7,6 @@ import {
 import { Request, Response } from 'express';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
-import { defineString } from 'firebase-functions/params';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { RECHARGE_PACKS } from './constants';
 
@@ -15,10 +14,7 @@ import { RECHARGE_PACKS } from './constants';
 // to the mobile client or include it in the React Native bundle.
 export const PAYU_MERCHANT_KEY = 'Rsdmix';
 export const PAYU_MERCHANT_SALT = 'MLzzjEiz2FCsqQqj0SUqXJ2gVn7u0RLp';
-const PAYU_ENVIRONMENT = defineString('PAYU_ENVIRONMENT', {
-  default: 'production',
-  description: 'PayU environment: test or production',
-});
+const PAYU_ENVIRONMENT = 'production'
 const RAZORPAY_KEY_ID = 'rzp_live_TvMDKDtzbCyqkh'
 const RAZORPAY_KEY_SECRET = 'uRC4PD65JKygZ6gFdPQucd3h'
 const RAZORPAY_WEBHOOK_SECRET = 'dc48bc67e925117c28d68cd5a799e3f4180f4410e5caa69a9007dd8a1298c06a'
@@ -60,7 +56,7 @@ const sha512 = (value: string) =>
   createHash('sha512').update(value, 'utf8').digest('hex');
 
 const paymentEnvironment = () =>
-  PAYU_ENVIRONMENT.value() === 'production' ? 'production' : 'test';
+  PAYU_ENVIRONMENT === 'production' ? 'production' : 'test';
 
 const postServiceUrl = () =>
   paymentEnvironment() === 'production'

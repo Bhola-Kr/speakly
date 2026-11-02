@@ -41,16 +41,22 @@ export const openRazorpayCheckout = async (
       return confirmation.data;
     }
     return verifyUntilSettled(confirmation.data);
-  } catch (error: any) {
+  } catch {
+    let payment: PaymentTransaction | null = null;
     try {
-      const payment = await verifyUntilSettled(transaction);
+      payment = await verifyUntilSettled(transaction);
       if (payment.status === 'success') return payment;
     } catch {
-      // Preserve the checkout error when server verification is unavailable.
+      // Fall through to a user-facing message if verification is unavailable.
     }
-    const description = String(
-      error?.description || error?.error?.description || error?.message || '',
+    if (payment?.status === 'failed') {
+      throw new Error(
+        payment.failureReason ||
+          'Payment failed. No amount was added to your wallet.',
+      );
+    }
+    throw new Error(
+      'Payment was cancelled or could not be completed. If money was deducted, Razorpay will verify it and your wallet will be updated automatically.',
     );
-    throw new Error(description || 'The payment was not completed.');
   }
 };

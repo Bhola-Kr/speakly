@@ -4,6 +4,7 @@
 
 # Xcode
 #
+*.adminsdk
 build/
 *.pbxuser
 !default.pbxuser
@@ -40,6 +41,7 @@ local.properties
 node_modules/
 npm-debug.log
 yarn-error.log
+/firebase-backend/functions/adminsdk.json
 
 # fastlane
 #
