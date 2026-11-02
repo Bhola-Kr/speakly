@@ -23,6 +23,24 @@ const DATA_ROOT = 'speakly';
 const PAYMENT_ROOT = `${DATA_ROOT}/payments`;
 const RECONCILE_LIMIT = 50;
 
+type PaymentGateway = 'payu' | 'razorpay';
+
+const isPaymentGatewayActive = async (gateway: PaymentGateway) => {
+  const snapshot = await admin
+    .database()
+    .ref(`${DATA_ROOT}/configs/activePaymentGateways`)
+    .once('value');
+  if (!snapshot.exists()) return gateway === 'razorpay';
+
+  const config = snapshot.val();
+  return (
+    !!config &&
+    typeof config === 'object' &&
+    !Array.isArray(config) &&
+    config[gateway] === true
+  );
+};
+
 type PaymentStatus =
   | 'initiated'
   | 'pending'
@@ -341,6 +359,12 @@ const verifyAndFinalize = async (transactionId: string) => {
 export const initiatePayment = async (req: Request, res: Response) => {
   try {
     const uid = await getAuthenticatedUid(req);
+    if (!(await isPaymentGatewayActive('payu'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'PayU is not currently enabled',
+      });
+    }
     const packId = Number(req.body?.packId);
     const pack = RECHARGE_PACKS.find(item => item.id === packId);
     if (!pack) {
@@ -444,6 +468,12 @@ export const initiatePayment = async (req: Request, res: Response) => {
 export const initiateRazorpayPayment = async (req: Request, res: Response) => {
   try {
     const uid = await getAuthenticatedUid(req);
+    if (!(await isPaymentGatewayActive('razorpay'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'Razorpay is not currently enabled',
+      });
+    }
     const packId = Number(req.body?.packId);
     const pack = RECHARGE_PACKS.find(item => item.id === packId);
     if (!pack) {

@@ -24,6 +24,11 @@ import type { RechargePack } from '../../api/api';
 import { useUser } from '../../hooks/UserContext';
 import { openPayUCheckout } from '../../payment/payuCheckout';
 import { openRazorpayCheckout } from '../../payment/razorpayCheckout';
+import {
+  getActivePaymentGateways,
+  listenActivePaymentGateways,
+} from '../../firebase/paymentGateways';
+import type { PaymentGateway } from '../../firebase/paymentGateways';
 
 const WalletScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
@@ -33,9 +38,35 @@ const WalletScreen = ({ navigation }: any) => {
   const [loadingPacks, setLoadingPacks] = useState(true);
   const [packsError, setPacksError] = useState('');
   const [paying, setPaying] = useState(false);
-  const [paymentGateway, setPaymentGateway] = useState<'payu' | 'razorpay'>(
-    'payu',
-  );
+  const [activePaymentGateways, setActivePaymentGateways] = useState<
+    PaymentGateway[]
+  >([]);
+  const [gatewayConfigLoading, setGatewayConfigLoading] = useState(true);
+  const [gatewayConfigError, setGatewayConfigError] = useState('');
+  const [paymentGateway, setPaymentGateway] =
+    useState<PaymentGateway>('razorpay');
+
+  useEffect(() => {
+    const unsubscribe = listenActivePaymentGateways(
+      gateways => {
+        setActivePaymentGateways(gateways);
+        setPaymentGateway(current =>
+          gateways.includes(current) ? current : gateways[0] || 'razorpay',
+        );
+        setGatewayConfigError('');
+        setGatewayConfigLoading(false);
+      },
+      error => {
+        console.warn('Unable to load payment gateway config:', error);
+        setActivePaymentGateways([]);
+        setGatewayConfigError(
+          'Unable to load payment methods. Please try again.',
+        );
+        setGatewayConfigLoading(false);
+      },
+    );
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -89,6 +120,16 @@ const WalletScreen = ({ navigation }: any) => {
     if (!selectedPack || paying) return;
     try {
       setPaying(true);
+      const currentGateways = await getActivePaymentGateways();
+      setActivePaymentGateways(currentGateways);
+      if (!currentGateways.includes(paymentGateway)) {
+        setPaymentGateway(currentGateways[0] || 'razorpay');
+        throw new Error(
+          currentGateways.length
+            ? 'That payment method is no longer active. Please select an active method and try again.'
+            : 'No payment methods are currently active.',
+        );
+      }
       const payment =
         paymentGateway === 'razorpay'
           ? await openRazorpayCheckout(selectedPack.id)
@@ -281,42 +322,71 @@ const WalletScreen = ({ navigation }: any) => {
             <Text style={styles.payAmount}>₹{selectedPack.amount}</Text>
           </View>
 
-          <View style={styles.gatewayRow}>
-            {(['payu', 'razorpay'] as const).map(gateway => {
-              const selected = paymentGateway === gateway;
-              return (
-                <TouchableOpacity
-                  key={gateway}
-                  activeOpacity={0.8}
-                  disabled={paying}
-                  onPress={() => setPaymentGateway(gateway)}
-                  style={[
-                    styles.gatewayOption,
-                    selected && styles.gatewayOptionSelected,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name={selected ? 'radiobox-marked' : 'radiobox-blank'}
-                    size={18}
-                    color={selected ? Colors.secondary : Colors.subText}
-                  />
-                  <Text
-                    style={[
-                      styles.gatewayText,
-                      selected && styles.gatewayTextSelected,
-                    ]}
-                  >
-                    {gateway === 'payu' ? 'PayU' : 'Razorpay'}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {gatewayConfigLoading && (
+            <ActivityIndicator
+              style={styles.gatewayStatus}
+              size="small"
+              color={Colors.secondary}
+            />
+          )}
+
+          {!!gatewayConfigError && (
+            <Text style={styles.gatewayStatus}>{gatewayConfigError}</Text>
+          )}
+
+          {!gatewayConfigLoading &&
+            !gatewayConfigError &&
+            activePaymentGateways.length === 0 && (
+              <Text style={styles.gatewayStatus}>
+                No payment methods are currently active.
+              </Text>
+            )}
+
+          {!gatewayConfigLoading &&
+            !gatewayConfigError && activePaymentGateways.length > 1 && 
+            activePaymentGateways.length > 0 && (
+              <View style={styles.gatewayRow}>
+                {activePaymentGateways.map(gateway => {
+                  const selected = paymentGateway === gateway;
+                  return (
+                    <TouchableOpacity
+                      key={gateway}
+                      activeOpacity={0.8}
+                      disabled={paying}
+                      onPress={() => setPaymentGateway(gateway)}
+                      style={[
+                        styles.gatewayOption,
+                        selected && styles.gatewayOptionSelected,
+                      ]}
+                    >
+                        <MaterialCommunityIcons
+                          name={selected ? 'radiobox-marked' : 'radiobox-blank'}
+                          size={18}
+                          color={selected ? Colors.secondary : Colors.subText}
+                        />
+                      <Text
+                        style={[
+                          styles.gatewayText,
+                          selected && styles.gatewayTextSelected,
+                        ]}
+                      >
+                        {gateway === 'payu' ? 'PayU' : 'Razorpay'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
 
           <GradientButton
             title={`Pay ₹${selectedPack.amount}`}
             onPress={onRecharge}
-            disabled={paying}
+            disabled={
+              paying ||
+              gatewayConfigLoading ||
+              !!gatewayConfigError ||
+              activePaymentGateways.length === 0
+            }
             loading={paying}
             style={styles.paymentButton}
           />
@@ -344,6 +414,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginTop: 14,
+  },
+
+  gatewayStatus: {
+    marginTop: 14,
+    textAlign: 'center',
+    color: Colors.subText,
   },
 
   gatewayOption: {

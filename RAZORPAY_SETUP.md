@@ -4,6 +4,24 @@ The mobile app creates Razorpay orders through the Firebase backend. Wallet
 credit is performed only after the backend verifies a captured payment with
 Razorpay. The existing idempotency marker prevents duplicate wallet credits.
 
+## Choose active payment gateways
+
+Set `/speakly/configs/activePaymentGateways` in Firebase Realtime Database.
+Only gateways set to `true` are shown in Wallet and can be used to start a
+payment; the backend also rejects payment initiation for a disabled gateway.
+For example, to offer Razorpay only:
+
+```json
+{
+  "payu": false,
+  "razorpay": true
+}
+```
+
+Set both values to `true` to offer both gateways. If this config node does not
+exist, Razorpay is the default gateway. If the node exists but neither gateway
+is enabled, payments are disabled.
+
 ## Firebase parameters
 
 Set these values when Firebase prompts during deployment:
