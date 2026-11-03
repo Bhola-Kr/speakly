@@ -1,10 +1,11 @@
 import auth from '@react-native-firebase/auth';
 import { scopedDatabase as database } from './firebase';
+import { calculateCallAmount, normalizeCallRate } from '../constants/constants';
 import {
-  calculateCallAmount,
-  normalizeCallRate,
-} from '../constants/constants';
-import { fetchAgoraToken, sendIncomingCallPush } from '../api/calls';
+  fetchAgoraToken,
+  sendIncomingCallPush,
+  settleExpertCallEarnings,
+} from '../api/calls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FEMALE_AVAILABILITY_KEY = 'femaleAvailabilityEnabled';
@@ -455,9 +456,11 @@ class RoomService {
       callStartedAt: Date.now(),
       updatedAt: Date.now(),
     });
-    await this.logExpertActivity(femaleUid, 'active', room?.currentCallId).catch(
-      error => console.warn('Unable to record expert activity:', error),
-    );
+    await this.logExpertActivity(
+      femaleUid,
+      'active',
+      room?.currentCallId,
+    ).catch(error => console.warn('Unable to record expert activity:', error));
   }
 
   async chargeCallMinute(femaleUid: string): Promise<boolean> {
@@ -550,12 +553,8 @@ class RoomService {
     if (room.currentCallId) {
       await this.saveCallHistory(room, endedAt);
     }
-    await this.logExpertActivity(
-      femaleUid,
-      'online',
-      room.currentCallId,
-    ).catch(error =>
-      console.warn('Unable to record expert activity:', error),
+    await this.logExpertActivity(femaleUid, 'online', room.currentCallId).catch(
+      error => console.warn('Unable to record expert activity:', error),
     );
 
     // Wait a moment so both users receive "ended"
@@ -616,28 +615,9 @@ class RoomService {
     await database().ref().update(updates);
 
     if (amount > 0 && room.female?.uid && room.currentCallId) {
-      await database()
-        .ref(`users/${room.female.uid}/expertEarnings`)
-        .transaction(value => {
-          const earnings = value && typeof value === 'object' ? value : {};
-          const creditedCalls =
-            earnings.creditedCalls &&
-            typeof earnings.creditedCalls === 'object'
-              ? earnings.creditedCalls
-              : {};
-          if (creditedCalls[room.currentCallId]) return;
-          return {
-            ...earnings,
-            total: Number(earnings.total || 0) + amount,
-            available: Number(earnings.available || 0) + amount,
-            withdrawn: Number(earnings.withdrawn || 0),
-            creditedCalls: {
-              ...creditedCalls,
-              [room.currentCallId]: { amount, creditedAt: Date.now() },
-            },
-            updatedAt: Date.now(),
-          };
-        });
+      await settleExpertCallEarnings(room.currentCallId).catch(error =>
+        console.warn('Unable to settle expert earnings:', error),
+      );
     }
 
     if (

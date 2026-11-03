@@ -154,6 +154,29 @@ class Api {
     return this.get<PaymentsResponse>('/payments');
   }
 
+  getMyExpertCompensation() {
+    return this.get<ExpertCompensationResponse>('/expert-compensation/me');
+  }
+
+  getExpertCompensationForAdmin(uid: string) {
+    return this.get<ExpertCompensationResponse>(
+      `/admin/users/${encodeURIComponent(uid)}/expert-compensation`,
+    );
+  }
+
+  updateExpertCompensation(uid: string, callRatePerMinute: number) {
+    return this.put<ExpertCompensationResponse>(
+      `/admin/users/${encodeURIComponent(uid)}/expert-compensation`,
+      { callRatePerMinute },
+    );
+  }
+
+  settleExpertEarnings(callId: string) {
+    return this.post<{ success: boolean }>(
+      `/calls/${encodeURIComponent(callId)}/settle-expert-earnings`,
+    );
+  }
+
   sendIncomingCallNotification(payload: {
     recipientUid: string;
     femaleUid: string;
@@ -307,6 +330,11 @@ export interface PaymentResponse {
 export interface PaymentsResponse {
   success: boolean;
   data: PaymentTransaction[];
+}
+
+export interface ExpertCompensationResponse {
+  success: boolean;
+  data: { callRatePerMinute: number };
 }
 
 export default new Api();

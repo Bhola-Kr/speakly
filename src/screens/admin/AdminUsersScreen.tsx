@@ -25,6 +25,10 @@ import {
   processWithdrawalRequest,
   WithdrawalRequest,
 } from '../../firebase/expertEarnings';
+import {
+  fetchExpertCompensationForAdmin,
+  saveExpertCompensation,
+} from '../../api/calls';
 
 type UserRecord = Record<string, any> & { uid?: string };
 type ExpertApplication = {
@@ -50,6 +54,7 @@ type EditableUserFields = {
   avatarId: string;
   balance: string;
   callRatePerMinute: string;
+  expertCallRatePerMinute: string;
 };
 type ExpertActivity = {
   id: string;
@@ -79,6 +84,7 @@ type ExpertCallHistory = {
 };
 
 const PAGE_SIZE = 25;
+const DEFAULT_EXPERT_CALL_RATE_PER_MINUTE = 1;
 const USER_STATUSES = ['online', 'offline', 'busy'] as const;
 const formatDuration = (duration: number) => {
   const totalSeconds = Math.max(0, Math.floor(duration / 1000));
@@ -472,9 +478,21 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     };
   }, [allowed, query]);
 
-  const selectUser = (item: UserRecord) => {
+  const selectUser = async (item: UserRecord) => {
     const uid = String(item.uid || '');
     if (!uid) return setError('This record has no valid user ID.');
+    let expertRate = DEFAULT_EXPERT_CALL_RATE_PER_MINUTE;
+    if (item.isExpert === true) {
+      try {
+        const compensation = await fetchExpertCompensationForAdmin(uid);
+        const configuredRate = Number(compensation.data.callRatePerMinute);
+        if (Number.isFinite(configuredRate) && configuredRate > 0) {
+          expertRate = configuredRate;
+        }
+      } catch (loadError) {
+        console.warn('Unable to load expert compensation rate:', loadError);
+      }
+    }
     setSelectedUid(uid);
     const currentStatus = String(item.profile?.status ?? '').toLowerCase();
     setEditingUser({
@@ -491,9 +509,8 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         : 'offline',
       avatarId: String(item.profile?.avatarId ?? ''),
       balance: String(item.wallet?.balance ?? ''),
-      callRatePerMinute: String(
-        item.profile?.price ?? CALL_RATE_PER_MINUTE,
-      ),
+      callRatePerMinute: String(item.profile?.price ?? CALL_RATE_PER_MINUTE),
+      expertCallRatePerMinute: String(expertRate),
     });
     setError('');
   };
@@ -562,11 +579,19 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         : 0;
       if (!Number.isFinite(balance))
         throw new Error('Balance must be a valid number.');
-      const callRatePerMinute = Number(
-        editingUser.callRatePerMinute.trim(),
-      );
+      const callRatePerMinute = Number(editingUser.callRatePerMinute.trim());
       if (!Number.isFinite(callRatePerMinute) || callRatePerMinute <= 0) {
         throw new Error('Call rate must be greater than zero.');
+      }
+      const expertCallRatePerMinute = Number(
+        editingUser.expertCallRatePerMinute.trim(),
+      );
+      if (
+        editingUser.isExpert &&
+        (!Number.isFinite(expertCallRatePerMinute) ||
+          expertCallRatePerMinute <= 0)
+      ) {
+        throw new Error('Expert earning rate must be greater than zero.');
       }
       const avatarText = editingUser.avatarId.trim();
       const avatarId =
@@ -578,6 +603,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         birthYear,
         balance: String(balance),
         callRatePerMinute: String(callRatePerMinute),
+        expertCallRatePerMinute: String(expertCallRatePerMinute),
         avatarId: String(avatarId),
       };
       await database()
@@ -596,6 +622,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
             editingUser.voiceVerified,
           [`users/${selectedUid}/wallet/balance`]: balance,
         });
+      if (editingUser.isExpert) {
+        await saveExpertCompensation(selectedUid, expertCallRatePerMinute);
+      }
       updateLocalUser(selectedUid, normalized);
       setEditingUser(normalized);
       Alert.alert('Saved', 'The user was updated successfully.');
@@ -724,10 +753,12 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                     {application.applicantPhone || application.uid}
                   </Text>
                   <Text style={styles.applicationMeta}>
-                    {(application.supportedLanguages || [
-                      application.language || 'Unknown language',
-                    ]).join(', ')} ·{' '}
-                    {overdue ? 'Review overdue' : 'Within review window'}
+                    {(
+                      application.supportedLanguages || [
+                        application.language || 'Unknown language',
+                      ]
+                    ).join(', ')}{' '}
+                    · {overdue ? 'Review overdue' : 'Within review window'}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -787,7 +818,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         </View>
       </View>
       {withdrawals.length === 0 ? (
-        <Text style={styles.noApplications}>No withdrawals awaiting payment.</Text>
+        <Text style={styles.noApplications}>
+          No withdrawals awaiting payment.
+        </Text>
       ) : (
         withdrawals.map(request => {
           const busy = processingWithdrawal === request.id;
@@ -799,7 +832,8 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               </Text>
               <Text style={styles.withdrawalAmount}>₹{request.amount}</Text>
               <Text style={styles.applicationMeta}>
-                Requested {new Date(request.requestedAt).toLocaleString('en-IN')}
+                Requested{' '}
+                {new Date(request.requestedAt).toLocaleString('en-IN')}
               </Text>
               <View style={styles.reviewActions}>
                 <TouchableOpacity
@@ -1161,7 +1195,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   />
                 </View>
                 <Text style={styles.sectionTitle}>Wallet</Text>
-                <Text style={styles.label}>Call rate (₹ per minute)</Text>
+                <Text style={styles.label}>
+                  User charge rate (coins per minute)
+                </Text>
                 <TextInput
                   value={editingUser.callRatePerMinute}
                   onChangeText={value =>
@@ -1175,6 +1211,30 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   placeholderTextColor={Colors.placeholder}
                   keyboardType="decimal-pad"
                 />
+                {editingUser.isExpert && (
+                  <>
+                    <Text style={styles.label}>
+                      Expert earning rate (₹ per minute)
+                    </Text>
+                    <TextInput
+                      value={editingUser.expertCallRatePerMinute}
+                      onChangeText={value =>
+                        updateField(
+                          'expertCallRatePerMinute',
+                          value.replace(/[^0-9.]/g, ''),
+                        )
+                      }
+                      style={styles.input}
+                      placeholder={String(DEFAULT_EXPERT_CALL_RATE_PER_MINUTE)}
+                      placeholderTextColor={Colors.placeholder}
+                      keyboardType="decimal-pad"
+                    />
+                    <Text style={styles.switchHelp}>
+                      Private payout rate. Only the expert and administrators
+                      can see it.
+                    </Text>
+                  </>
+                )}
                 <Text style={styles.label}>Balance</Text>
                 <TextInput
                   value={editingUser.balance}

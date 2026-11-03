@@ -16,6 +16,12 @@ import {
   reconcilePayuPayments,
   verifyPayment,
 } from './payments';
+import {
+  getExpertCompensationForAdmin,
+  getMyExpertCompensation,
+  settleExpertEarnings,
+  updateExpertCompensation,
+} from './expertCompensation';
 
 const app = express();
 
@@ -230,14 +236,15 @@ app.post('/payments/initiate', initiatePayment);
 app.post('/payments/razorpay/initiate', initiateRazorpayPayment);
 app.post('/payments/hash', generatePaymentHash);
 app.post('/payments/:transactionId/confirm', confirmPayment);
-app.post(
-  '/payments/:transactionId/razorpay/confirm',
-  confirmRazorpayPayment,
-);
+app.post('/payments/:transactionId/razorpay/confirm', confirmRazorpayPayment);
 app.post('/payments/:transactionId/verify', verifyPayment);
 app.get('/payments', listPayments);
 app.post('/payu/callback', payuWebhook);
 app.post('/razorpay/webhook', razorpayWebhook);
+app.get('/expert-compensation/me', getMyExpertCompensation);
+app.get('/admin/users/:uid/expert-compensation', getExpertCompensationForAdmin);
+app.put('/admin/users/:uid/expert-compensation', updateExpertCompensation);
+app.post('/calls/:callId/settle-expert-earnings', settleExpertEarnings);
 
 // ============================================
 // MSG91 OTP WIDGET - SEND OTP

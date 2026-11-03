@@ -130,7 +130,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
       const request = await requestExpertWithdrawal();
       Alert.alert(
         'Withdrawal Requested',
-        `₹${request.amount} is reserved for manual payment by the admin.`,
+        `Your request for ₹${request.amount} has been submitted. The admin will review and process it. During the review, they may contact you on your registered phone number.`,
       );
     } catch (error: any) {
       Alert.alert(

@@ -1,5 +1,16 @@
 import Api from '../api/api';
 
+export const fetchMyExpertCompensation = () => Api.getMyExpertCompensation();
+
+export const fetchExpertCompensationForAdmin = (uid: string) =>
+  Api.getExpertCompensationForAdmin(uid);
+
+export const saveExpertCompensation = (uid: string, rate: number) =>
+  Api.updateExpertCompensation(uid, rate);
+
+export const settleExpertCallEarnings = (callId: string) =>
+  Api.settleExpertEarnings(callId);
+
 // ============================================
 // TYPES
 // ============================================

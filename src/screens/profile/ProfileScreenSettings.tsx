@@ -16,6 +16,7 @@ import { Alert, Linking } from 'react-native';
 import auth from '@react-native-firebase/auth';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import {
   manAccountMenus,
@@ -33,6 +34,7 @@ import { useActiveCall } from '../../hooks/ActiveCallContext';
 import RoomService from '../../firebase/RoomService';
 import authData from '../../firebase/authData';
 import { openAppReview } from '../../firebase/appReview';
+import { fetchMyExpertCompensation } from '../../api/calls';
 
 interface Props {
   navigation: any;
@@ -71,6 +73,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const profileName =
     gender === 'female' ? profile?.tamilName || profile?.name : profile?.name;
   const [totalCallDuration, setTotalCallDuration] = useState(0);
+  const [expertCallRate, setExpertCallRate] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isExpert) {
@@ -79,6 +82,26 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
     }
 
     return RoomService.listenTotalCallDuration(setTotalCallDuration);
+  }, [isExpert]);
+
+  useEffect(() => {
+    let active = true;
+    if (!isExpert) {
+      setExpertCallRate(null);
+      return () => {
+        active = false;
+      };
+    }
+    fetchMyExpertCompensation()
+      .then(response => {
+        if (active) setExpertCallRate(response.data.callRatePerMinute);
+      })
+      .catch(() => {
+        if (active) setExpertCallRate(null);
+      });
+    return () => {
+      active = false;
+    };
   }, [isExpert]);
 
   const formattedTotalCallDuration = useMemo(() => {
@@ -388,6 +411,19 @@ ${PLAY_STORE_URL}`,
               Member since {formatDate(user?.createdAt)}
             </Text>
           </View>
+
+          {isExpert && expertCallRate !== null && (
+            <View style={expertStyles.detailRow}>
+              <Ionicons
+                name="cash-outline"
+                size={21}
+                color={EXPERT_COLORS.tealDark}
+              />
+              <Text style={expertStyles.detailText}>
+                Your earning rate: ₹{expertCallRate} per minute
+              </Text>
+            </View>
+          )}
 
           <TouchableOpacity
             activeOpacity={0.85}
