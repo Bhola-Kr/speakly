@@ -9,6 +9,7 @@ import {
   Share,
   StyleSheet,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -74,6 +75,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
     gender === 'female' ? profile?.tamilName || profile?.name : profile?.name;
   const [totalCallDuration, setTotalCallDuration] = useState(0);
   const [expertCallRate, setExpertCallRate] = useState<number | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     if (!isExpert) {
@@ -126,6 +128,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
     'https://play.google.com/store/apps/details?id=com.ra.speakly';
 
   const handleLogout = () => {
+    if (loggingOut) return;
     if (activeCall) {
       Alert.alert(
         'Call in progress',
@@ -147,6 +150,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              setLoggingOut(true);
               await authData.logout();
 
               // Navigate to Login/Auth screen
@@ -154,8 +158,13 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
                 index: 0,
                 routes: [{ name: 'Login' }],
               });
-            } catch (e) {
-              console.log(e);
+            } catch (error: any) {
+              Alert.alert(
+                'Unable to Logout',
+                error?.message || 'Please try again.',
+              );
+            } finally {
+              setLoggingOut(false);
             }
           },
         },
@@ -283,6 +292,7 @@ ${PLAY_STORE_URL}`,
           <React.Fragment key={item.id}>
             <TouchableOpacity
               activeOpacity={0.82}
+              disabled={item.action === 'logout' && loggingOut}
               onPress={() => handleMenuItemPress(item)}
               style={expertStyles.menuRow}
             >
@@ -306,18 +316,27 @@ ${PLAY_STORE_URL}`,
                     item.danger && expertStyles.menuTitleDanger,
                   ]}
                 >
-                  {item.title}
+                  {item.action === 'logout' && loggingOut
+                    ? 'Logging out…'
+                    : item.title}
                 </Text>
                 {item.value && (
                   <Text style={expertStyles.menuValue}>{item.value}</Text>
                 )}
               </View>
 
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={27}
-                color="#667085"
-              />
+              {item.action === 'logout' && loggingOut ? (
+                <ActivityIndicator
+                  size="small"
+                  color={EXPERT_COLORS.tealDark}
+                />
+              ) : (
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={27}
+                  color="#667085"
+                />
+              )}
             </TouchableOpacity>
 
             {index !== data.length - 1 && <View style={expertStyles.divider} />}
