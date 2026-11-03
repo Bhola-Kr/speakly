@@ -19,6 +19,7 @@ import {
 import {
   getExpertCompensationForAdmin,
   getMyExpertCompensation,
+  notifyExpertApproval,
   settleExpertEarnings,
   updateExpertCompensation,
 } from './expertCompensation';
@@ -245,6 +246,10 @@ app.get('/expert-compensation/me', getMyExpertCompensation);
 app.get('/admin/users/:uid/expert-compensation', getExpertCompensationForAdmin);
 app.put('/admin/users/:uid/expert-compensation', updateExpertCompensation);
 app.post('/calls/:callId/settle-expert-earnings', settleExpertEarnings);
+app.post(
+  '/admin/users/:uid/expert-approval-notification',
+  notifyExpertApproval,
+);
 
 // ============================================
 // MSG91 OTP WIDGET - SEND OTP

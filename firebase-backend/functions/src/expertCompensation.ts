@@ -136,12 +136,62 @@ export const updateExpertCompensation = async (req: Request, res: Response) => {
         : error?.message === 'FORBIDDEN'
         ? 403
         : 500;
-    return res
-      .status(status)
-      .json({
-        success: false,
-        message: 'Unable to update expert compensation',
-      });
+    return res.status(status).json({
+      success: false,
+      message: 'Unable to update expert compensation',
+    });
+  }
+};
+
+export const notifyExpertApproval = async (req: Request, res: Response) => {
+  try {
+    const adminUid = await authenticatedUid(req);
+    await requireAdmin(adminUid);
+    const expertUid = String(req.params.uid || '');
+    const [userSnapshot, tokenSnapshot] = await Promise.all([
+      admin.database().ref(`${DATA_ROOT}/users/${expertUid}`).once('value'),
+      admin
+        .database()
+        .ref(`${DATA_ROOT}/users/${expertUid}/fcmTokens`)
+        .once('value'),
+    ]);
+    const user = userSnapshot.val();
+    if (!user || user.isExpert !== true) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Approved expert not found' });
+    }
+    const tokenValue = tokenSnapshot.val();
+    const token =
+      typeof tokenValue === 'string' ? tokenValue : tokenValue?.token;
+    if (typeof token !== 'string' || !token.trim()) {
+      return res.json({ success: true, delivered: false });
+    }
+    await admin.messaging().send({
+      token: token.trim(),
+      notification: {
+        title: 'Expert account approved',
+        body: 'Your expert account has been approved. You can now go online, help learners, and start earning.',
+      },
+      data: { type: 'expert_approved' },
+      android: { priority: 'high' },
+      apns: {
+        payload: { aps: { sound: 'default' } },
+      },
+    });
+    return res.json({ success: true, delivered: true });
+  } catch (error: any) {
+    logger.error('Send expert approval notification failed', error);
+    const status =
+      error?.message === 'UNAUTHENTICATED'
+        ? 401
+        : error?.message === 'FORBIDDEN'
+        ? 403
+        : 500;
+    return res.status(status).json({
+      success: false,
+      message: 'Unable to send expert approval notification',
+    });
   }
 };
 

@@ -28,6 +28,7 @@ import {
 import {
   fetchExpertCompensationForAdmin,
   saveExpertCompensation,
+  sendExpertApprovalNotification,
 } from '../../api/calls';
 
 type UserRecord = Record<string, any> & { uid?: string };
@@ -710,11 +711,20 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           [`users/${application.uid}/verification/voiceVerified`]: approved,
           [`users/${application.uid}/settings/voiceCallsEnabled`]: approved,
         });
+      if (approved) {
+        await sendExpertApprovalNotification(application.uid).catch(
+          notificationError =>
+            console.warn(
+              'Unable to notify approved expert:',
+              notificationError,
+            ),
+        );
+      }
       Alert.alert(
         approved ? 'Expert Approved' : 'Application Rejected',
         approved
           ? 'The user now has expert access.'
-          : 'The user will continue as a learner.',
+          : 'The user can continue using Speakly as a learner.',
       );
     } catch (reviewError: any) {
       Alert.alert(

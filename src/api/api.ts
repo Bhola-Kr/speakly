@@ -177,6 +177,12 @@ class Api {
     );
   }
 
+  sendExpertApprovalNotification(uid: string) {
+    return this.post<{ success: boolean; delivered: boolean }>(
+      `/admin/users/${encodeURIComponent(uid)}/expert-approval-notification`,
+    );
+  }
+
   sendIncomingCallNotification(payload: {
     recipientUid: string;
     femaleUid: string;

@@ -35,9 +35,7 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
       ? initialLanguages
       : [
           String(
-            existing.practiceLanguage ||
-              existing.nativeLanguage ||
-              'English',
+            existing.practiceLanguage || existing.nativeLanguage || 'English',
           ),
         ],
   );
@@ -119,8 +117,8 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
         </Text>
         {role === 'expert' ? (
           <Text style={styles.languageHelp}>
-            Select one or more. You will record verification audio in your
-            first selected language: {languages[0]}.
+            Select one or more. You will record verification audio in your first
+            selected language: {languages[0]}.
           </Text>
         ) : null}
         <View style={styles.languageGrid}>
@@ -165,8 +163,8 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
             />
             <Text style={styles.infoText}>
               Experts submit one short recording in their first selected
-              language. Review usually completes within 30 minutes. You remain
-              a learner until approved.
+              language. Review usually completes within 30 minutes. App access
+              is enabled after an admin approves your application.
             </Text>
           </View>
         )}

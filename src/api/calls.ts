@@ -11,6 +11,9 @@ export const saveExpertCompensation = (uid: string, rate: number) =>
 export const settleExpertCallEarnings = (callId: string) =>
   Api.settleExpertEarnings(callId);
 
+export const sendExpertApprovalNotification = (uid: string) =>
+  Api.sendExpertApprovalNotification(uid);
+
 // ============================================
 // TYPES
 // ============================================

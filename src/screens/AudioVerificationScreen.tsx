@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   PermissionsAndroid,
   Platform,
   ScrollView,
@@ -45,7 +46,9 @@ type ApplicationStatus = 'idle' | 'recording' | 'uploading' | 'pending';
 const AudioVerificationScreen = ({ navigation, route }: any) => {
   const language = String(route.params?.language || 'English');
   const supportedLanguages: string[] = Array.isArray(route.params?.languages)
-    ? route.params.languages.map((item: unknown) => String(item)).filter(Boolean)
+    ? route.params.languages
+        .map((item: unknown) => String(item))
+        .filter(Boolean)
     : [language];
   const prompt = PROMPTS[language] || PROMPTS.English;
   const [status, setStatus] = useState<ApplicationStatus>('idle');
@@ -56,6 +59,14 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
   const recordingStartedAtRef = useRef(0);
   const isStoppingRef = useRef(false);
   const stopAndSubmitRecordingRef = useRef<() => Promise<void>>(async () => {});
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => true,
+    );
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     const currentUser = auth().currentUser;
@@ -85,7 +96,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
       hour: '2-digit',
       minute: '2-digit',
     });
-    return `Expected review by ${due}. You can continue using Speakly as a learner while you wait.`;
+    return `Expected review by ${due}. You will receive access after an admin approves your expert application.`;
   }, [reviewDueAt]);
 
   const requestPermission = async () => {
@@ -238,14 +249,6 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
           <Text style={styles.submittedText}>
             Submitted {new Date(submittedAt).toLocaleString('en-IN')}
           </Text>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() =>
-              navigation.reset({ index: 0, routes: [{ name: 'Main' }] })
-            }
-          >
-            <Text style={styles.secondaryButtonText}>Continue as learner</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
