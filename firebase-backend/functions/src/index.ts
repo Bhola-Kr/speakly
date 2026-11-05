@@ -20,9 +20,12 @@ import {
   getExpertCompensationForAdmin,
   getMyExpertCompensation,
   notifyExpertApproval,
+  notifyAdminsOfExpertApplication,
+  notifyAdminsOnExpertApplicationCreated,
   settleExpertEarnings,
   updateExpertCompensation,
 } from './expertCompensation';
+import { notifyAdminsOnUserOnboarded } from './onboardingNotifications';
 
 const app = express();
 
@@ -250,6 +253,7 @@ app.post(
   '/admin/users/:uid/expert-approval-notification',
   notifyExpertApproval,
 );
+app.post('/expert-applications/notify-admins', notifyAdminsOfExpertApplication);
 
 // ============================================
 // MSG91 OTP WIDGET - SEND OTP
@@ -751,7 +755,11 @@ app.get('/', (_req: Request, res: Response) => {
 // ============================================
 // FIREBASE FUNCTION
 // ============================================
-export { reconcilePayuPayments };
+export {
+  reconcilePayuPayments,
+  notifyAdminsOnExpertApplicationCreated,
+  notifyAdminsOnUserOnboarded,
+};
 export const api = onRequest(
   {
     cors: true,

@@ -183,6 +183,12 @@ class Api {
     );
   }
 
+  notifyAdminsOfExpertApplication() {
+    return this.post<{ success: boolean; delivered: number }>(
+      '/expert-applications/notify-admins',
+    );
+  }
+
   sendIncomingCallNotification(payload: {
     recipientUid: string;
     femaleUid: string;

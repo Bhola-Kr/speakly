@@ -77,11 +77,21 @@ type ExpertCallHistory = {
   id: string;
   callId: string;
   startedAt: number;
+  endedAt?: number;
   duration: number;
   amount: number;
   status: string;
   maleInfo?: { name?: string };
   archivedAt?: number;
+};
+type DailyExpertSummary = {
+  dateKey: string;
+  dayStartedAt: number;
+  onlineDuration: number;
+  callsReceived: number;
+  completedCalls: number;
+  missedCalls: number;
+  callDuration: number;
 };
 
 const PAGE_SIZE = 25;
@@ -117,6 +127,93 @@ const getOnlineDuration = (entries: ExpertActivity[]) => {
 
   if (onlineSince !== null) total += Math.max(0, now - onlineSince);
   return total;
+};
+const getLocalDayStart = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  ).getTime();
+};
+const getLocalDateKey = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    '0',
+  )}-${String(date.getDate()).padStart(2, '0')}`;
+};
+const getCallTimestamp = (call: ExpertCallHistory) => {
+  const endedAt = Number(call.endedAt || 0);
+  const duration = Number(call.duration || 0);
+  if (endedAt > 0 && duration > 0) return endedAt - duration;
+  return endedAt || Number(call.startedAt || 0);
+};
+const getDailyExpertSummaries = (
+  entries: ExpertActivity[],
+  calls: ExpertCallHistory[],
+) => {
+  const summaries = new Map<string, DailyExpertSummary>();
+  const ensureSummary = (timestamp: number) => {
+    const dateKey = getLocalDateKey(timestamp);
+    let summary = summaries.get(dateKey);
+    if (!summary) {
+      summary = {
+        dateKey,
+        dayStartedAt: getLocalDayStart(timestamp),
+        onlineDuration: 0,
+        callsReceived: 0,
+        completedCalls: 0,
+        missedCalls: 0,
+        callDuration: 0,
+      };
+      summaries.set(dateKey, summary);
+    }
+    return summary;
+  };
+  const addOnlineInterval = (startedAt: number, endedAt: number) => {
+    let cursor = startedAt;
+    while (cursor < endedAt) {
+      const dayStartedAt = getLocalDayStart(cursor);
+      const nextDay = new Date(dayStartedAt);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const intervalEnd = Math.min(endedAt, nextDay.getTime());
+      ensureSummary(cursor).onlineDuration += intervalEnd - cursor;
+      cursor = intervalEnd;
+    }
+  };
+
+  const sortedEntries = [...entries].sort(
+    (a, b) => Number(a.createdAt) - Number(b.createdAt),
+  );
+  let onlineSince: number | null = null;
+  sortedEntries.forEach(entry => {
+    const timestamp = Number(entry.createdAt || 0);
+    if (!timestamp) return;
+    ensureSummary(timestamp);
+    if (entry.status === 'online' && onlineSince === null) {
+      onlineSince = timestamp;
+    } else if (entry.status === 'offline' && onlineSince !== null) {
+      addOnlineInterval(onlineSince, timestamp);
+      onlineSince = null;
+    }
+  });
+  if (onlineSince !== null) addOnlineInterval(onlineSince, Date.now());
+
+  calls.forEach(call => {
+    const timestamp = getCallTimestamp(call);
+    if (!timestamp) return;
+    const summary = ensureSummary(timestamp);
+    const completed = String(call.status).toLowerCase() === 'completed';
+    summary.callsReceived += 1;
+    summary.completedCalls += completed ? 1 : 0;
+    summary.missedCalls += completed ? 0 : 1;
+    summary.callDuration += Number(call.duration || 0);
+  });
+
+  return [...summaries.values()].sort(
+    (a, b) => b.dayStartedAt - a.dayStartedAt,
+  );
 };
 const readableError = (error: any, fallback: string) =>
   typeof error?.message === 'string' && error.message.trim()
@@ -222,6 +319,13 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           Number(a.latestActivity.createdAt),
       );
   }, [activities]);
+  const dailyExpertSummaries = useMemo(
+    () =>
+      selectedExpert
+        ? getDailyExpertSummaries(selectedExpert.activities, expertCallHistory)
+        : [],
+    [expertCallHistory, selectedExpert],
+  );
 
   const loadUsers = useCallback(
     async (append = false) => {
@@ -712,19 +816,23 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           [`users/${application.uid}/settings/voiceCallsEnabled`]: approved,
         });
       if (approved) {
-        await sendExpertApprovalNotification(application.uid).catch(
-          notificationError =>
-            console.warn(
-              'Unable to notify approved expert:',
-              notificationError,
-            ),
+        const notification = await sendExpertApprovalNotification(
+          application.uid,
+        ).catch(notificationError => {
+          console.warn('Unable to notify approved expert:', notificationError);
+          return null;
+        });
+        Alert.alert(
+          'Expert Approved',
+          notification?.delivered
+            ? 'The user now has expert access and was notified.'
+            : 'The user now has expert access, but no notification could be delivered. Ask them to open Speakly and allow notifications.',
         );
+        return;
       }
       Alert.alert(
-        approved ? 'Expert Approved' : 'Application Rejected',
-        approved
-          ? 'The user now has expert access.'
-          : 'The user can continue using Speakly as a learner.',
+        'Application Rejected',
+        'The user can continue using Speakly as a learner.',
       );
     } catch (reviewError: any) {
       Alert.alert(
@@ -1347,6 +1455,60 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 </View>
               </View>
 
+              <Text style={styles.expertHistoryHeading}>Daily activity</Text>
+              {loadingExpertHistory ? (
+                <ActivityIndicator
+                  color={Colors.secondary}
+                  style={styles.expertHistoryLoader}
+                />
+              ) : dailyExpertSummaries.length === 0 ? (
+                <Text style={styles.noApplications}>
+                  No daily activity is available for this expert.
+                </Text>
+              ) : (
+                dailyExpertSummaries.map(day => (
+                  <View key={day.dateKey} style={styles.dailyActivityCard}>
+                    <Text style={styles.dailyActivityDate}>
+                      {new Date(day.dayStartedAt).toLocaleDateString('en-IN', {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                    <View style={styles.dailyStatsRow}>
+                      <View style={styles.dailyStat}>
+                        <Text style={styles.dailyStatValue}>
+                          {formatDuration(day.onlineDuration)}
+                        </Text>
+                        <Text style={styles.dailyStatLabel}>Active</Text>
+                      </View>
+                      <View style={styles.dailyStat}>
+                        <Text style={styles.dailyStatValue}>
+                          {day.callsReceived}
+                        </Text>
+                        <Text style={styles.dailyStatLabel}>Received</Text>
+                      </View>
+                      <View style={styles.dailyStat}>
+                        <Text style={styles.dailyStatValue}>
+                          {day.completedCalls}
+                        </Text>
+                        <Text style={styles.dailyStatLabel}>Completed</Text>
+                      </View>
+                      <View style={styles.dailyStat}>
+                        <Text style={styles.dailyStatValue}>
+                          {day.missedCalls}
+                        </Text>
+                        <Text style={styles.dailyStatLabel}>Missed</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.dailyCallTime}>
+                      Total call time: {formatDuration(day.callDuration)}
+                    </Text>
+                  </View>
+                ))
+              )}
+
               <Text style={styles.expertHistoryHeading}>Call history</Text>
               {loadingExpertHistory ? (
                 <ActivityIndicator
@@ -1556,6 +1718,45 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   expertHistoryLoader: { marginVertical: 28 },
+  dailyActivityCard: {
+    marginBottom: 10,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  dailyActivityDate: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  dailyStatsRow: {
+    marginTop: 13,
+    flexDirection: 'row',
+  },
+  dailyStat: { flex: 1, alignItems: 'center', paddingHorizontal: 2 },
+  dailyStatValue: {
+    color: Colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  dailyStatLabel: {
+    marginTop: 3,
+    color: Colors.subText,
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  dailyCallTime: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    color: Colors.secondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   expertCallCard: {
     minHeight: 70,
     marginBottom: 9,

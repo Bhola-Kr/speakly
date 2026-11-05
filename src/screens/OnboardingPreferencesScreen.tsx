@@ -74,12 +74,18 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
               title: 'Learn',
               detail: 'Practice with experts',
               icon: 'school-outline',
+              color: '#D94F87',
+              softColor: '#FFF0F6',
+              borderColor: '#F4B7CF',
             },
             {
               value: 'expert' as const,
               title: 'Be an expert',
               detail: 'Help learners speak',
               icon: 'account-voice',
+              color: '#078A7D',
+              softColor: '#E7F9F4',
+              borderColor: '#9DDED2',
             },
           ].map(item => {
             const selected = role === item.value;
@@ -92,14 +98,25 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
                     setLanguages(current => [current[0] || 'English']);
                   }
                 }}
-                style={[styles.roleCard, selected && styles.selectedCard]}
+                style={[
+                  styles.roleCard,
+                  {
+                    backgroundColor: selected ? item.color : item.softColor,
+                    borderColor: selected ? item.color : item.borderColor,
+                  },
+                ]}
               >
                 <MaterialCommunityIcons
                   name={item.icon}
                   size={30}
-                  color={selected ? Colors.white : Colors.secondary}
+                  color={selected ? Colors.white : item.color}
                 />
-                <Text style={[styles.roleTitle, selected && styles.whiteText]}>
+                <Text
+                  style={[
+                    styles.roleTitle,
+                    { color: selected ? Colors.white : item.color },
+                  ]}
+                >
                   {item.title}
                 </Text>
                 <Text
@@ -235,10 +252,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.white,
   },
-  selectedCard: {
-    backgroundColor: Colors.secondary,
-    borderColor: Colors.secondary,
-  },
   roleTitle: {
     marginTop: 12,
     color: Colors.text,
@@ -246,7 +259,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   roleDetail: { marginTop: 4, color: Colors.subText, fontSize: 13 },
-  whiteText: { color: Colors.white },
   whiteMuted: { color: Colors.overlayWhite90 },
   languageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   languageCard: {

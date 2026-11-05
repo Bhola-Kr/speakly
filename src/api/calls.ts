@@ -14,6 +14,9 @@ export const settleExpertCallEarnings = (callId: string) =>
 export const sendExpertApprovalNotification = (uid: string) =>
   Api.sendExpertApprovalNotification(uid);
 
+export const notifyAdminsOfExpertApplication = () =>
+  Api.notifyAdminsOfExpertApplication();
+
 // ============================================
 // TYPES
 // ============================================

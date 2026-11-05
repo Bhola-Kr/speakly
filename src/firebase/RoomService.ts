@@ -61,6 +61,7 @@ export interface Room {
   male: UserInfo | null;
   createdAt: number;
   updatedAt: number;
+  callRequestedAt?: number | null;
   callStartedAt?: number | null;
   chargedAmount?: number | null;
   callRatePerMinute?: number;
@@ -315,6 +316,7 @@ class RoomService {
       }
       room.status = 'ringing';
       room.currentCallId = callId;
+      room.callRequestedAt = Date.now();
       room.male = {
         uid: firebaseUser.uid,
         name: male.profile.name,
@@ -594,7 +596,11 @@ class RoomService {
 
     const history = {
       callId: room.currentCallId,
-      startedAt: room.createdAt,
+      startedAt:
+        room.callRequestedAt ||
+        room.callStartedAt ||
+        room.updatedAt ||
+        room.createdAt,
       endedAt,
       duration,
       amount,

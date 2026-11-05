@@ -1,9 +1,31 @@
 import { Request, Response } from 'express';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
+import { onValueWritten } from 'firebase-functions/v2/database';
 
 const DATA_ROOT = 'speakly';
 const DEFAULT_EXPERT_CALL_RATE_PER_MINUTE = 1;
+const GENERAL_NOTIFICATION_CHANNEL_ID = 'voicetamil_general';
+
+const notificationDeliveryOptions = {
+  android: {
+    priority: 'high' as const,
+    notification: {
+      channelId: GENERAL_NOTIFICATION_CHANNEL_ID,
+      sound: 'default',
+    },
+  },
+  apns: {
+    headers: {
+      'apns-priority': '10',
+      'apns-push-type': 'alert',
+    },
+    payload: { aps: { sound: 'default' } },
+  },
+};
+
+const applicationNotificationPath =
+  '/speakly/expertApplications/{applicantUid}';
 
 const authenticatedUid = async (req: Request) => {
   const authorization = String(req.headers.authorization || '');
@@ -170,14 +192,11 @@ export const notifyExpertApproval = async (req: Request, res: Response) => {
     await admin.messaging().send({
       token: token.trim(),
       notification: {
-        title: 'Expert account approved',
-        body: 'Your expert account has been approved. You can now go online, help learners, and start earning.',
+        title: '🎉 Congratulations! Aap Speakly Expert Ban Gayi Hain!',
+        body: '🥳 Aapka account activate ho gaya hai! Abhi online aaiye, calls par earning shuru kijiye aur special early-expert benefits ka fayda uthaiye! 💰',
       },
       data: { type: 'expert_approved' },
-      android: { priority: 'high' },
-      apns: {
-        payload: { aps: { sound: 'default' } },
-      },
+      ...notificationDeliveryOptions,
     });
     return res.json({ success: true, delivered: true });
   } catch (error: any) {
@@ -191,6 +210,139 @@ export const notifyExpertApproval = async (req: Request, res: Response) => {
     return res.status(status).json({
       success: false,
       message: 'Unable to send expert approval notification',
+    });
+  }
+};
+
+const sendExpertApplicationNotificationToAdmins = async (
+  applicantUid: string,
+) => {
+  const [applicationSnapshot, applicantSnapshot, usersSnapshot] =
+    await Promise.all([
+      admin
+        .database()
+        .ref(`${DATA_ROOT}/expertApplications/${applicantUid}`)
+        .once('value'),
+      admin.database().ref(`${DATA_ROOT}/users/${applicantUid}`).once('value'),
+      admin.database().ref(`${DATA_ROOT}/users`).once('value'),
+    ]);
+  const application = applicationSnapshot.val();
+  if (application?.uid !== applicantUid || application?.status !== 'pending') {
+    throw new Error('PENDING_APPLICATION_NOT_FOUND');
+  }
+
+  const applicant = applicantSnapshot.val() || {};
+  const applicantName = String(
+    applicant.profile?.name || applicant.profile?.tamilName || 'A new expert',
+  );
+  const tokens: string[] = [];
+  usersSnapshot.forEach(child => {
+    const user = child.val();
+    if (user?.isAdmin !== true) return;
+    const tokenValue = user.fcmTokens;
+    const token =
+      typeof tokenValue === 'string' ? tokenValue : tokenValue?.token;
+    if (typeof token === 'string' && token.trim()) tokens.push(token.trim());
+  });
+  const uniqueTokens = [...new Set(tokens)];
+  if (uniqueTokens.length === 0) return 0;
+
+  const applicationRef = admin
+    .database()
+    .ref(`${DATA_ROOT}/expertApplications/${applicantUid}`);
+  const notificationClaim = await applicationRef.transaction(current => {
+    if (
+      current?.uid !== applicantUid ||
+      current?.status !== 'pending' ||
+      current?.adminNotificationSentAt
+    ) {
+      return;
+    }
+    return { ...current, adminNotificationSentAt: Date.now() };
+  });
+  if (!notificationClaim.committed) return 0;
+
+  let delivered = 0;
+  try {
+    for (let offset = 0; offset < uniqueTokens.length; offset += 500) {
+      const result = await admin.messaging().sendEachForMulticast({
+        tokens: uniqueTokens.slice(offset, offset + 500),
+        notification: {
+          title: 'New expert application',
+          body: `${applicantName} submitted an expert verification. Review and approve the application.`,
+        },
+        data: {
+          type: 'expert_application_submitted',
+          applicantUid,
+        },
+        ...notificationDeliveryOptions,
+      });
+      delivered += result.successCount;
+    }
+  } catch (error) {
+    await applicationRef.child('adminNotificationSentAt').remove();
+    throw error;
+  }
+
+  if (delivered === 0) {
+    await applicationRef.child('adminNotificationSentAt').remove();
+  }
+  return delivered;
+};
+
+export const notifyAdminsOnExpertApplicationCreated = onValueWritten(
+  applicationNotificationPath,
+  async event => {
+    const applicantUid = String(event.params.applicantUid || '');
+    const previousApplication = event.data.before.val();
+    const application = event.data.after.val();
+    const isNewSubmission =
+      !previousApplication ||
+      previousApplication.status !== 'pending' ||
+      previousApplication.submittedAt !== application?.submittedAt;
+    if (
+      !applicantUid ||
+      application?.uid !== applicantUid ||
+      application?.status !== 'pending' ||
+      !isNewSubmission
+    ) {
+      return;
+    }
+
+    const delivered = await sendExpertApplicationNotificationToAdmins(
+      applicantUid,
+    );
+    logger.info('Expert application admin notifications processed', {
+      applicantUid,
+      delivered,
+    });
+  },
+);
+
+export const notifyAdminsOfExpertApplication = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const applicantUid = await authenticatedUid(req);
+    const delivered = await sendExpertApplicationNotificationToAdmins(
+      applicantUid,
+    );
+    return res.json({ success: true, delivered });
+  } catch (error: any) {
+    logger.error('Notify admins of expert application failed', error);
+    const status =
+      error?.message === 'UNAUTHENTICATED'
+        ? 401
+        : error?.message === 'PENDING_APPLICATION_NOT_FOUND'
+        ? 400
+        : 500;
+    return res.status(status).json({
+      success: false,
+      message:
+        status === 400
+          ? 'Pending expert application not found'
+          : 'Unable to notify administrators',
     });
   }
 };

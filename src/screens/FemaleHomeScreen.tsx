@@ -202,6 +202,43 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity
+          activeOpacity={0.88}
+          onPress={goOnLine}
+          disabled={goingOnline}
+          style={styles.onlineButtonTouch}
+        >
+          <LinearGradient
+            colors={['#05786F', '#08A98F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.onlineButton, goingOnline && styles.loadingButton]}
+          >
+            <View style={styles.onlineIconCircle}>
+              {goingOnline ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Ionicons name="radio-outline" size={29} color={COLORS.white} />
+              )}
+            </View>
+
+            <View style={styles.onlineButtonCopy}>
+              <Text style={styles.onlineText}>
+                {goingOnline ? 'GOING ONLINE…' : 'GO ONLINE'}
+              </Text>
+              <Text style={styles.onlineDescription}>
+                {goingOnline
+                  ? 'Preparing your expert room'
+                  : 'Become visible and start receiving calls'}
+              </Text>
+            </View>
+
+            <View style={styles.onlineArrow}>
+              <Ionicons name="arrow-forward" size={24} color={COLORS.white} />
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
         <View style={styles.tutorialShell}>
           <FlatList
             key={tutorialCardWidth}
@@ -270,40 +307,6 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={goOnLine}
-          disabled={goingOnline}
-          style={styles.onlineButtonTouch}
-        >
-          <LinearGradient
-            colors={['#0B978A', '#08A98F']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.onlineButton, goingOnline && styles.loadingButton]}
-          >
-            {goingOnline ? (
-              <>
-                <ActivityIndicator size="small" color={COLORS.white} />
-                <Text style={styles.onlineText}>Getting you ready…</Text>
-              </>
-            ) : (
-              <>
-                <View style={styles.onlineDot} />
-                <Ionicons name="call-outline" size={24} color={COLORS.white} />
-                <Text style={styles.onlineText}>Start receiving calls</Text>
-                <View style={styles.onlineArrow}>
-                  <Ionicons
-                    name="arrow-forward"
-                    size={23}
-                    color={COLORS.white}
-                  />
-                </View>
-              </>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-
         <View style={styles.earningsCard}>
           <View style={styles.earningsHeader}>
             <View>
@@ -314,7 +317,11 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               </Text>
             </View>
             <View style={styles.earningsIcon}>
-              <Ionicons name="wallet-outline" size={30} color={COLORS.tealDark} />
+              <Ionicons
+                name="wallet-outline"
+                size={30}
+                color={COLORS.tealDark}
+              />
             </View>
           </View>
           <TouchableOpacity
@@ -671,21 +678,22 @@ const styles = StyleSheet.create({
   },
   onlineButtonTouch: {
     marginHorizontal: 20,
-    marginTop: 18,
-    marginBottom: 20,
+    marginTop: 4,
+    marginBottom: 24,
+    borderRadius: 27,
+    shadowColor: COLORS.tealDark,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 18,
+    elevation: 9,
   },
   onlineButton: {
-    height: 56,
-    paddingHorizontal: 20,
-    borderRadius: 28,
+    minHeight: 92,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderRadius: 27,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: COLORS.tealDark,
-    shadowOffset: { width: 0, height: 9 },
-    shadowOpacity: 0.17,
-    shadowRadius: 14,
-    elevation: 5,
   },
   loadingButton: {
     opacity: 0.78,
@@ -741,25 +749,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
   },
-  onlineDot: {
-    width: 11,
-    height: 11,
-    marginRight: 15,
-    borderRadius: 6,
-    backgroundColor: COLORS.online,
+  onlineIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  onlineButtonCopy: {
+    flex: 1,
+    marginLeft: 15,
   },
   onlineText: {
-    marginLeft: 11,
     color: COLORS.white,
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 21,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  onlineDescription: {
+    marginTop: 4,
+    color: 'rgba(255,255,255,0.86)',
+    fontSize: 12.5,
+    lineHeight: 17,
   },
   onlineArrow: {
-    position: 'absolute',
-    right: 16,
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    marginLeft: 10,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.13)',

@@ -20,6 +20,7 @@ import storage from '@react-native-firebase/storage';
 import Colors from '../constants/colors';
 import VoiceDetector, { VoiceResult } from './voiceDetector';
 import { databaseRef } from '../firebase/firebase';
+import { notifyAdminsOfExpertApplication } from '../api/calls';
 
 const REVIEW_WINDOW_MS = 30 * 60 * 1000;
 const MIN_RECORDING_SECONDS = 5;
@@ -55,6 +56,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
   const [seconds, setSeconds] = useState(0);
   const [submittedAt, setSubmittedAt] = useState(0);
   const [reviewDueAt, setReviewDueAt] = useState(0);
+  const [contactConsent, setContactConsent] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordingStartedAtRef = useRef(0);
   const isStoppingRef = useRef(false);
@@ -111,6 +113,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
   const submitRecording = async (result: VoiceResult) => {
     const currentUser = auth().currentUser;
     if (!currentUser) throw new Error('Please sign in again.');
+    if (!contactConsent) {
+      throw new Error('Please provide onboarding contact consent.');
+    }
     if (!result.localUri)
       throw new Error('The recording file was not created.');
     if (Number(result.durationMs || 0) < MIN_RECORDING_SECONDS * 1000) {
@@ -139,6 +144,8 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
       audioUrl,
       storagePath,
       durationMs: Number(result.durationMs || 0),
+      onboardingContactConsent: true,
+      consentedAt: now,
       submittedAt: now,
       reviewDueAt: dueAt,
       updatedAt: now,
@@ -151,6 +158,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
       [`users/${currentUser.uid}/profile/supportedLanguages`]:
         supportedLanguages,
     });
+    await notifyAdminsOfExpertApplication().catch(error =>
+      console.warn('Unable to notify administrators:', error),
+    );
     setSubmittedAt(now);
     setReviewDueAt(dueAt);
     setStatus('pending');
@@ -187,6 +197,13 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
     }
 
     if (status !== 'idle') return;
+    if (!contactConsent) {
+      Alert.alert(
+        'Consent Required',
+        'Please confirm that the Speakly team may contact you for onboarding assistance.',
+      );
+      return;
+    }
 
     try {
       if (!(await requestPermission()))
@@ -236,20 +253,92 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
           backgroundColor={Colors.background}
           barStyle="dark-content"
         />
-        <View style={styles.pendingContent}>
-          <View style={styles.pendingIcon}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.pendingContent}
+        >
+          <View style={styles.brandRow}>
+            <View style={styles.brandIcon}>
+              <MaterialCommunityIcons
+                name="waveform"
+                size={25}
+                color={Colors.white}
+              />
+            </View>
+            <Text style={styles.brandName}>Speakly</Text>
+          </View>
+
+          <View style={styles.reviewIllustration}>
+            <View style={styles.reviewGlow} />
             <MaterialCommunityIcons
               name="clock-check-outline"
-              size={46}
+              size={76}
               color={Colors.secondary}
             />
           </View>
-          <Text style={styles.title}>Application submitted</Text>
-          <Text style={styles.subtitle}>{reviewMessage}</Text>
+
+          <Text style={styles.pendingTitle}>Application{`\n`}Under Review</Text>
+          <Text style={styles.pendingSubtitle}>
+            Your expert application has been submitted successfully.
+          </Text>
+
+          <View style={styles.progressCard}>
+            <View style={styles.progressRow}>
+              <MaterialCommunityIcons
+                name="check-circle"
+                size={27}
+                color={Colors.successStrong}
+              />
+              <Text style={styles.progressText}>Voice sample submitted</Text>
+            </View>
+            <View style={styles.progressLineActive} />
+            <View style={styles.progressRow}>
+              <View style={styles.reviewingIcon}>
+                <MaterialCommunityIcons
+                  name="clock-outline"
+                  size={19}
+                  color={Colors.warningStrong}
+                />
+              </View>
+              <Text style={styles.progressText}>
+                Team reviewing your profile
+              </Text>
+            </View>
+            <View style={styles.progressLine} />
+            <View style={styles.progressRow}>
+              <MaterialCommunityIcons
+                name="checkbox-blank-circle-outline"
+                size={27}
+                color={Colors.placeholder}
+              />
+              <Text style={[styles.progressText, styles.progressTextPending]}>
+                Expert account activation
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.notificationCard}>
+            <View style={styles.notificationIcon}>
+              <MaterialCommunityIcons
+                name="bell-ring-outline"
+                size={31}
+                color={Colors.secondary}
+              />
+            </View>
+            <Text style={styles.notificationTitle}>
+              We’ll notify you once approved!
+            </Text>
+            <Text style={styles.notificationText}>
+              Once approved, you can go online, receive calls, and start
+              earning.
+            </Text>
+          </View>
+
+          <Text style={styles.reviewMessage}>{reviewMessage}</Text>
           <Text style={styles.submittedText}>
             Submitted {new Date(submittedAt).toLocaleString('en-IN')}
           </Text>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -274,6 +363,33 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
           <Text style={styles.prompt}>{prompt}</Text>
         </View>
 
+        <TouchableOpacity
+          activeOpacity={0.8}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: contactConsent }}
+          disabled={status !== 'idle'}
+          onPress={() => setContactConsent(value => !value)}
+          style={[
+            styles.consentCard,
+            contactConsent && styles.consentCardSelected,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={
+              contactConsent
+                ? 'checkbox-marked-circle'
+                : 'checkbox-blank-circle-outline'
+            }
+            size={27}
+            color={contactConsent ? Colors.secondary : Colors.placeholder}
+          />
+          <Text style={styles.consentText}>
+            I choose to be contacted by the Speakly team for assistance in
+            onboarding. The team may contact opted-in experts for training and
+            early-expert benefits.
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.recordingArea}>
           {status === 'uploading' ? (
             <>
@@ -286,7 +402,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
                 style={[
                   styles.micButton,
                   status === 'recording' && styles.stopButton,
+                  !contactConsent && styles.micButtonDisabled,
                 ]}
+                disabled={!contactConsent && status !== 'recording'}
                 onPress={toggleRecording}
               >
                 <MaterialCommunityIcons
@@ -352,6 +470,29 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     fontWeight: '700',
   },
+  consentCard: {
+    marginTop: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  consentCardSelected: {
+    borderColor: Colors.secondary,
+    backgroundColor: Colors.surface,
+  },
+  consentText: {
+    flex: 1,
+    marginLeft: 12,
+    color: Colors.text,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+  },
   recordingArea: {
     flex: 1,
     minHeight: 280,
@@ -367,6 +508,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.secondary,
   },
   stopButton: { backgroundColor: Colors.danger },
+  micButtonDisabled: { backgroundColor: Colors.disabled },
   timer: {
     marginTop: 18,
     color: Colors.text,
@@ -375,21 +517,149 @@ const styles = StyleSheet.create({
   },
   recordHint: { marginTop: 12, color: Colors.subText, fontSize: 14 },
   pendingContent: {
-    flex: 1,
-    padding: 28,
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 36,
+    alignItems: 'center',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  brandIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 15,
+    backgroundColor: Colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pendingIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: Colors.screenTint,
+  brandName: {
+    marginLeft: 10,
+    color: Colors.text,
+    fontSize: 25,
+    fontWeight: '900',
+  },
+  reviewIllustration: {
+    width: 150,
+    height: 150,
+    marginTop: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
   },
-  submittedText: { marginTop: 18, color: Colors.subText, fontSize: 12 },
+  reviewGlow: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: Colors.surface,
+  },
+  pendingTitle: {
+    color: Colors.text,
+    fontSize: 31,
+    lineHeight: 36,
+    fontWeight: '900',
+    textAlign: 'center',
+    letterSpacing: -0.7,
+  },
+  pendingSubtitle: {
+    maxWidth: 320,
+    marginTop: 12,
+    color: Colors.subText,
+    fontSize: 16,
+    lineHeight: 23,
+    textAlign: 'center',
+  },
+  progressCard: {
+    width: '100%',
+    marginTop: 28,
+    paddingHorizontal: 22,
+    paddingVertical: 22,
+    borderRadius: 22,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: Colors.shadow,
+    shadowOpacity: 1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
+  },
+  progressRow: {
+    minHeight: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  progressText: {
+    marginLeft: 14,
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  progressTextPending: { color: Colors.subText },
+  reviewingIcon: {
+    width: 27,
+    height: 27,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.warningStrongSurface,
+  },
+  progressLineActive: {
+    width: 2,
+    height: 17,
+    marginLeft: 13,
+    backgroundColor: Colors.successStrong,
+  },
+  progressLine: {
+    width: 2,
+    height: 17,
+    marginLeft: 13,
+    backgroundColor: Colors.border,
+  },
+  notificationCard: {
+    width: '100%',
+    marginTop: 20,
+    padding: 22,
+    alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  notificationIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  notificationTitle: {
+    marginTop: 14,
+    color: Colors.text,
+    fontSize: 17,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  notificationText: {
+    maxWidth: 300,
+    marginTop: 7,
+    color: Colors.subText,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  reviewMessage: {
+    marginTop: 18,
+    color: Colors.subText,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  submittedText: { marginTop: 6, color: Colors.placeholder, fontSize: 11 },
   secondaryButton: {
     marginTop: 30,
     minHeight: 50,
