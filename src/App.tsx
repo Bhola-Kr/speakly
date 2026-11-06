@@ -20,8 +20,6 @@ import {
   ParamListBase,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import LoginScreen from './screens/LoginScreen';
-import OtpScreen from './screens/OtpScreen';
 import GenderScreen from './screens/GenderScreen';
 import OnboardingPreferencesScreen from './screens/OnboardingPreferencesScreen';
 import AudioVerificationScreen from './screens/AudioVerificationScreen';
@@ -64,6 +62,7 @@ import RoomService, { Room } from './firebase/RoomService';
 import database from '@react-native-firebase/database';
 import { databaseRef } from './firebase/firebase';
 import AppAlert from './components/AppAlert';
+import HomeScreen from './screens/home/HomeScreen';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -119,8 +118,7 @@ function RootStack() {
       }}
     >
       <Stack.Screen name="Splash" component={SplashScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Otp" component={OtpScreen} />
+      <Stack.Screen name="GuestHome" component={HomeScreen} />
       <Stack.Screen
         name="OnboardingPreferences"
         component={OnboardingPreferencesScreen}
@@ -131,7 +129,15 @@ function RootStack() {
         component={AudioVerificationScreen}
         options={{ gestureEnabled: false }}
       />
-      <Stack.Screen name="Avatar" component={AvatarScreen} />
+      <Stack.Screen
+        name="Avatar"
+        component={AvatarScreen}
+        options={{
+          gestureEnabled: false,
+          animation: 'none',
+          contentStyle: { backgroundColor: Colors.background },
+        }}
+      />
       <Stack.Screen
         name="Main"
         component={BottomTabs}
@@ -142,7 +148,15 @@ function RootStack() {
         component={FemaleBottomTabs}
         options={{ gestureEnabled: false }}
       />
-      <Stack.Screen name="ProfileSetting" component={ProfileSettingScreen} />
+      <Stack.Screen
+        name="ProfileSetting"
+        component={ProfileSettingScreen}
+        options={{
+          gestureEnabled: false,
+          animation: 'none',
+          contentStyle: { backgroundColor: Colors.background },
+        }}
+      />
       <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
       <Stack.Screen
         options={{
@@ -155,6 +169,9 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: false,
+          gestureEnabled: false,
+          animation: 'none',
+          contentStyle: { backgroundColor: Colors.background },
         }}
         name="EditProfile"
         component={EditProfileScreen}

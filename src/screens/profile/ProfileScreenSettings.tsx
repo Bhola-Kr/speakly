@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   ScrollView,
@@ -12,6 +18,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { Alert, Linking } from 'react-native';
 import auth from '@react-native-firebase/auth';
@@ -77,6 +84,15 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const [totalCallDuration, setTotalCallDuration] = useState(0);
   const [expertCallRate, setExpertCallRate] = useState<number | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      });
+    }, []),
+  );
 
   useEffect(() => {
     if (!isExpert) {
@@ -157,7 +173,7 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
               // Navigate to Login/Auth screen
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'Login' }],
+                routes: [{ name: 'GuestHome' }],
               });
             } catch (error: any) {
               Alert.alert(
@@ -360,6 +376,8 @@ ${PLAY_STORE_URL}`,
       <View style={expertStyles.backgroundGlow} pointerEvents="none" />
 
       <ScrollView
+        ref={scrollRef}
+        style={expertStyles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={expertStyles.content}
       >
@@ -563,6 +581,10 @@ const expertStyles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: EXPERT_COLORS.background,
   },
+  scrollView: {
+    flex: 1,
+    backgroundColor: EXPERT_COLORS.background,
+  },
   backgroundGlow: {
     position: 'absolute',
     width: 380,
@@ -573,6 +595,7 @@ const expertStyles = StyleSheet.create({
     backgroundColor: 'rgba(252,229,235,0.48)',
   },
   content: {
+    flexGrow: 1,
     paddingHorizontal: 20,
     paddingBottom: 40,
   },

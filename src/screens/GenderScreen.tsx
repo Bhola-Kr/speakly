@@ -95,7 +95,12 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
       }
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Main' }],
+        routes: [
+          {
+            name: 'Main',
+            params: { pendingCall: route.params?.pendingCall },
+          },
+        ],
       });
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Unable to save your choice.');

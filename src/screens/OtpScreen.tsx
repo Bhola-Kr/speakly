@@ -17,11 +17,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import authData from '../firebase/authData';
-import { hasValidUsername } from '../utils/profileValidation';
 import { useUser } from '../hooks/UserContext';
 import { resendMSGOtp, verifyMSGOtp } from '../api/calls';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../constants/colors';
+import { createAnonymousName } from '../utils/profileValidation';
 
 const COLORS = {
   background: Colors.background,
@@ -41,6 +41,7 @@ interface Props {
 
 const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const phoneNumber = route?.params?.phone ?? '';
+  const pendingCall = route?.params?.pendingCall;
   const displayPhoneNumber = phoneNumber.startsWith('+')
     ? phoneNumber
     : `+${phoneNumber}`;
@@ -137,35 +138,33 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       const firebaseUser = await authData.loginWithCustomToken(response.token);
 
       // Get user information using the UID
-      const userInfo = await authData.getUser(firebaseUser.uid);
+      let userInfo = await authData.getUser(firebaseUser.uid);
 
-      // Brand new user
       if (!userInfo) {
-        navigation.replace('OnboardingPreferences', {
-          user: firebaseUser,
+        await authData.createUser(firebaseUser, 'male', 'learner', 'English');
+        await authData.updateProfile({
+          name: createAnonymousName(firebaseUser.uid),
+          gender: 'male',
+          role: 'learner',
+          avatarId: 1,
+          avatarSelected: true,
+          practiceLanguage: 'English',
+          nativeLanguage: 'English',
+          supportedLanguages: ['English'],
         });
-        return;
+        userInfo = await authData.getUser(firebaseUser.uid);
       }
 
       await refreshUser();
 
-      // Profile setup is the third and final signup screen.
-      if (
-        !userInfo?.profile?.gender ||
-        !hasValidUsername(userInfo?.profile?.name) ||
-        userInfo?.profile?.avatarSelected !== true
-      ) {
-        navigation.replace('OnboardingPreferences', {
-          user: firebaseUser,
-          existingProfile: userInfo?.profile,
-        });
-        return;
-      }
-
       navigation.reset({
         index: 0,
         routes: [
-          { name: userInfo?.isExpert === true ? 'FemaleBottomTabs' : 'Main' },
+          {
+            name: userInfo?.isExpert === true ? 'FemaleBottomTabs' : 'Main',
+            params:
+              userInfo?.isExpert === true ? undefined : { pendingCall },
+          },
         ],
       });
     } catch (e: any) {

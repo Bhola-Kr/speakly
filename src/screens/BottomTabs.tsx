@@ -52,7 +52,7 @@ const tabIconStyles = {
   },
 };
 
-const BottomTabs = () => {
+const BottomTabs = ({ route }: any) => {
   const insets = useSafeAreaInsets();
 
   useFocusEffect(
@@ -136,6 +136,7 @@ const BottomTabs = () => {
       <Tab.Screen
         name="Home"
         component={HomeScreen}
+        initialParams={{ pendingCall: route?.params?.pendingCall }}
         options={{
           tabBarIcon: HomeTabIcon,
         }}

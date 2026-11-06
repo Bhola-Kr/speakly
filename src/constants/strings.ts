@@ -19,7 +19,7 @@ export const copy = {
   },
   home: {
     heading: 'Who Would You Like to Talk To?',
-    supportingText: 'Discover people and start a conversation.',
+    supportingText: 'Start a conversation.',
     availableHosts: 'Available Hosts',
     online: 'Online',
     busy: 'Busy',

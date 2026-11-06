@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -22,7 +28,11 @@ interface Props {
 
 const EmptyState = ({ onPress }: Props) => {
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.illustration}>
         <View style={styles.glowOne} />
         <View style={styles.glowTwo} />
@@ -73,40 +83,47 @@ const EmptyState = ({ onPress }: Props) => {
           style={styles.button}
         >
           <Ionicons name="call" size={22} color={COLORS.white} />
-          <Text style={styles.buttonText}>{copy.home.randomMatch}</Text>
+          <Text numberOfLines={1} style={styles.buttonText}>
+            Find an expert
+          </Text>
         </LinearGradient>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
 export default EmptyState;
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     alignItems: 'center',
-    paddingTop: 24,
-    paddingHorizontal: 24,
+    justifyContent: 'center',
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 110,
   },
   illustration: {
-    width: 260,
-    height: 255,
+    width: 220,
+    height: 205,
     alignItems: 'center',
     justifyContent: 'center',
   },
   glowOne: {
     position: 'absolute',
-    width: 230,
-    height: 180,
+    width: 200,
+    height: 155,
     borderRadius: 100,
     backgroundColor: 'rgba(252,229,235,0.62)',
     transform: [{ rotate: '-14deg' }],
   },
   glowTwo: {
     position: 'absolute',
-    width: 155,
-    height: 190,
+    width: 135,
+    height: 165,
     right: 12,
     borderRadius: 86,
     backgroundColor: 'rgba(255,229,237,0.72)',
@@ -153,8 +170,8 @@ const styles = StyleSheet.create({
   },
   phoneBubble: {
     position: 'absolute',
-    right: 18,
-    bottom: 28,
+    right: 10,
+    bottom: 18,
     width: 86,
     height: 86,
     borderRadius: 43,
@@ -221,7 +238,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   buttonTouch: {
-    marginTop: 22,
+    width: '100%',
+    maxWidth: 300,
+    marginTop: 18,
     borderRadius: 19,
     shadowColor: COLORS.tealDark,
     shadowOffset: { width: 0, height: 8 },
@@ -230,15 +249,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   button: {
-    width: 176,
-    height: 55,
+    width: '100%',
+    minHeight: 50,
+    paddingHorizontal: 20,
     borderRadius: 19,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    marginLeft: 12,
+    flexShrink: 1,
+    marginLeft: 9,
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '800',

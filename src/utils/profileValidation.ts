@@ -10,6 +10,19 @@ export const hasValidName = (value: unknown, minimumLength: number): boolean =>
 export const hasValidUsername = (value: unknown): boolean =>
   hasValidName(value, MIN_USERNAME_LENGTH);
 
+export const createAnonymousName = (uid: string): string => {
+  let hash = 0;
+  for (let index = 0; index < uid.length; index += 1) {
+    hash = (hash * 31 + uid.charCodeAt(index)) % 10000;
+  }
+  return `Anonymous ${String(hash).padStart(4, '0')}`;
+};
+
+export const isAnonymousProfileName = (value: unknown): boolean => {
+  const name = String(value || '').trim();
+  return name === 'User' || /^Anonymous \d{4}$/.test(name);
+};
+
 type AccountData = {
   profile?: {
     gender?: unknown;

@@ -199,6 +199,7 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
               role,
               language: languages[0],
               languages,
+              pendingCall: route.params?.pendingCall,
             })
           }
         />

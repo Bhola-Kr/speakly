@@ -35,21 +35,22 @@ const SplashScreen = ({ navigation }: any) => {
       const currentUser = auth().currentUser;
 
       if (!currentUser) {
-        navigateTo('Login');
+        navigateTo('GuestHome');
         return;
       }
 
       const userInfo = await authData.getUser(currentUser.uid);
 
       if (!userInfo) {
-        navigateTo('Login');
+        navigateTo('GuestHome');
         return;
       }
 
       if (
-        !userInfo?.profile?.gender ||
-        !hasValidUsername(userInfo?.profile?.name) ||
-        userInfo?.profile?.avatarSelected !== true
+        userInfo?.profile?.role === 'expert' &&
+        (!userInfo?.profile?.gender ||
+          !hasValidUsername(userInfo?.profile?.name) ||
+          userInfo?.profile?.avatarSelected !== true)
       ) {
         navigateTo('OnboardingPreferences', {
           user: currentUser,
@@ -77,7 +78,7 @@ const SplashScreen = ({ navigation }: any) => {
       navigateTo(userInfo?.isExpert === true ? 'FemaleBottomTabs' : 'Main');
     } catch (error) {
       console.error('SplashScreen:', error);
-      navigateTo('Login');
+      navigateTo('GuestHome');
     }
   }, [navigateTo]);
 

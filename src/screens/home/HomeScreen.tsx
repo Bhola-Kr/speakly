@@ -13,6 +13,7 @@ import {
   Text,
   View,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { scopedDatabase as database } from '../../firebase/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +38,9 @@ import {
 } from '../../firebase/signupOffer';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { copy } from '../../constants/strings';
+import auth from '@react-native-firebase/auth';
+import GuestLoginModal from './GuestLoginModal';
+import { isAnonymousProfileName } from '../../utils/profileValidation';
 
 const HOME_COLORS = {
   background: Colors.background,
@@ -49,6 +53,7 @@ const HOME_COLORS = {
 
 interface Props {
   navigation: any;
+  route?: any;
 }
 
 const keyExtractor = (item: any) => item?.uid;
@@ -68,7 +73,7 @@ const hasCompleteFemaleProfile = (item: any) => {
   return hasName;
 };
 
-const HomeScreen: React.FC<Props> = ({ navigation }) => {
+const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
   useFirstCallReview();
   const { user } = useUser();
   const [selected, setSelected] = useState('All');
@@ -76,6 +81,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [expertsLoaded, setExpertsLoaded] = useState(false);
   const [randomCalling, setRandomCalling] = useState(false);
   const [callingUserId, setCallingUserId] = useState<string | null>(null);
+  const [loginVisible, setLoginVisible] = useState(false);
+  const [guestPendingCall, setGuestPendingCall] = useState<any>(null);
+  const [guestDestination, setGuestDestination] = useState<
+    'Wallet' | 'ProfileSetting' | null
+  >(null);
   const [offer, setOffer] = useState<SignupOfferConfig>({
     active: false,
     amount: 0,
@@ -84,6 +94,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [claimingOffer, setClaimingOffer] = useState(false);
   const claimingOfferRef = useRef(false);
   const callInProgressRef = useRef(false);
+  const pendingCallHandledRef = useRef(false);
 
   const canStartCall = useCallBalanceGuard(navigation);
 
@@ -104,7 +115,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const offerClaimed = Boolean(user?.offers?.signupOffer?.claimedAt);
+  const showProfileReminder =
+    Boolean(user) &&
+    user?.isExpert !== true &&
+    isAnonymousProfileName(user?.profile?.name);
   const showOffer =
+    (!auth().currentUser || Boolean(user)) &&
     user?.isExpert !== true &&
     offer.active &&
     offer.amount > 0 &&
@@ -132,23 +148,46 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   }, []);
 
+  const handleOfferClaim = useCallback(() => {
+    if (!auth().currentUser) {
+      setOfferDismissed(true);
+      setGuestPendingCall(null);
+      setGuestDestination(null);
+      setLoginVisible(true);
+      return;
+    }
+    claimOffer();
+  }, [claimOffer]);
+
   useEffect(() => {
-    const ref = database().ref('users').orderByChild('isExpert').equalTo(true);
+    const ref = database()
+      .ref('users')
+      .orderByChild('isExpert')
+      .equalTo(true)
+      .limitToFirst(100);
 
-    const listener = ref.on('value', snapshot => {
-      const users: any[] = [];
+    const listener = ref.on(
+      'value',
+      snapshot => {
+        const users: any[] = [];
 
-      snapshot.forEach(child => {
-        const femaleUser = child.val();
+        snapshot.forEach(child => {
+          const femaleUser = child.val();
 
-        if (hasCompleteFemaleProfile(femaleUser)) {
-          users.push(femaleUser);
-        }
-        return false;
-      });
-      setFemaleUsers(users);
-      setExpertsLoaded(true);
-    });
+          if (hasCompleteFemaleProfile(femaleUser)) {
+            users.push(femaleUser);
+          }
+          return false;
+        });
+        setFemaleUsers(users);
+        setExpertsLoaded(true);
+      },
+      error => {
+        console.warn('Unable to load expert directory:', error);
+        setFemaleUsers([]);
+        setExpertsLoaded(true);
+      },
+    );
 
     return () => {
       ref.off('value', listener);
@@ -157,6 +196,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleCall = useCallback(
     async (item: any) => {
+      if (!auth().currentUser) {
+        setGuestDestination(null);
+        setGuestPendingCall({ uid: item?.uid, profile: item?.profile });
+        setLoginVisible(true);
+        return;
+      }
       if (
         callInProgressRef.current ||
         !canStartCall(Number(item?.profile?.price))
@@ -217,6 +262,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   }, [femaleUsers, selected]);
 
   const onRandomCall = useCallback(async () => {
+    if (!auth().currentUser) {
+      setGuestDestination(null);
+      setGuestPendingCall({ random: true });
+      setLoginVisible(true);
+      return;
+    }
     if (callInProgressRef.current) return;
 
     callInProgressRef.current = true;
@@ -246,13 +297,51 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   }, [canStartCall, navigation]);
 
+  useEffect(() => {
+    const pendingCall = route?.params?.pendingCall;
+    if (
+      !pendingCall ||
+      pendingCallHandledRef.current ||
+      !auth().currentUser ||
+      !user
+    ) {
+      return;
+    }
+
+    pendingCallHandledRef.current = true;
+    navigation.setParams?.({ pendingCall: undefined });
+    if (pendingCall.random === true) {
+      onRandomCall();
+      return;
+    }
+    if (pendingCall.uid) {
+      handleCall({ uid: pendingCall.uid, profile: pendingCall.profile || {} });
+    }
+  }, [handleCall, navigation, onRandomCall, route?.params?.pendingCall, user]);
+
   const walletPress = useCallback(
-    () => navigation.navigate('Wallet'),
+    () => {
+      if (auth().currentUser) {
+        navigation.navigate('Wallet');
+        return;
+      }
+      setGuestPendingCall(null);
+      setGuestDestination('Wallet');
+      setLoginVisible(true);
+    },
     [navigation],
   );
 
   const userProfilePress = useCallback(
-    () => navigation.navigate('ProfileSetting', { gender: 'male' }),
+    () => {
+      if (auth().currentUser) {
+        navigation.navigate('ProfileSetting', { gender: 'male' });
+        return;
+      }
+      setGuestPendingCall(null);
+      setGuestDestination('ProfileSetting');
+      setLoginVisible(true);
+    },
     [navigation],
   );
 
@@ -260,6 +349,31 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     () => (
       <>
         <Header walletPress={walletPress} userProfilePress={userProfilePress} />
+
+        {showProfileReminder && (
+          <TouchableOpacity
+            activeOpacity={0.84}
+            style={styles.profileReminder}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
+            <View style={styles.profileReminderIcon}>
+              <MaterialCommunityIcons
+                name="account-edit-outline"
+                size={21}
+                color={HOME_COLORS.tealDark}
+              />
+            </View>
+            <View style={styles.profileReminderCopy}>
+              <Text style={styles.profileReminderTitle}>
+                Make this profile yours
+              </Text>
+              <Text style={styles.profileReminderText} numberOfLines={1}>
+                Add your name and choose an avatar.
+              </Text>
+            </View>
+            <Text style={styles.profileReminderAction}>Update</Text>
+          </TouchableOpacity>
+        )}
 
         <Banner randomCall={onRandomCall} calling={randomCalling} />
 
@@ -275,7 +389,15 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         />
       </>
     ),
-    [onRandomCall, randomCalling, selected, userProfilePress, walletPress],
+    [
+      navigation,
+      onRandomCall,
+      randomCalling,
+      selected,
+      showProfileReminder,
+      userProfilePress,
+      walletPress,
+    ],
   );
 
   const renderItem = useCallback(
@@ -340,8 +462,45 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         visible={showOffer}
         amount={offer.amount}
         claiming={claimingOffer}
-        onClaim={claimOffer}
+        onClaim={handleOfferClaim}
         onDismiss={() => setOfferDismissed(true)}
+      />
+
+      <GuestLoginModal
+        visible={loginVisible}
+        onOpenTerms={() => {
+          setLoginVisible(false);
+          navigation.navigate('TermsAndConditions');
+        }}
+        onOpenPrivacy={() => {
+          setLoginVisible(false);
+          navigation.navigate('PrivacyPolicy');
+        }}
+        onClose={() => {
+          setLoginVisible(false);
+          setGuestPendingCall(null);
+          setGuestDestination(null);
+        }}
+        onAuthenticated={isExpert => {
+          setLoginVisible(false);
+          const learnerRoutes: any[] = [
+            { name: 'Main', params: { pendingCall: guestPendingCall } },
+          ];
+          if (guestDestination === 'Wallet') {
+            learnerRoutes.push({ name: 'Wallet' });
+          } else if (guestDestination === 'ProfileSetting') {
+            learnerRoutes.push({
+              name: 'ProfileSetting',
+              params: { gender: 'male' },
+            });
+          }
+          navigation.reset({
+            index: isExpert ? 0 : learnerRoutes.length - 1,
+            routes: [
+              ...(isExpert ? [{ name: 'FemaleBottomTabs' }] : learnerRoutes),
+            ],
+          });
+        }}
       />
     </SafeAreaView>
   );
@@ -380,6 +539,47 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
+  },
+  profileReminder: {
+    minHeight: 58,
+    marginHorizontal: 14,
+    marginBottom: 4,
+    paddingHorizontal: 12,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: HOME_COLORS.white,
+  },
+  profileReminderIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primaryLight,
+  },
+  profileReminderCopy: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 10,
+  },
+  profileReminderTitle: {
+    color: HOME_COLORS.navy,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  profileReminderText: {
+    marginTop: 2,
+    color: HOME_COLORS.body,
+    fontSize: 12,
+  },
+  profileReminderAction: {
+    marginLeft: 8,
+    color: HOME_COLORS.tealDark,
+    fontSize: 13,
+    fontWeight: '900',
   },
 
   heading: {

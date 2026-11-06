@@ -51,7 +51,7 @@ interface Props {
   route: any;
 }
 
-const LoginScreen: React.FC<Props> = ({ navigation }) => {
+const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const { height } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [mobile, setMobile] = useState('');
@@ -104,6 +104,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       navigation.navigate('Otp', {
         phone,
         reqId: response.reqId,
+        pendingCall: route?.params?.pendingCall,
       });
     } catch (error: any) {
       console.error('onGetOTP -> error', error);
