@@ -36,6 +36,7 @@ import RoomService from '../../firebase/RoomService';
 import authData from '../../firebase/authData';
 import { openAppReview } from '../../firebase/appReview';
 import { fetchMyExpertCompensation } from '../../api/calls';
+import Colors from '../../constants/colors';
 
 interface Props {
   navigation: any;
@@ -43,15 +44,15 @@ interface Props {
 }
 
 const EXPERT_COLORS = {
-  background: '#F7FFFE',
-  navy: '#071A2D',
-  teal: '#08AA91',
-  tealDark: '#078A7D',
-  tealPale: '#DFF9F4',
-  body: '#727A90',
-  white: '#FFFFFF',
-  border: '#D9F0EC',
-  dangerPale: '#FFF0F0',
+  background: Colors.background,
+  navy: Colors.textPrimary,
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  tealPale: Colors.primaryLight,
+  body: Colors.textSecondary,
+  white: Colors.surface,
+  border: Colors.border,
+  dangerPale: Colors.errorStrongSurface,
 };
 
 const ProfileSettingScreen = ({ navigation }: Props) => {
@@ -244,7 +245,7 @@ Thank you.
     try {
       await Share.share({
         title: 'Speakly',
-        message: `Practice languages with expert speakers on Speakly.
+        message: `Discover people and start genuine voice conversations on Speakly.
 
 Download now:
 ${PLAY_STORE_URL}`,
@@ -305,7 +306,7 @@ ${PLAY_STORE_URL}`,
                 <MaterialCommunityIcons
                   name={item.icon}
                   size={24}
-                  color={item.danger ? '#E45F5F' : EXPERT_COLORS.tealDark}
+                  color={item.danger ? Colors.error : EXPERT_COLORS.tealDark}
                 />
               </View>
 
@@ -502,7 +503,7 @@ ${PLAY_STORE_URL}`,
             </View>
             <View style={expertStyles.callTimeDivider} />
             <View style={expertStyles.callTimeContent}>
-              <Text style={expertStyles.callTimeLabel}>Available balance</Text>
+              <Text style={expertStyles.callTimeLabel}>My Coins</Text>
               <Text style={expertStyles.callTimeDescription}>
                 Tap to add more coins
               </Text>
@@ -569,7 +570,7 @@ const expertStyles = StyleSheet.create({
     top: -240,
     right: -140,
     borderRadius: 190,
-    backgroundColor: 'rgba(218,249,244,0.38)',
+    backgroundColor: 'rgba(252,229,235,0.48)',
   },
   content: {
     paddingHorizontal: 20,
@@ -588,7 +589,7 @@ const expertStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: EXPERT_COLORS.white,
-    shadowColor: '#1B5850',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -612,7 +613,7 @@ const expertStyles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.92)',
     borderRadius: 26,
     backgroundColor: 'rgba(255,255,255,0.74)',
-    shadowColor: '#23655D',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 7 },
     shadowOpacity: 0.06,
     shadowRadius: 18,
@@ -625,7 +626,7 @@ const expertStyles = StyleSheet.create({
     top: 20,
     right: -135,
     borderRadius: 155,
-    backgroundColor: 'rgba(213,248,241,0.48)',
+    backgroundColor: 'rgba(252,229,235,0.52)',
   },
   profileGlowTwo: {
     position: 'absolute',
@@ -634,7 +635,7 @@ const expertStyles = StyleSheet.create({
     left: -180,
     top: 95,
     borderRadius: 140,
-    backgroundColor: 'rgba(232,252,248,0.55)',
+    backgroundColor: 'rgba(255,229,237,0.58)',
   },
   avatarWrap: {
     width: 118,
@@ -706,9 +707,9 @@ const expertStyles = StyleSheet.create({
     marginTop: 18,
     paddingHorizontal: 24,
     borderWidth: 1.4,
-    borderColor: '#BFEDE4',
+    borderColor: Colors.border,
     borderRadius: 17,
-    backgroundColor: 'rgba(234,251,247,0.72)',
+    backgroundColor: 'rgba(255,240,242,0.82)',
   },
   editButtonText: {
     marginLeft: 17,
@@ -727,10 +728,10 @@ const expertStyles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#EEF3F3',
+    borderColor: Colors.border,
     borderRadius: 24,
     backgroundColor: EXPERT_COLORS.white,
-    shadowColor: '#225C55',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
     shadowRadius: 15,
@@ -744,10 +745,10 @@ const expertStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#EEF3F3',
+    borderColor: Colors.border,
     borderRadius: 24,
     backgroundColor: EXPERT_COLORS.white,
-    shadowColor: '#225C55',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
     shadowRadius: 15,
@@ -794,7 +795,7 @@ const expertStyles = StyleSheet.create({
     width: 1,
     height: 45,
     marginHorizontal: 17,
-    backgroundColor: '#E6ECEC',
+    backgroundColor: Colors.divider,
   },
   callTimeContent: {
     flex: 1,
@@ -830,10 +831,10 @@ const expertStyles = StyleSheet.create({
   menuCard: {
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#EEF3F3',
+    borderColor: Colors.border,
     borderRadius: 23,
     backgroundColor: EXPERT_COLORS.white,
-    shadowColor: '#225C55',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.045,
     shadowRadius: 15,
@@ -867,7 +868,7 @@ const expertStyles = StyleSheet.create({
     fontWeight: '800',
   },
   menuTitleDanger: {
-    color: '#D85050',
+    color: Colors.error,
   },
   menuValue: {
     marginTop: 3,
@@ -878,7 +879,7 @@ const expertStyles = StyleSheet.create({
     height: 1,
     marginLeft: 98,
     marginRight: 25,
-    backgroundColor: '#E8EEEE',
+    backgroundColor: Colors.divider,
   },
   footer: {
     flexDirection: 'row',

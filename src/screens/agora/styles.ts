@@ -26,7 +26,7 @@ export default StyleSheet.create({
     borderRadius: 155,
     right: -120,
     top: 45,
-    backgroundColor: 'rgba(83, 226, 205, 0.16)',
+    backgroundColor: 'rgba(233, 75, 112, 0.16)',
   },
 
   callerGlowBottom: {
@@ -36,7 +36,7 @@ export default StyleSheet.create({
     borderRadius: 140,
     left: -150,
     bottom: 80,
-    backgroundColor: 'rgba(91, 220, 201, 0.11)',
+    backgroundColor: 'rgba(201, 31, 70, 0.11)',
   },
 
   header: {
@@ -58,7 +58,7 @@ export default StyleSheet.create({
   },
 
   headerTitleCaller: {
-    color: '#071A2D',
+    color: Colors.textPrimary,
     fontSize: 17,
     fontWeight: '800',
   },
@@ -71,8 +71,8 @@ export default StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.88)',
     borderWidth: 1,
-    borderColor: '#D9F0EC',
-    shadowColor: '#078A7D',
+    borderColor: Colors.border,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
@@ -111,8 +111,8 @@ export default StyleSheet.create({
     borderRadius: 102,
     padding: 7,
     borderWidth: 10,
-    borderColor: 'rgba(177,246,235,0.55)',
-    shadowColor: '#08A991',
+    borderColor: 'rgba(233,75,112,0.35)',
+    shadowColor: Colors.primary,
     shadowOpacity: 0.2,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },
@@ -145,7 +145,7 @@ export default StyleSheet.create({
     backgroundColor: Colors.white,
     borderWidth: 3,
     borderColor: Colors.white,
-    shadowColor: '#071A2D',
+    shadowColor: Colors.textPrimary,
     shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
@@ -192,7 +192,7 @@ export default StyleSheet.create({
   },
 
   nameCaller: {
-    color: '#071A2D',
+    color: Colors.textPrimary,
     marginTop: 0,
     fontSize: 27,
     fontWeight: '900',
@@ -206,7 +206,7 @@ export default StyleSheet.create({
   },
 
   englishNameCaller: {
-    color: '#727A90',
+    color: Colors.textSecondary,
   },
 
   city: {
@@ -227,7 +227,7 @@ export default StyleSheet.create({
 
   statusContainerCaller: {
     marginTop: 9,
-    backgroundColor: '#E1FAF5',
+    backgroundColor: Colors.primaryLight,
     paddingHorizontal: 15,
     paddingVertical: 7,
   },
@@ -246,7 +246,7 @@ export default StyleSheet.create({
   },
 
   statusCaller: {
-    color: '#078A7D',
+    color: Colors.primary,
     fontWeight: '800',
   },
 
@@ -287,7 +287,7 @@ export default StyleSheet.create({
   },
 
   callDurationLabelCaller: {
-    color: '#727A90',
+    color: Colors.textSecondary,
     marginTop: 12,
     fontSize: 12,
     letterSpacing: 0.5,
@@ -306,7 +306,7 @@ export default StyleSheet.create({
   },
 
   timerCaller: {
-    color: '#071A2D',
+    color: Colors.textPrimary,
     marginTop: 5,
     fontSize: 40,
     fontWeight: '900',
@@ -456,8 +456,8 @@ export default StyleSheet.create({
     borderRadius: 30,
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
-    borderColor: '#DDF1ED',
-    shadowColor: '#078A7D',
+    borderColor: Colors.border,
+    shadowColor: Colors.primary,
     shadowOpacity: 0.11,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
@@ -494,9 +494,9 @@ export default StyleSheet.create({
   },
 
   controlButtonCaller: {
-    backgroundColor: '#E1FAF5',
+    backgroundColor: Colors.primaryLight,
     borderWidth: 1,
-    borderColor: '#D3F2EC',
+    borderColor: Colors.border,
   },
 
   controlButtonActive: {
@@ -504,8 +504,8 @@ export default StyleSheet.create({
   },
 
   controlButtonActiveCaller: {
-    backgroundColor: '#08A991',
-    borderColor: '#08A991',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
 
   controlButtonCompact: {
@@ -523,7 +523,7 @@ export default StyleSheet.create({
   },
 
   controlTextCaller: {
-    color: '#071A2D',
+    color: Colors.textPrimary,
     fontWeight: '700',
   },
 

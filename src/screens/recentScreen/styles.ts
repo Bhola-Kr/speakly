@@ -6,7 +6,7 @@ export default StyleSheet.create({
   container: {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: '#F7FFFE',
+    backgroundColor: Colors.background,
   },
   backgroundArt: {
     position: 'absolute',
@@ -22,7 +22,7 @@ export default StyleSheet.create({
     width: 350,
     height: 350,
     borderRadius: 175,
-    backgroundColor: 'rgba(219,250,245,0.40)',
+    backgroundColor: 'rgba(252,229,235,0.48)',
   },
   backgroundWaveLeft: {
     position: 'absolute',
@@ -31,7 +31,7 @@ export default StyleSheet.create({
     width: 420,
     height: 330,
     borderRadius: 190,
-    backgroundColor: 'rgba(224,251,247,0.54)',
+    backgroundColor: 'rgba(255,229,237,0.58)',
     transform: [{ rotate: '24deg' }],
   },
   backgroundWaveRight: {
@@ -41,7 +41,7 @@ export default StyleSheet.create({
     width: 420,
     height: 360,
     borderRadius: 200,
-    backgroundColor: 'rgba(231,252,249,0.66)',
+    backgroundColor: 'rgba(252,229,235,0.66)',
     transform: [{ rotate: '-26deg' }],
   },
 
@@ -109,13 +109,13 @@ export default StyleSheet.create({
     lineHeight: 29,
     fontWeight: '900',
     letterSpacing: -0.8,
-    color: '#071A2D',
+    color: Colors.textPrimary,
   },
 
   subtitle: {
     marginTop: 1,
     fontSize: UI.typography.secondary,
-    color: '#747B91',
+    color: Colors.textSecondary,
     lineHeight: 18,
   },
 
@@ -125,17 +125,18 @@ export default StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 11,
     overflow: 'hidden',
-    backgroundColor: '#DFF9F4',
+    backgroundColor: Colors.primaryLight,
     fontSize: 13,
     fontWeight: '800',
-    color: '#078A7D',
+    color: Colors.primary,
   },
 
   card: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 9,
-    borderRadius: UI.radius.card,
+    borderRadius: 22,
+    borderColor: Colors.primaryLight,
   },
 
   row: {
@@ -152,28 +153,50 @@ export default StyleSheet.create({
   },
 
   avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 16,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: Colors.primaryLight,
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  avatarDotOuter: {
+    position: 'absolute',
+    right: 1,
+    bottom: 1,
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  avatarDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
 
   info: {
     flex: 1,
 
-    marginLeft: 11,
+    marginLeft: 12,
     minWidth: 0,
   },
 
   tamilName: {
-    fontSize: 19,
+    fontSize: 18,
+    lineHeight: 23,
 
-    fontWeight: '700',
+    fontWeight: '800',
 
     color: Colors.text,
   },
 
   englishName: {
     fontSize: 13,
+    lineHeight: 17,
 
     color: Colors.subText,
 
@@ -193,11 +216,11 @@ export default StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 5,
   },
   metaText: {
-    color: Colors.text,
-    fontSize: 12,
+    color: Colors.textSecondary,
+    fontSize: 11,
     fontWeight: '700',
   },
   metaDot: {
@@ -207,10 +230,45 @@ export default StyleSheet.create({
     marginHorizontal: 6,
     backgroundColor: Colors.subText,
   },
-  compactStatus: {
-    marginTop: 3,
+  cardChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  cardLanguageChip: {
+    maxWidth: 104,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 15,
+    backgroundColor: Colors.primaryLight,
+  },
+  cardLanguageText: {
+    flexShrink: 1,
+    marginLeft: 5,
+    color: Colors.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  cardStatusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  cardStatusDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  cardStatusText: {
+    marginLeft: 5,
+    fontSize: 13,
+    fontWeight: '800',
   },
 
   label: {
@@ -243,16 +301,45 @@ export default StyleSheet.create({
   },
 
   callButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.secondary,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: Colors.onlineStatus,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
+    shadowColor: Colors.onlineStatus,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 4,
   },
   callButtonDisabled: {
     opacity: 0.6,
+  },
+  cardActions: {
+    marginLeft: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardRatePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 15,
+    backgroundColor: Colors.coinSurface,
+  },
+  cardRateValue: {
+    color: Colors.coinText,
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  cardRateUnit: {
+    color: Colors.coinText,
+    fontSize: 11,
+    fontWeight: '700',
   },
 
 });

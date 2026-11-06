@@ -129,7 +129,7 @@ const VerificationAnimation = () => {
       <Text style={styles.verifyTitle}>Verifying your voice...</Text>
 
       <Text style={styles.verifySubTitle}>
-        Please wait while we compare your recording with our verification model.
+        Please wait while we securely process your recording.
       </Text>
 
       <View style={styles.equalizerRow}>

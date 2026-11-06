@@ -24,38 +24,40 @@ import {
   listenMinimumWithdrawalAmount,
   requestExpertWithdrawal,
 } from '../firebase/expertEarnings';
+import Colors from '../constants/colors';
+import { copy } from '../constants/strings';
 
 const COLORS = {
-  background: '#F5FFFD',
-  navy: '#071A2D',
-  teal: '#08AA91',
-  tealDark: '#078A7D',
-  tealPale: '#DFF9F4',
-  mint: '#BDF4E8',
-  body: '#71788E',
-  white: '#FFFFFF',
-  border: '#DFF0ED',
+  background: Colors.background,
+  navy: Colors.textPrimary,
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  tealPale: Colors.primaryLight,
+  mint: Colors.accentLight,
+  body: Colors.textSecondary,
+  white: Colors.surface,
+  border: Colors.border,
   coral: '#FF8B66',
   coralPale: '#FFF3EB',
-  purple: '#7956F4',
-  purplePale: '#F1ECFF',
-  online: '#62D957',
-  offline: '#A2A8B5',
+  purple: Colors.accent,
+  purplePale: Colors.accentLight,
+  online: Colors.online,
+  offline: Colors.offline,
 };
 
 const tutorialData = [
   {
     id: '1',
-    title: 'Go Online',
+    title: copy.host.goOnline,
     subtitle:
-      'Become available and receive practice calls from language learners.',
+      'Become available and receive calls from people ready to talk.',
     icon: 'radio',
   },
   {
     id: '2',
-    title: 'Guide the conversation',
+    title: 'Welcome the conversation',
     subtitle:
-      'Help learners improve fluency through focused one-to-one conversation.',
+      'Be present, curious, and respectful in every one-to-one conversation.',
     icon: 'chatbubbles',
   },
   {
@@ -67,9 +69,9 @@ const tutorialData = [
   },
   {
     id: '4',
-    title: 'Build confidence',
+    title: 'Keep it genuine',
     subtitle:
-      'Choose useful topics and create a welcoming language-practice session.',
+      'Choose engaging topics and create a warm, welcoming conversation.',
     icon: 'happy',
   },
 ];
@@ -118,7 +120,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const { activeCall, showCall } = useActiveCall();
   const tamilName = String(user?.profile?.tamilName || '').trim();
   const englishName = String(user?.profile?.name || '').trim();
-  const displayName = tamilName || englishName || 'Expert';
+  const displayName = tamilName || englishName || 'Host';
   const showEnglishName = Boolean(
     tamilName && englishName && tamilName !== englishName,
   );
@@ -180,7 +182,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={styles.greeting}>EXPERT DASHBOARD</Text>
+            <Text style={styles.greeting}>{copy.host.dashboard.toUpperCase()}</Text>
             <Text numberOfLines={1} style={styles.userName}>
               {displayName}
             </Text>
@@ -190,7 +192,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               </Text>
             )}
             <Text style={styles.subtitle}>
-              Choose when learners can reach you.
+              Choose when people can reach you for a conversation.
             </Text>
           </View>
 
@@ -218,7 +220,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.onlineButtonTouch}
         >
           <LinearGradient
-            colors={['#05786F', '#08A98F']}
+            colors={Colors.buttonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.onlineButton, goingOnline && styles.loadingButton]}
@@ -233,11 +235,11 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 
             <View style={styles.onlineButtonCopy}>
               <Text style={styles.onlineText}>
-                {goingOnline ? 'GOING ONLINE…' : 'GO ONLINE'}
+                {goingOnline ? 'GOING ONLINE…' : copy.host.goOnline.toUpperCase()}
               </Text>
               <Text style={styles.onlineDescription}>
                 {goingOnline
-                  ? 'Preparing your expert room'
+                  ? 'Preparing your host room'
                   : 'Become visible and start receiving calls'}
               </Text>
             </View>
@@ -267,7 +269,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             }}
             renderItem={({ item, index }) => (
               <LinearGradient
-                colors={['#FFFFFF', '#EEFFFB']}
+                colors={[Colors.surface, Colors.surfaceSecondary]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.tutorialCard, { width: tutorialCardWidth }]}
@@ -282,7 +284,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
                 </View>
 
                 <Text style={styles.sectionTitle}>
-                  MAKE EVERY SESSION COUNT
+                  MAKE EVERY CONVERSATION COUNT
                 </Text>
                 <Text
                   style={[
@@ -319,7 +321,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.earningsCard}>
           <View style={styles.earningsHeader}>
             <View>
-              <Text style={styles.earningsEyebrow}>YOUR EARNINGS</Text>
+              <Text style={styles.earningsEyebrow}>{copy.host.earnings.toUpperCase()}</Text>
               <Text style={styles.earningsTotal}>₹{totalEarnings}</Text>
               <Text style={styles.earningsAvailable}>
                 ₹{availableEarnings} available
@@ -411,7 +413,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
 
             <Text style={styles.statusDescription}>
-              Learners currently see your profile as{' '}
+              Callers currently see your profile as{' '}
               <Text style={styles.statusEmphasis}>
                 {isOnline ? 'visible' : 'hidden'}
               </Text>
@@ -588,7 +590,7 @@ const styles = StyleSheet.create({
     right: -20,
     bottom: -11,
     borderRadius: 60,
-    backgroundColor: 'rgba(176,245,231,0.35)',
+    backgroundColor: 'rgba(252,229,235,0.55)',
   },
   toggleTrack: {
     position: 'absolute',
@@ -632,7 +634,7 @@ const styles = StyleSheet.create({
     right: 49,
     top: -4,
     borderRadius: 3,
-    backgroundColor: '#72E2CE',
+    backgroundColor: Colors.accent,
     transform: [{ rotate: '10deg' }],
   },
   signalTwo: {
@@ -642,7 +644,7 @@ const styles = StyleSheet.create({
     right: 27,
     top: 3,
     borderRadius: 3,
-    backgroundColor: '#72E2CE',
+    backgroundColor: Colors.accent,
     transform: [{ rotate: '34deg' }],
   },
   signalThree: {
@@ -652,7 +654,7 @@ const styles = StyleSheet.create({
     right: 10,
     top: 19,
     borderRadius: 3,
-    backgroundColor: '#72E2CE',
+    backgroundColor: Colors.accent,
     transform: [{ rotate: '70deg' }],
   },
   secondaryArtwork: {

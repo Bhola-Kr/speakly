@@ -23,25 +23,27 @@ import CountryPicker, {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { sendOtp } from '../api/calls';
+import Colors from '../constants/colors';
+import { copy } from '../constants/strings';
 
 const COLORS = {
-  background: '#F2FFFC',
-  card: '#FFFFFF',
-  navy: '#071A2D',
-  teal: '#08A98F',
-  tealDark: '#078A78',
-  tealPale: '#E2F9F4',
-  body: '#6D748B',
-  placeholder: '#9B9EAA',
-  border: '#D7DADF',
-  disabled: '#D9DBDE',
-  white: '#FFFFFF',
+  background: Colors.background,
+  card: Colors.surface,
+  navy: Colors.textPrimary,
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  tealPale: Colors.primaryLight,
+  body: Colors.textSecondary,
+  placeholder: Colors.placeholder,
+  border: Colors.border,
+  disabled: Colors.disabled,
+  white: Colors.textOnPrimary,
 };
 
 const benefits = [
   { icon: 'message-text', label: 'Real people' },
-  { icon: 'waveform', label: 'Natural\nconversations' },
-  { icon: 'chart-bar', label: 'Flexible\npractice' },
+  { icon: 'waveform', label: 'Voice\nconversations' },
+  { icon: 'chart-bar', label: 'Talk your\nway' },
 ] as const;
 
 interface Props {
@@ -145,14 +147,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                     color={COLORS.white}
                   />
                 </View>
-                <Text style={styles.logo}>speakly</Text>
+                <Text style={styles.logo}>Speakly</Text>
               </View>
 
               <View style={styles.heroCopyRow}>
                 <Text style={styles.heading}>
-                  Practice{`\n`}
-                  <Text style={styles.headingAccent}>real conversations</Text>
-                  {`\n`}with language{`\n`}experts
+                  {copy.login.heroTitle}
                 </Text>
 
                 <View style={styles.heroArtwork} pointerEvents="none">
@@ -183,9 +183,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               </View>
 
               <Text style={styles.heroSubtitle}>
-                Speak naturally, get real-time{`\n`}feedback and build
-                confidence{`\n`}
-                one conversation at a time.
+                {copy.login.supportingText}
               </Text>
 
               <View style={styles.benefitsRow}>
@@ -209,9 +207,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             style={[styles.formCard, keyboardVisible && styles.keyboardCard]}
           >
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>Start speaking today</Text>
+              <Text style={styles.formTitle}>{copy.login.heading}</Text>
               <Text style={styles.formSubtitle}>
-                Enter your mobile number to continue securely.
+                {copy.login.subtitle} Enter your mobile number to continue.
               </Text>
             </View>
 
@@ -249,7 +247,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 onChangeText={text => setMobile(text.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
                 maxLength={10}
-                placeholder="Your Mobile Number"
+                placeholder={copy.login.phonePlaceholder}
                 placeholderTextColor={COLORS.placeholder}
                 style={styles.input}
                 returnKeyType="done"
@@ -304,7 +302,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               disabled={!canContinue}
               onPress={onGetOTP}
               accessibilityRole="button"
-              accessibilityLabel="Send verification code"
+              accessibilityLabel={copy.login.cta}
               accessibilityState={{ disabled: !canContinue, busy: loading }}
               style={[
                 styles.nextButton,
@@ -315,7 +313,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 <ActivityIndicator color={COLORS.white} />
               ) : (
                 <>
-                  <Text style={styles.nextText}>Send verification code</Text>
+                  <Text style={styles.nextText}>{copy.login.cta}</Text>
                   <View style={styles.nextArrowCircle}>
                     <MaterialCommunityIcons
                       name="arrow-right"
@@ -336,8 +334,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.disclaimerRow}>
               <View style={styles.disclaimerLine} />
               <Text style={styles.safeText}>
-                Language practice only. Speakly is not a dating{`\n`}or
-                matchmaking app.
+                {copy.login.safetyNote}
               </Text>
               <View style={styles.disclaimerLine} />
             </View>
@@ -374,7 +371,7 @@ const styles = StyleSheet.create({
     borderRadius: 155,
     right: -118,
     top: 30,
-    backgroundColor: 'rgba(190, 250, 238, 0.58)',
+    backgroundColor: 'rgba(252, 229, 235, 0.72)',
   },
   heroGlowTwo: {
     position: 'absolute',
@@ -514,7 +511,7 @@ const styles = StyleSheet.create({
   benefitLabel: {
     marginTop: 9,
     textAlign: 'center',
-    color: '#445169',
+    color: Colors.textSecondary,
     fontSize: 13,
     lineHeight: 16,
   },
@@ -526,7 +523,7 @@ const styles = StyleSheet.create({
     paddingBottom: 27,
     borderRadius: 22,
     backgroundColor: COLORS.card,
-    shadowColor: '#3C8C7E',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.04,
     shadowRadius: 18,

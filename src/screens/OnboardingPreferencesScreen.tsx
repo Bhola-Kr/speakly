@@ -12,6 +12,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
+import { copy } from '../constants/strings';
 
 export const ONBOARDING_LANGUAGES = [
   { name: 'English', nativeName: 'English' },
@@ -62,9 +63,9 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.step}>STEP 2 OF 3</Text>
-        <Text style={styles.title}>How will you use Speakly?</Text>
+        <Text style={styles.title}>How would you like to join?</Text>
         <Text style={styles.subtitle}>
-          Choose the languages you use and how you want to participate.
+          Choose your conversation language and how you want to participate.
         </Text>
 
         <Text style={styles.heading}>I want to</Text>
@@ -72,21 +73,21 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
           {[
             {
               value: 'learner' as const,
-              title: 'Learn',
-              detail: 'Practice with experts',
-              icon: 'school-outline',
-              color: '#D94F87',
-              softColor: '#FFF0F6',
-              borderColor: '#F4B7CF',
+              title: 'Join conversations',
+              detail: 'Discover hosts and start calls',
+              icon: 'account-voice',
+              color: Colors.accent,
+              softColor: Colors.accentLight,
+              borderColor: Colors.border,
             },
             {
               value: 'expert' as const,
-              title: 'Be an expert',
-              detail: 'Help learners speak',
+              title: copy.host.onboarding,
+              detail: 'Go online and receive calls',
               icon: 'account-voice',
-              color: '#078A7D',
-              softColor: '#E7F9F4',
-              borderColor: '#9DDED2',
+              color: Colors.primary,
+              softColor: Colors.primaryLight,
+              borderColor: Colors.border,
             },
           ].map(item => {
             const selected = role === item.value;
@@ -131,11 +132,13 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
         </View>
 
         <Text style={styles.heading}>
-          {role === 'expert' ? 'Languages I support' : 'My native language'}
+          {role === 'expert'
+            ? 'Languages I can converse in'
+            : 'Preferred conversation language'}
         </Text>
         {role === 'expert' ? (
           <Text style={styles.languageHelp}>
-            Select one or more. You will record verification audio in your first
+            Select one or more. Your voice verification will use your first
             selected language: {languages[0]}.
           </Text>
         ) : null}
@@ -180,9 +183,9 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
               color={Colors.secondary}
             />
             <Text style={styles.infoText}>
-              Experts submit one short recording in their first selected
-              language. Review usually completes within 30 minutes. App access
-              is enabled after an admin approves your application.
+              Hosts submit one short recording for voice verification. Review
+              usually completes within 30 minutes. Host access is enabled after
+              approval.
             </Text>
           </View>
         )}

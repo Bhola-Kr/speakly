@@ -8,6 +8,7 @@ import {
   initiateWalletPayment,
   verifyWalletPayment,
 } from '../api/calls';
+import Colors from '../constants/colors';
 
 type HashEvent = {
   hashString?: string;
@@ -185,8 +186,8 @@ export const openPayUCheckout = async (
       PayUBizSdk.openCheckoutScreen({
         payUPaymentParams: paymentParams,
         payUCheckoutProConfig: {
-          primaryColor: '#7157F5',
-          secondaryColor: '#25204A',
+          primaryColor: Colors.primary,
+          secondaryColor: Colors.textPrimary,
           merchantName: 'Speakly',
           showExitConfirmationOnCheckoutScreen: true,
           showExitConfirmationOnPaymentScreen: true,

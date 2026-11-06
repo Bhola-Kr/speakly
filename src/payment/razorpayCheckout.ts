@@ -52,11 +52,11 @@ export const openRazorpayCheckout = async (
     if (payment?.status === 'failed') {
       throw new Error(
         payment.failureReason ||
-          'Payment failed. No amount was added to your wallet.',
+          'Payment failed. No coins were added to your balance.',
       );
     }
     throw new Error(
-      'Payment was cancelled or could not be completed. If money was deducted, Razorpay will verify it and your wallet will be updated automatically.',
+      'Payment was cancelled or could not be completed. If money was deducted, Razorpay will verify it and your coin balance will update automatically.',
     );
   }
 };

@@ -41,6 +41,8 @@ export interface UserInfo {
   gender?: string;
   avatarId: number | string;
   price?: number;
+  practiceLanguage?: string;
+  supportedLanguages?: string[];
 }
 
 export interface Room {
@@ -100,7 +102,7 @@ class RoomService {
       id: entryRef.key,
       expertUid,
       expertName: String(
-        user?.profile?.name || user?.profile?.tamilName || 'Expert',
+        user?.profile?.name || user?.profile?.tamilName || 'Host',
       ),
       phone: String(user?.phone || user?.profile?.phone || ''),
       status,
@@ -167,6 +169,14 @@ class RoomService {
         gender: user.profile.gender,
         avatarId: user.profile.avatarId,
         price: normalizeCallRate(user.profile.price),
+        practiceLanguage: String(
+          user.profile.practiceLanguage ||
+            user.profile.supportedLanguages?.[0] ||
+            'English',
+        ),
+        supportedLanguages: Array.isArray(user.profile.supportedLanguages)
+          ? user.profile.supportedLanguages
+          : [],
       },
       callRatePerMinute: normalizeCallRate(user.profile.price),
       male: null,
@@ -832,7 +842,7 @@ class RoomService {
     });
 
     if (rooms.length === 0) {
-      throw new Error('No language experts are currently online.');
+      throw new Error('No hosts are currently online.');
     }
 
     // Shuffle so every user has an equal chance
@@ -858,7 +868,7 @@ class RoomService {
       }
     }
 
-    throw new Error('No language experts are currently online.');
+    throw new Error('No hosts are currently online.');
   }
 }
 

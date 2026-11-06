@@ -17,22 +17,24 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { getMaleAvatar } from '../constants/constants';
 import RoomService, { CallHistory } from '../firebase/RoomService';
+import Colors from '../constants/colors';
+import { copy } from '../constants/strings';
 
 const COLORS = {
-  background: '#F7FFFE',
-  navy: '#071A2D',
-  teal: '#08AA91',
-  tealDark: '#078A7D',
-  tealPale: '#DFF9F4',
-  body: '#747A90',
-  white: '#FFFFFF',
-  border: '#E4F0EF',
-  line: '#DCECEA',
-  purple: '#7655F5',
-  successSurface: '#DDF9F2',
-  danger: '#E76666',
-  dangerSurface: '#FFE9E9',
-  shadow: '#225C55',
+  background: Colors.background,
+  navy: Colors.textPrimary,
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  tealPale: Colors.primaryLight,
+  body: Colors.textSecondary,
+  white: Colors.surface,
+  border: Colors.border,
+  line: Colors.divider,
+  purple: Colors.accent,
+  successSurface: Colors.successStrongSurface,
+  danger: Colors.error,
+  dangerSurface: Colors.errorStrongSurface,
+  shadow: Colors.primary,
 };
 
 interface Props {
@@ -115,7 +117,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.info}>
           <Text numberOfLines={1} style={styles.name}>
-            {item.maleInfo?.name || 'Learner'}
+            {item.maleInfo?.name || 'Caller'}
           </Text>
           <View style={styles.durationRow}>
             <Ionicons name="call-outline" size={16} color={COLORS.purple} />
@@ -136,7 +138,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
             <Text
               style={[styles.statusText, !completed && styles.statusTextMissed]}
             >
-              {item.status}
+              {completed ? copy.call.ended : item.status}
             </Text>
           </View>
 
@@ -153,7 +155,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
         <Ionicons
           name="chevron-forward"
           size={24}
-          color="#B8BDC8"
+          color={Colors.disabled}
           style={styles.chevron}
         />
       </View>
@@ -169,9 +171,9 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Call History</Text>
+          <Text style={styles.title}>{copy.recents.title}</Text>
           <Text style={styles.subtitle}>
-            View your recent voice call history.
+            {copy.recents.supportingText}
           </Text>
         </View>
 
@@ -200,9 +202,9 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.emptyIcon}>
               <Ionicons name="time-outline" size={38} color={COLORS.teal} />
             </View>
-            <Text style={styles.emptyTitle}>No call history yet</Text>
+            <Text style={styles.emptyTitle}>{copy.recents.emptyTitle}</Text>
             <Text style={styles.emptyDescription}>
-              Your completed and missed calls will appear here.
+              {copy.recents.emptyText}
             </Text>
           </View>
         }
@@ -283,7 +285,7 @@ const styles = StyleSheet.create({
     top: -150,
     right: -170,
     borderRadius: 165,
-    backgroundColor: 'rgba(210,250,243,0.55)',
+    backgroundColor: 'rgba(252,229,235,0.62)',
   },
   backgroundGlowTwo: {
     position: 'absolute',
@@ -292,7 +294,7 @@ const styles = StyleSheet.create({
     left: -190,
     bottom: 80,
     borderRadius: 140,
-    backgroundColor: 'rgba(228,251,247,0.38)',
+    backgroundColor: 'rgba(255,229,237,0.42)',
   },
   header: {
     flexDirection: 'row',
@@ -352,7 +354,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 18,
-    backgroundColor: '#EFF7F6',
+    backgroundColor: Colors.surfaceSecondary,
   },
   dateText: {
     marginLeft: 8,
@@ -370,7 +372,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#EDF3F3',
+    borderColor: Colors.border,
     borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.95)',
     shadowColor: COLORS.shadow,
@@ -386,7 +388,7 @@ const styles = StyleSheet.create({
     right: 25,
     bottom: -105,
     borderRadius: 85,
-    backgroundColor: 'rgba(218,249,243,0.32)',
+    backgroundColor: 'rgba(252,229,235,0.38)',
   },
   avatar: {
     width: 68,
@@ -496,7 +498,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingTop: 105,
     paddingRight: 20,
-    backgroundColor: 'rgba(7,26,45,0.16)',
+    backgroundColor: 'rgba(37,27,32,0.16)',
   },
   popup: {
     width: 220,

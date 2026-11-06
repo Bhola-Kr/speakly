@@ -142,7 +142,7 @@ const AppAlert = () => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(16, 14, 35, 0.62)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'center',
     padding: UI.spacing.xl,
   },

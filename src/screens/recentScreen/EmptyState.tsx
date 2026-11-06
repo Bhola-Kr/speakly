@@ -3,15 +3,17 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import Colors from '../../constants/colors';
+import { copy } from '../../constants/strings';
 
 const COLORS = {
-  navy: '#071A2D',
-  teal: '#09B49D',
-  tealDark: '#078A7D',
-  mint: '#DFF9F4',
-  body: '#747B91',
-  white: '#FFFFFF',
-  line: '#DCE3EF',
+  navy: Colors.textPrimary,
+  teal: Colors.accent,
+  tealDark: Colors.primary,
+  mint: Colors.primaryLight,
+  body: Colors.textSecondary,
+  white: Colors.textOnPrimary,
+  line: Colors.divider,
 };
 
 interface Props {
@@ -38,7 +40,7 @@ const EmptyState = ({ onPress }: Props) => {
         </View>
 
         <LinearGradient
-          colors={['#20D8C0', '#08A991']}
+          colors={Colors.buttonGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.phoneBubble}
@@ -53,10 +55,10 @@ const EmptyState = ({ onPress }: Props) => {
         <View style={[styles.signal, styles.signalFour]} />
       </View>
 
-      <Text style={styles.title}>No Calls Yet</Text>
+      <Text style={styles.title}>{copy.recents.emptyTitle}</Text>
 
       <Text style={styles.subtitle}>
-        Your recent conversations will appear here.
+        {copy.recents.emptyText}
       </Text>
 
       <TouchableOpacity
@@ -65,13 +67,13 @@ const EmptyState = ({ onPress }: Props) => {
         style={styles.buttonTouch}
       >
         <LinearGradient
-          colors={['#10B8A0', '#078A7D']}
+          colors={Colors.buttonGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.button}
         >
           <Ionicons name="call" size={22} color={COLORS.white} />
-          <Text style={styles.buttonText}>Call Now</Text>
+          <Text style={styles.buttonText}>{copy.home.randomMatch}</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
     width: 230,
     height: 180,
     borderRadius: 100,
-    backgroundColor: 'rgba(206,248,241,0.56)',
+    backgroundColor: 'rgba(252,229,235,0.62)',
     transform: [{ rotate: '-14deg' }],
   },
   glowTwo: {
@@ -107,7 +109,7 @@ const styles = StyleSheet.create({
     height: 190,
     right: 12,
     borderRadius: 86,
-    backgroundColor: 'rgba(224,251,247,0.72)',
+    backgroundColor: 'rgba(255,229,237,0.72)',
     transform: [{ rotate: '25deg' }],
   },
   historySheet: {
@@ -132,8 +134,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 5,
-    borderColor: '#22C9B4',
-    backgroundColor: '#E8FBF7',
+    borderColor: Colors.accent,
+    backgroundColor: Colors.primaryLight,
   },
   sheetLineLong: {
     width: 72,
@@ -171,14 +173,14 @@ const styles = StyleSheet.create({
     width: 23,
     height: 23,
     borderRadius: 5,
-    backgroundColor: '#08A991',
+    backgroundColor: Colors.primary,
     transform: [{ rotate: '35deg' }],
   },
   signal: {
     position: 'absolute',
     width: 5,
     borderRadius: 3,
-    backgroundColor: '#26CBB6',
+    backgroundColor: Colors.accent,
   },
   signalOne: {
     height: 22,

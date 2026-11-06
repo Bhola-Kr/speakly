@@ -36,14 +36,15 @@ import {
   SignupOfferConfig,
 } from '../../firebase/signupOffer';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { copy } from '../../constants/strings';
 
 const HOME_COLORS = {
-  background: '#F5FFFD',
-  navy: '#071A2D',
-  tealDark: '#078A7D',
-  body: '#747B91',
-  white: '#FFFFFF',
-  border: '#DFF0ED',
+  background: Colors.background,
+  navy: Colors.textPrimary,
+  tealDark: Colors.primary,
+  body: Colors.textSecondary,
+  white: Colors.surface,
+  border: Colors.border,
 };
 
 interface Props {
@@ -118,7 +119,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       const creditedAmount = await claimSignupOffer();
       Alert.alert(
         'Offer Claimed',
-        `${creditedAmount} coins were added to your wallet.`,
+        `${creditedAmount} coins were added to your balance.`,
       );
     } catch (error: any) {
       Alert.alert(
@@ -263,8 +264,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <Banner randomCall={onRandomCall} calling={randomCalling} />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.heading}>Available experts</Text>
-          <Text style={styles.sectionHint}>Tap a card to call</Text>
+          <Text style={styles.heading}>{copy.home.availableHosts}</Text>
+          <Text style={styles.sectionHint}>{copy.home.supportingText}</Text>
         </View>
 
         <CategoryList
@@ -322,9 +323,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     color={Colors.secondary}
                   />
                 </View>
-                <Text style={styles.emptyTitle}>No experts here yet</Text>
+                <Text style={styles.emptyTitle}>{copy.home.noHosts}</Text>
                 <Text style={styles.emptyText}>
-                  Try another topic or check back in a little while.
+                  {copy.home.noHostsHint}
                 </Text>
               </>
             ) : (
@@ -366,7 +367,7 @@ const styles = StyleSheet.create({
     width: 430,
     height: 430,
     borderRadius: 215,
-    backgroundColor: 'rgba(207,249,242,0.35)',
+    backgroundColor: 'rgba(252,229,235,0.42)',
   },
   backgroundGlowMiddle: {
     position: 'absolute',
@@ -375,7 +376,7 @@ const styles = StyleSheet.create({
     width: 430,
     height: 430,
     borderRadius: 215,
-    backgroundColor: 'rgba(221,251,246,0.44)',
+    backgroundColor: 'rgba(255,229,237,0.48)',
   },
   list: {
     flex: 1,

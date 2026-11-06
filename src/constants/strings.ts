@@ -1,13 +1,85 @@
 import { CALL_RATE_PER_MINUTE } from './constants';
 
+export const copy = {
+  brand: {
+    appName: 'Speakly',
+    splash: 'Speakly — Baat Ho Jaaye?',
+    tagline: 'Baat Ho Jaaye?',
+    reassurance: 'Koi Hai, Jo Sunega.',
+  },
+  login: {
+    heading: 'Baat Ho Jaaye?',
+    subtitle: 'Koi Hai, Jo Sunega.',
+    heroTitle: 'Real conversations start here',
+    supportingText: 'Meet new people and enjoy genuine voice conversations.',
+    cta: 'Continue',
+    phonePlaceholder: 'Your Mobile Number',
+    safetyNote:
+      'Social audio conversations only. Speakly is not a dating, therapy, or professional advice service.',
+  },
+  home: {
+    heading: 'Who Would You Like to Talk To?',
+    supportingText: 'Discover people and start a conversation.',
+    availableHosts: 'Available Hosts',
+    online: 'Online',
+    busy: 'Busy',
+    offline: 'Offline',
+    startCall: 'Start Call',
+    randomMatch: 'Find Someone to Talk To',
+    talkAgain: 'Talk Again',
+    noHosts: 'No hosts are available right now',
+    noHostsHint: 'Try another topic or check back in a little while.',
+  },
+  recents: {
+    title: 'Recents',
+    supportingText: 'View your completed and missed voice calls.',
+    emptyTitle: 'No Calls Yet',
+    emptyText: 'Your conversations will appear here.',
+  },
+  wallet: {
+    title: 'My Coins',
+    addCoins: 'Add Coins',
+    balanceLabel: 'My Coins',
+    lowBalanceTitle: 'Not Enough Coins',
+    lowBalanceMessage: `You need at least ${CALL_RATE_PER_MINUTE} coins to start a call.`,
+  },
+  call: {
+    outgoing: 'Calling...',
+    connecting: 'Connecting...',
+    connected: 'Connected',
+    reconnecting: 'Reconnecting...',
+    rejected: 'Call Declined',
+    rejectedMessage: 'The host declined this call.',
+    timeout: 'No Answer',
+    failedAction: 'Try Another Host',
+    ended: 'Call Ended',
+    callAgain: 'Call Again',
+    incoming: 'Incoming Call',
+  },
+  host: {
+    onboarding: 'Become a Host',
+    verification: 'Voice Verification',
+    pending: 'Application Under Review',
+    approved: "You're Approved!",
+    dashboard: 'Host Dashboard',
+    goOnline: 'Go Online',
+    goOffline: 'Go Offline',
+    earnings: 'My Earnings',
+    roleName: 'Host',
+  },
+  common: {
+    continue: 'Continue',
+    cancel: 'Cancel',
+    accept: 'Accept',
+    decline: 'Decline',
+    tryAgain: 'Please try again.',
+  },
+} as const;
+
 export default {
-  appName: 'Speakly',
-
-  heading: 'Speak with confidence',
-
-  subHeading: `Practice with an expert @ ₹${CALL_RATE_PER_MINUTE}/min`,
-
-  phonePlaceholder: 'Your Mobile Number',
-
-  otp: 'Get OTP',
+  appName: copy.brand.appName,
+  heading: copy.home.heading,
+  subHeading: `Start a conversation @ ${CALL_RATE_PER_MINUTE} coins/min`,
+  phonePlaceholder: copy.login.phonePlaceholder,
+  otp: copy.login.cta,
 };

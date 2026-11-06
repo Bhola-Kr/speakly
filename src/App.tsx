@@ -15,6 +15,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   createNavigationContainerRef,
+  DefaultTheme,
   NavigationContainer,
   ParamListBase,
 } from '@react-navigation/native';
@@ -79,11 +80,21 @@ const deferUpdatesOn = new Set([
   'OnlineRoom',
 ]);
 
+const speaklyNavigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.primary,
+    background: Colors.background,
+    card: Colors.surface,
+    text: Colors.textPrimary,
+    border: Colors.border,
+    notification: Colors.accent,
+  },
+};
+
 const getStatusBarAppearance = (screen: string) => {
-  if (screen === 'IncomingCall' || screen === 'OutgoingCall') {
-    return { backgroundColor: Colors.navy, barStyle: 'light-content' as const };
-  }
-  if (screen === 'Splash' || screen === 'Call' || screen === 'OnlineRoom') {
+  if (screen === 'Call') {
     return {
       backgroundColor: Colors.primary,
       barStyle: 'light-content' as const,
@@ -158,7 +169,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: false,
-          title: 'Recent',
+          title: 'Recents',
           headerStyle: { backgroundColor: Colors.background },
         }}
         name="ManHistory"
@@ -392,6 +403,7 @@ Thank you.`);
 
   return (
     <NavigationContainer
+      theme={speaklyNavigationTheme}
       ref={navigationRef}
       initialState={retainedNavigationState}
       onReady={syncActiveScreen}
@@ -524,7 +536,7 @@ const callStyles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
   },
-  returnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
+  returnText: { color: Colors.textOnPrimary, fontWeight: '600', fontSize: 14 },
   deletionOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.62)',

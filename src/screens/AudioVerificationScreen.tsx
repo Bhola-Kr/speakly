@@ -21,27 +21,22 @@ import Colors from '../constants/colors';
 import VoiceDetector, { VoiceResult } from './voiceDetector';
 import { databaseRef } from '../firebase/firebase';
 import { notifyAdminsOfExpertApplication } from '../api/calls';
+import { copy } from '../constants/strings';
 
 const REVIEW_WINDOW_MS = 30 * 60 * 1000;
 const MIN_RECORDING_SECONDS = 5;
 const MAX_RECORDING_SECONDS = 10;
+const HOST_VERIFICATION_PROMPT =
+  'Hello, I am joining Speakly as a conversation host. I will welcome callers with respect and keep every conversation safe and genuine.';
 const PROMPTS: Record<string, string> = {
-  English:
-    'Hello, I am joining Speakly as a language expert. I will help learners speak clearly and confidently.',
-  Hindi:
-    'नमस्ते, मैं स्पीकली पर भाषा विशेषज्ञ के रूप में जुड़ रहा हूँ। मैं सीखने वालों को आत्मविश्वास से बोलने में मदद करूँगा।',
-  Sanskrit:
-    'नमस्ते, अहं स्पीकली-मञ्चे भाषाविशेषज्ञरूपेण सम्मिलितो भवामि। शिक्षार्थिनः आत्मविश्वासेन वक्तुं साहाय्यं करिष्यामि।',
-  Tamil:
-    'வணக்கம், நான் ஸ்பீக்லியில் மொழி நிபுணராக இணைகிறேன். பயனர்கள் நம்பிக்கையுடன் பேச நான் உதவுவேன்.',
-  Telugu:
-    'నమస్కారం, నేను స్పీక్లీలో భాషా నిపుణుడిగా చేరుతున్నాను. నేర్చుకునేవారు ధైర్యంగా మాట్లాడేందుకు సహాయం చేస్తాను.',
-  Kannada:
-    'ನಮಸ್ಕಾರ, ನಾನು ಸ್ಪೀಕ್ಲಿಯಲ್ಲಿ ಭಾಷಾ ತಜ್ಞನಾಗಿ ಸೇರುತ್ತಿದ್ದೇನೆ. ಕಲಿಯುವವರು ಆತ್ಮವಿಶ್ವಾಸದಿಂದ ಮಾತನಾಡಲು ಸಹಾಯ ಮಾಡುತ್ತೇನೆ.',
-  Malayalam:
-    'നമസ്കാരം, ഞാൻ സ്പീക്ലിയിൽ ഭാഷാ വിദഗ്ധനായി ചേരുന്നു. പഠിക്കുന്നവർ ആത്മവിശ്വാസത്തോടെ സംസാരിക്കാൻ ഞാൻ സഹായിക്കും.',
-  Bangla:
-    'নমস্কার, আমি স্পিকলিতে ভাষা বিশেষজ্ঞ হিসেবে যোগ দিচ্ছি। শিক্ষার্থীদের আত্মবিশ্বাসের সঙ্গে কথা বলতে সাহায্য করব।',
+  English: HOST_VERIFICATION_PROMPT,
+  Hindi: HOST_VERIFICATION_PROMPT,
+  Sanskrit: HOST_VERIFICATION_PROMPT,
+  Tamil: HOST_VERIFICATION_PROMPT,
+  Telugu: HOST_VERIFICATION_PROMPT,
+  Kannada: HOST_VERIFICATION_PROMPT,
+  Malayalam: HOST_VERIFICATION_PROMPT,
+  Bangla: HOST_VERIFICATION_PROMPT,
 };
 
 type ApplicationStatus = 'idle' | 'recording' | 'uploading' | 'pending';
@@ -95,12 +90,12 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
   }, [navigation]);
 
   const reviewMessage = useMemo(() => {
-    if (!reviewDueAt) return 'Your application is waiting for admin review.';
+    if (!reviewDueAt) return 'Your host application is waiting for review.';
     const due = new Date(reviewDueAt).toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
     });
-    return `Expected review by ${due}. You will receive access after an admin approves your expert application.`;
+    return `Expected review by ${due}. You will receive host access after your application is approved.`;
   }, [reviewDueAt]);
 
   const requestPermission = async () => {
@@ -279,9 +274,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
             />
           </View>
 
-          <Text style={styles.pendingTitle}>Application{`\n`}Under Review</Text>
+          <Text style={styles.pendingTitle}>{copy.host.pending}</Text>
           <Text style={styles.pendingSubtitle}>
-            Your expert application has been submitted successfully.
+            Your host application has been submitted successfully.
           </Text>
 
           <View style={styles.progressCard}>
@@ -314,7 +309,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
                 color={Colors.placeholder}
               />
               <Text style={[styles.progressText, styles.progressTextPending]}>
-                Expert account activation
+                Host account activation
               </Text>
             </View>
           </View>
@@ -349,7 +344,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.eyebrow}>EXPERT VERIFICATION</Text>
+        <Text style={styles.eyebrow}>{copy.host.verification.toUpperCase()}</Text>
         <Text style={styles.title}>Record in {language}</Text>
         <Text style={styles.subtitle}>
           Read the text naturally. An admin will listen and normally review it
@@ -387,8 +382,8 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
           />
           <Text style={styles.consentText}>
             I choose to be contacted by the Speakly team for assistance in
-            onboarding. The team may contact opted-in experts for training and
-            early-expert benefits.
+            onboarding. The team may contact opted-in hosts with setup guidance
+            and early-host updates.
           </Text>
         </TouchableOpacity>
 

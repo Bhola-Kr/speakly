@@ -17,7 +17,7 @@ import { scopedDatabase as database } from '../../../firebase/firebase';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
-import strings from '../../../constants/strings';
+import strings, { copy } from '../../../constants/strings';
 import RoomService from '../../../firebase/RoomService';
 import { getFemaleAvatar, getMaleAvatar } from '../../../constants/constants';
 
@@ -41,8 +41,8 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const ripple = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0)).current;
   const callResolved = useRef(false);
+  const timedOut = useRef(false);
 
-  const [dots, setDots] = useState('');
   const [cancelling, setCancelling] = useState(false);
 
   const cancelCall = async () => {
@@ -52,6 +52,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
     try {
       setCancelling(true);
+      timedOut.current = false;
       await RoomService.menRejectCall(femaleUid);
     } catch (error) {
       console.error('Unable to cancel call:', error);
@@ -67,6 +68,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       const snapshot = await database().ref(`rooms/${femaleUid}`).once('value');
       const room = snapshot.val();
       if (room?.status === 'ringing') {
+        timedOut.current = true;
         await RoomService.menRejectCall(femaleUid);
       }
     }, 30000);
@@ -75,7 +77,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       femaleUid,
 
       room => {
-        const closeCall = (_title?: string, _message?: string) => {
+        const closeCall = (title?: string, message?: string) => {
           if (callResolved.current) {
             return;
           }
@@ -87,6 +89,16 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             index: 0,
             routes: [{ name: 'Main', params: { screen: 'Home' } }],
           });
+
+          if (title && message) {
+            setTimeout(
+              () =>
+                Alert.alert(title, message, [
+                  { text: copy.call.failedAction },
+                ]),
+              200,
+            );
+          }
         };
 
         switch (room?.status) {
@@ -111,13 +123,18 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
           case 'rejected':
             closeCall(
-              'Call Ended',
-              'Your call request was declined by the recipient.',
+              copy.call.rejected,
+              copy.call.rejectedMessage,
             );
             break;
 
           case 'men_rejected':
-            closeCall();
+            timedOut.current
+              ? closeCall(
+                  copy.call.timeout,
+                  'This host did not answer. Try another available host.',
+                )
+              : closeCall();
             break;
 
           case 'waiting':
@@ -126,7 +143,10 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
           case 'ended':
           case 'offline':
-            closeCall();
+            closeCall(
+              copy.call.timeout,
+              'This host is not available right now. Try another host.',
+            );
             break;
         }
       },
@@ -178,20 +198,9 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
     rippleAnimation.start();
     glowAnimation.start();
 
-    const timer = setInterval(() => {
-      setDots(prev => {
-        if (prev.length >= 3) {
-          return '';
-        }
-
-        return prev + '.';
-      });
-    }, 500);
-
     return () => {
       rippleAnimation.stop();
       glowAnimation.stop();
-      clearInterval(timer);
     };
   }, [glow, ripple]);
 
@@ -216,7 +225,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       <View style={[styles.header, compactLayout && styles.headerCompact]}>
         <Text style={styles.logo}>{strings.appName}</Text>
 
-        <Text style={styles.status}>Connecting{dots}</Text>
+        <Text style={styles.status}>{copy.call.outgoing}</Text>
 
         <Text style={styles.statusSub}>
           Waiting for <Text style={styles.statusTamilName}>{displayName}</Text>
@@ -272,7 +281,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.englishName}>{englishName}</Text>
         )}
 
-        <Text style={styles.city}>Conversation expert</Text>
+        <Text style={styles.city}>{copy.host.roleName}</Text>
 
         <View
           style={[
@@ -294,7 +303,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             <Icon name="phone" size={24} color={Colors.inkBlue} />
           </TouchableOpacity>
 
-          <Text style={styles.callingText}>Calling user...</Text>
+          <Text style={styles.callingText}>Waiting for an answer</Text>
         </View>
       </View>
 

@@ -38,6 +38,7 @@ import {
   setCallInterval,
 } from '../../utils/callRuntime';
 import Colors from '../../constants/colors';
+import { copy } from '../../constants/strings';
 import RoomService from '../../firebase/RoomService';
 import {
   getFemaleAvatar,
@@ -123,7 +124,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  const [status, setStatus] = useState('Connecting...');
+  const [status, setStatus] = useState<string>(copy.call.connecting);
 
   const [connected, setConnected] = useState(false);
 
@@ -295,7 +296,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
       finishCall(updateRoom);
       if (gender === 'male') {
-        Alert.alert('Call Ended', message);
+        Alert.alert(copy.call.ended, message);
       }
     },
     [finishCall, gender],
@@ -308,8 +309,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
     const ending = finishCall();
     Alert.alert(
-      'Balance Exhausted',
-      'Your wallet balance is insufficient to continue this call.',
+      copy.wallet.lowBalanceTitle,
+      'Your coin balance is too low to continue this call.',
       [{ text: 'OK' }],
     );
     await ending;
@@ -408,7 +409,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
     rtcEngine.registerEventHandler({
       onJoinChannelSuccess: () => {
-        setStatus('Waiting for user...');
+        setStatus(copy.call.connecting);
       },
 
       onUserJoined: async () => {
@@ -419,7 +420,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         peerRecoveryRef.current = null;
         setConnected(true);
 
-        setStatus('Connected');
+        setStatus(copy.call.connected);
 
         startTimer();
 
@@ -431,10 +432,10 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         if (reason === UserOfflineReasonType.UserOfflineQuit) {
           finishCallFromRemote(
             true,
-            'The expert has disconnected from the call.',
+            'The host ended the call.',
           );
         } else {
-          setStatus('Waiting for the other user to reconnect...');
+          setStatus(copy.call.reconnecting);
           if (!peerRecoveryRef.current) {
             peerRecoveryRef.current = setCallInterval(async () => {
               peerRecoveryRef.current?.();
@@ -451,31 +452,31 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           reason === LocalAudioStreamReason.LocalAudioStreamReasonInterrupted ||
           reason === LocalAudioStreamReason.LocalAudioStreamReasonDeviceBusy
         ) {
-          setStatus('Audio interrupted — call is still connected');
+          setStatus(copy.call.reconnecting);
         } else if (
           state === LocalAudioStreamState.LocalAudioStreamStateRecording ||
           state === LocalAudioStreamState.LocalAudioStreamStateEncoding
         ) {
-          setStatus('Connected');
+          setStatus(copy.call.connected);
         }
       },
 
       onConnectionStateChanged: (_connection, state: ConnectionStateType) => {
         switch (state) {
           case ConnectionStateType.ConnectionStateConnecting:
-            setStatus('Connecting...');
+            setStatus(copy.call.connecting);
             break;
 
           case ConnectionStateType.ConnectionStateConnected:
-            setStatus('Connected');
+            setStatus(copy.call.connected);
             break;
 
           case ConnectionStateType.ConnectionStateReconnecting:
-            setStatus('Reconnecting...');
+            setStatus(copy.call.reconnecting);
             break;
 
           case ConnectionStateType.ConnectionStateDisconnected:
-            if (!callEndedRef.current) setStatus('Reconnecting...');
+            if (!callEndedRef.current) setStatus(copy.call.reconnecting);
             break;
 
           case ConnectionStateType.ConnectionStateFailed:
@@ -700,14 +701,14 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     <LinearGradient
       colors={
         isCaller
-          ? ['#F7FFFE', '#E9FBF7']
+          ? [Colors.background, Colors.primaryLight]
           : [Colors.darkBackground, Colors.darkBackgroundAlt]
       }
       style={styles.container}
     >
       {visible && (
         <StatusBar
-          backgroundColor={isCaller ? '#F7FFFE' : Colors.primary}
+          backgroundColor={isCaller ? Colors.background : Colors.primary}
           barStyle={isCaller ? 'dark-content' : 'light-content'}
         />
       )}
@@ -733,7 +734,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
             <MaterialCommunityIcons
               name="arrow-left"
               size={26}
-              color={isCaller ? '#071A2D' : Colors.white}
+              color={isCaller ? Colors.textPrimary : Colors.white}
             />
           </TouchableOpacity>
 
@@ -758,7 +759,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               <MaterialCommunityIcons
                 name={safetyActionLoading ? 'loading' : 'shield-alert-outline'}
                 size={25}
-                color={isCaller ? '#078A7D' : Colors.secondary}
+                color={isCaller ? Colors.primary : Colors.secondary}
               />
             </TouchableOpacity>
           ) : (
@@ -776,7 +777,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           <LinearGradient
             colors={
               isCaller
-                ? ['#59E4D0', '#12AE98']
+                ? Colors.buttonGradient
                 : [Colors.darkAvatarSurface, Colors.darkAvatarSurface]
             }
             style={[
@@ -926,7 +927,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                         ? Colors.white
                         : Colors.darkBackground
                       : isCaller
-                      ? '#078A7D'
+                      ? Colors.primary
                       : Colors.white
                   }
                 />
@@ -967,7 +968,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                         ? Colors.white
                         : Colors.darkBackground
                       : isCaller
-                      ? '#078A7D'
+                      ? Colors.primary
                       : Colors.white
                   }
                 />

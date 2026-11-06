@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
-import strings from '../../../constants/strings';
+import strings, { copy } from '../../../constants/strings';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
@@ -100,7 +100,7 @@ export default function IncomingCallScreen() {
       <View style={styles.header}>
         <Text style={styles.logo}>{strings.appName}</Text>
 
-        <Text style={styles.title}>Incoming Voice Call</Text>
+        <Text style={styles.title}>{copy.call.incoming}</Text>
 
         <Text style={styles.subTitle}>Someone wants to talk with you</Text>
       </View>
@@ -162,7 +162,7 @@ export default function IncomingCallScreen() {
               <Icon name="phone-hangup" size={34} color={Colors.white} />
             </TouchableOpacity>
 
-            <Text style={styles.actionText}>Decline</Text>
+            <Text style={styles.actionText}>{copy.common.decline}</Text>
           </View>
 
           <View style={styles.actionItem}>
@@ -174,7 +174,7 @@ export default function IncomingCallScreen() {
               <Icon name="phone" size={34} color={Colors.white} />
             </TouchableOpacity>
 
-            <Text style={styles.actionText}>Accept</Text>
+            <Text style={styles.actionText}>{copy.common.accept}</Text>
           </View>
         </View>
 

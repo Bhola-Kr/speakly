@@ -5,14 +5,15 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { useUser } from '../../hooks/UserContext';
 import { getUserAvatar } from '../../constants/constants';
+import Colors from '../../constants/colors';
 
 const COLORS = {
-  navy: '#071A2D',
-  teal: '#08AA91',
-  tealDark: '#078A7D',
-  mint: '#E1FAF5',
-  white: '#FFFFFF',
-  border: '#DCEFEB',
+  navy: Colors.textPrimary,
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  mint: Colors.primaryLight,
+  white: Colors.surface,
+  border: Colors.border,
 };
 
 interface Props {
@@ -33,13 +34,13 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
           <View style={[styles.logoBar, styles.logoBarMedium]} />
           <View style={[styles.logoBar, styles.logoBarSmall]} />
         </View>
-        <Text style={styles.brand}>speakly</Text>
+        <Text style={styles.brand}>Speakly</Text>
       </View>
 
       <View style={styles.actions}>
         <TouchableOpacity
           onPress={walletPress}
-          accessibilityLabel="Open wallet"
+          accessibilityLabel="Open My Coins"
           style={styles.wallet}
         >
           <Image

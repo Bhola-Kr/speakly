@@ -21,16 +21,17 @@ import { hasValidUsername } from '../utils/profileValidation';
 import { useUser } from '../hooks/UserContext';
 import { resendMSGOtp, verifyMSGOtp } from '../api/calls';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Colors from '../constants/colors';
 
 const COLORS = {
-  background: '#F2FFFC',
-  navy: '#071A2D',
-  teal: '#08A98F',
-  tealDark: '#078A78',
-  tealPale: '#E2F9F4',
-  body: '#747A91',
-  border: '#C9EEE7',
-  white: '#FFFFFF',
+  background: Colors.background,
+  navy: Colors.textPrimary,
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  tealPale: Colors.primaryLight,
+  body: Colors.textSecondary,
+  border: Colors.border,
+  white: Colors.textOnPrimary,
 };
 
 interface Props {

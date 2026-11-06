@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../constants/colors';
 import GradientButton from '../components/GradientButton';
 import authData from '../firebase/authData';
+import { copy } from '../constants/strings';
 
 interface Props {
   navigation: any;
@@ -110,9 +111,9 @@ const LanguageScreen: React.FC<Props> = ({ navigation, route }) => {
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
 
       <View style={styles.header}>
-        <Text style={styles.smallTitle}>What do you want to practice?</Text>
+        <Text style={styles.smallTitle}>How would you like to connect?</Text>
 
-        <Text style={styles.title}>Practice language</Text>
+        <Text style={styles.title}>Conversation language</Text>
 
         <Text style={styles.note}>
           You can update this later from your profile.
@@ -129,7 +130,7 @@ const LanguageScreen: React.FC<Props> = ({ navigation, route }) => {
 
       <GradientButton
         style={styles.continueButton}
-        title={loading ? 'Please wait...' : 'Continue'}
+        title={loading ? 'Please wait...' : copy.common.continue}
         disabled={loading}
         onPress={async () => {
           try {

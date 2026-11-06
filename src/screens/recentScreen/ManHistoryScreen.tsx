@@ -9,6 +9,7 @@ import Colors from '../../constants/colors';
 import EmptyState from './EmptyState';
 import RecentCallCard from './RecentCallCard';
 import RoomService, { CallHistory } from '../../firebase/RoomService';
+import { copy } from '../../constants/strings';
 
 const ManHistoryScreen = ({ navigation, route }: any) => {
   const [history, setHistory] = useState<CallHistory[]>([]);
@@ -40,12 +41,12 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
 
           <View style={styles.headerCopy}>
             <View style={styles.titleRow}>
-              <Text style={styles.title}>Call History</Text>
+              <Text style={styles.title}>{copy.recents.title}</Text>
               <Text style={styles.count}>{history.length}</Text>
             </View>
 
             <Text style={styles.subtitle}>
-              Completed and missed calls
+              {copy.recents.supportingText}
             </Text>
           </View>
         </View>

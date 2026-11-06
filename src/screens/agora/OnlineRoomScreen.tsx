@@ -25,18 +25,20 @@ import { getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 import RoomService, { Room } from '../../firebase/RoomService';
 import authData from '../../firebase/authData';
+import Colors from '../../constants/colors';
+import { copy } from '../../constants/strings';
 
 const AVATAR = 'https://i.pravatar.cc/400?img=47';
 
 const COLORS = {
-  background: '#F5FFFD',
-  navy: '#071A2D',
-  teal: '#08AA91',
-  tealDark: '#078A7D',
-  mint: '#C8F8EE',
-  mintSoft: '#E4FBF7',
-  body: '#7B8298',
-  white: '#FFFFFF',
+  background: Colors.background,
+  navy: Colors.textPrimary,
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  mint: Colors.accentLight,
+  mintSoft: Colors.primaryLight,
+  body: Colors.textSecondary,
+  white: Colors.surface,
 };
 
 type Props = {
@@ -192,15 +194,15 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
   const goOffline = () => {
     Alert.alert(
-      'Go Offline',
-      'Are you sure you want to go offline? You will not receive practice calls from learners while you are offline.',
+      copy.host.goOffline,
+      'Are you sure you want to go offline? You will not receive incoming calls while you are offline.',
       [
         {
           text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Go Offline',
+          text: copy.host.goOffline,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -251,11 +253,11 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
           ]}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Online Room</Text>
+            <Text style={styles.title}>{copy.host.dashboard}</Text>
 
             <View style={styles.onlineBadge}>
               <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>Online</Text>
+              <Text style={styles.onlineText}>{copy.home.online}</Text>
             </View>
           </View>
 
@@ -277,7 +279,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
             <View style={styles.avatarHalo} />
             <Animated.View style={{ transform: [{ scale: avatarScale }] }}>
               <LinearGradient
-                colors={['#58E4D0', '#14B8A1']}
+                colors={Colors.buttonGradient}
                 style={styles.avatarBorder}
               >
                 <View style={styles.avatarInnerBorder}>
@@ -323,7 +325,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
             style={styles.offlineButtonTouch}
           >
             <LinearGradient
-              colors={['#0CA895', '#07877D']}
+              colors={Colors.buttonGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.offlineButton}
@@ -333,7 +335,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
                 color={COLORS.white}
                 size={29}
               />
-              <Text style={styles.offlineText}>Go Offline</Text>
+              <Text style={styles.offlineText}>{copy.host.goOffline}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </ScrollView>
@@ -371,7 +373,7 @@ const styles = StyleSheet.create({
     top: -125,
     right: -92,
     borderRadius: 160,
-    backgroundColor: 'rgba(221,250,246,0.68)',
+    backgroundColor: 'rgba(252,229,235,0.72)',
     transform: [{ rotate: '17deg' }],
   },
   backgroundBlobLeft: {
@@ -381,7 +383,7 @@ const styles = StyleSheet.create({
     top: 110,
     left: -210,
     borderRadius: 180,
-    backgroundColor: 'rgba(206,249,242,0.56)',
+    backgroundColor: 'rgba(255,229,237,0.60)',
     transform: [{ rotate: '-18deg' }],
   },
   backgroundBlobRight: {
@@ -391,7 +393,7 @@ const styles = StyleSheet.create({
     top: 245,
     right: -220,
     borderRadius: 170,
-    backgroundColor: 'rgba(212,250,244,0.48)',
+    backgroundColor: 'rgba(252,229,235,0.52)',
     transform: [{ rotate: '16deg' }],
   },
   backgroundBlobBottom: {
@@ -401,7 +403,7 @@ const styles = StyleSheet.create({
     bottom: -170,
     left: -140,
     borderRadius: 180,
-    backgroundColor: 'rgba(215,251,245,0.62)',
+    backgroundColor: 'rgba(255,240,242,0.70)',
     transform: [{ rotate: '28deg' }],
   },
   content: {
@@ -441,7 +443,7 @@ const styles = StyleSheet.create({
     height: 41,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#D7F5EF',
+    borderColor: Colors.border,
     backgroundColor: 'rgba(255,255,255,0.76)',
     shadowColor: COLORS.tealDark,
     shadowOpacity: 0.08,
@@ -477,7 +479,7 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: 'rgba(70,225,204,0.30)',
+    backgroundColor: 'rgba(233,75,112,0.22)',
   },
   avatarHalo: {
     position: 'absolute',
@@ -485,7 +487,7 @@ const styles = StyleSheet.create({
     height: 202,
     borderRadius: 101,
     borderWidth: 13,
-    borderColor: 'rgba(104,231,211,0.17)',
+    borderColor: 'rgba(201,31,70,0.16)',
   },
   avatarBorder: {
     width: 185,
@@ -536,9 +538,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(211,250,243,0.82)',
+    backgroundColor: 'rgba(252,229,235,0.86)',
     borderWidth: 5,
-    borderColor: 'rgba(236,255,251,0.9)',
+    borderColor: 'rgba(255,240,242,0.92)',
   },
   audioIcon: {
     width: 44,
@@ -547,7 +549,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(239,255,252,0.95)',
+    backgroundColor: 'rgba(255,245,246,0.96)',
   },
   audioBar: {
     width: 3,
@@ -576,14 +578,14 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(222,250,245,0.88)',
+    backgroundColor: 'rgba(252,229,235,0.90)',
   },
   listeningDot: {
     width: 10,
     height: 10,
     marginRight: 12,
     borderRadius: 5,
-    backgroundColor: '#14BBA4',
+    backgroundColor: Colors.primary,
   },
   listeningText: {
     color: COLORS.tealDark,

@@ -216,7 +216,8 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         />
 
         <Text style={styles.note}>
-          Speakly is for language practice—not dating or matchmaking.
+          Speakly is for social voice conversations—not dating, therapy, or
+          professional advice.
         </Text>
 
         <GradientButton

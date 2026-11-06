@@ -8,15 +8,17 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Colors from '../../constants/colors';
+import { copy } from '../../constants/strings';
 
 const COLORS = {
-  navy: '#071A2D',
-  teal: '#08AA91',
-  tealDark: '#078A7D',
-  mint: '#BDF4E8',
-  mintSoft: '#E6FBF6',
-  body: '#747B91',
-  white: '#FFFFFF',
+  navy: Colors.textPrimary,
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  mint: Colors.accentLight,
+  mintSoft: Colors.surfaceSecondary,
+  body: Colors.textSecondary,
+  white: Colors.textOnPrimary,
 };
 
 interface Props {
@@ -28,7 +30,7 @@ const Banner = ({ randomCall, calling }: Props) => {
   return (
     <View style={styles.bannerShadow}>
       <LinearGradient
-        colors={['#FFFFFF', '#E9FCF8']}
+        colors={[Colors.surface, Colors.surfaceSecondary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.banner}
@@ -42,10 +44,10 @@ const Banner = ({ randomCall, calling }: Props) => {
         </View>
 
         <View style={styles.copy}>
-          <Text style={styles.title}>Speak. Practice. Improve.</Text>
+          <Text style={styles.title}>{copy.home.heading}</Text>
 
           <Text style={styles.description}>
-            Start a live voice session now.
+            {copy.home.supportingText}
           </Text>
 
           <TouchableOpacity
@@ -58,7 +60,7 @@ const Banner = ({ randomCall, calling }: Props) => {
               <>
                 <ActivityIndicator size="small" color={COLORS.white} />
 
-                <Text style={styles.buttonText}>Connecting...</Text>
+                <Text style={styles.buttonText}>{copy.call.connecting}</Text>
               </>
             ) : (
               <>
@@ -68,7 +70,7 @@ const Banner = ({ randomCall, calling }: Props) => {
                   color={COLORS.white}
                 />
 
-                <Text style={styles.buttonText}>Start now</Text>
+                <Text style={styles.buttonText}>{copy.home.randomMatch}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -101,7 +103,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E0F3EF',
+    borderColor: Colors.border,
   },
   copy: {
     flex: 1,
@@ -113,7 +115,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 27,
     paddingTop: 2,
-    fontWeight: '900',
+    fontWeight: '500',
     letterSpacing: -0.8,
   },
   description: {

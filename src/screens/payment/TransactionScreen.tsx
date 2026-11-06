@@ -150,7 +150,7 @@ const TransactionScreen = ({ navigation }: any) => {
       <View style={styles.card}>
         <View style={styles.rowBetween}>
           <View style={styles.flex}>
-            <Text style={styles.amountTitle}>Recharge ₹{item.amount}</Text>
+            <Text style={styles.amountTitle}>Add Coins · ₹{item.amount}</Text>
 
             <Text style={styles.date}>
               {date.toLocaleTimeString('en-IN', {
@@ -223,8 +223,8 @@ const TransactionScreen = ({ navigation }: any) => {
             <View style={styles.infoRow}>
               <Text style={styles.label}>
                 {item.status === 'success'
-                  ? 'Wallet Credited'
-                  : 'Expected Wallet Credit'}
+                  ? 'Coins Added'
+                  : 'Expected Coins'}
               </Text>
 
               <Text style={styles.price}>{item.creditedAmount} coins</Text>
@@ -273,7 +273,7 @@ const TransactionScreen = ({ navigation }: any) => {
             {item.status === 'success'
               ? 'Copy Receipt ID'
               : item.status === 'failed'
-              ? 'Retry Recharge'
+              ? 'Add Coins Again'
               : 'Refresh Status'}
           </Text>
         </TouchableOpacity>
@@ -330,7 +330,7 @@ const TransactionScreen = ({ navigation }: any) => {
                 />
                 <Text style={styles.emptyTitle}>No transactions yet</Text>
                 <Text style={styles.emptyText}>
-                  Your wallet recharges will appear here.
+                  Your coin purchases will appear here.
                 </Text>
               </>
             )}

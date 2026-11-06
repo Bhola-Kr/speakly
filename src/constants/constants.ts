@@ -8,21 +8,21 @@ export const SUPPORT_EMAIL = 'support@joinspeakly.com';
 export const faqs = [
   {
     id: 1,
-    question: 'How do I change my language?',
+    question: 'How do I change my preferred conversation language?',
     answer:
-      'Go to Profile > Language and choose the language you want to practice.',
+      'Go to Profile > Language and choose the language you prefer for conversations.',
   },
   {
     id: 2,
-    question: 'Money was deducted but not added to my wallet.',
+    question: 'Money was deducted but coins were not added.',
     answer:
-      'Please wait for a few minutes. If your wallet is still not credited, open Transactions, select the payment, and contact support with the transaction details.',
+      'Please wait for a few minutes. If your coins are still not credited, open Transactions, select the payment, and contact support with the transaction details.',
   },
   {
     id: 3,
-    question: 'How do I add money to my wallet?',
+    question: 'How do I add coins?',
     answer:
-      'Open the Wallet section and tap "Add Balance". Choose an amount and complete the payment using UPI, Card, or other available payment methods.',
+      'Open My Coins and choose a coin pack. Complete the payment using any available payment method.',
   },
   {
     id: 4,
@@ -32,15 +32,15 @@ export const faqs = [
   },
   {
     id: 5,
-    question: 'Can I get a refund for wallet recharge?',
+    question: 'Can I get a refund for a coin purchase?',
     answer:
-      'Wallet recharges are generally non-refundable after they are successfully credited. If you experience a payment issue, please contact support.',
+      'Coin purchases are generally non-refundable after they are successfully credited. If you experience a payment issue, please contact support.',
   },
   {
     id: 6,
     question: 'How do I view my call history?',
     answer:
-      'Open the Recent Sessions section from your profile to view your previous expert conversations.',
+      'Open Recents to view your previous conversations and call details.',
   },
   {
     id: 7,
@@ -58,7 +58,7 @@ export const faqs = [
     id: 9,
     question: 'Why am I unable to make a call?',
     answer:
-      'Please check your internet connection, microphone permission, and wallet balance. Expert sessions are charged per minute. If the issue continues, contact support.',
+      'Please check your internet connection, microphone permission, and coin balance. Host calls are charged per minute at the price shown before you call. If the issue continues, contact support.',
   },
   {
     id: 10,

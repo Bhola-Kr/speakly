@@ -119,7 +119,7 @@ export async function displayIncomingCallNotification(
   });
   await notifee.displayNotification({
     id: `incoming-call-${callId}`,
-    title: 'Incoming Voice Call',
+    title: 'Incoming Call',
     body: `${callerName || 'Someone'} is calling you`,
     data: { type: 'incoming_call', callId, femaleUid },
     android: {

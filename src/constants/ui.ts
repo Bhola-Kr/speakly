@@ -1,3 +1,5 @@
+import Colors from './colors';
+
 const UI = {
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
   radius: { small: 10, chip: 14, card: 18, button: 16, alert: 24 },
@@ -12,7 +14,7 @@ const UI = {
   },
   shadow: {
     card: {
-      shadowColor: '#078A7D',
+      shadowColor: Colors.primary,
       shadowOpacity: 0.08,
       shadowRadius: 14,
       shadowOffset: { width: 0, height: 6 },

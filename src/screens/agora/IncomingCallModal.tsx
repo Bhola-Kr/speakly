@@ -15,6 +15,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '../../constants/colors';
 import UI from '../../constants/ui';
+import { copy } from '../../constants/strings';
 
 interface Props {
   visible: boolean;
@@ -114,7 +115,7 @@ const IncomingCallModal = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>Incoming Voice Call</Text>
+          <Text style={styles.title}>{copy.call.incoming}</Text>
 
           <Text style={styles.subtitle}>Someone wants to connect with you</Text>
 
@@ -196,9 +197,9 @@ const IncomingCallModal = ({
           </View>
 
           <View style={styles.buttonLabelRow}>
-            <Text style={styles.buttonLabel}>Decline</Text>
+            <Text style={styles.buttonLabel}>{copy.common.decline}</Text>
 
-            <Text style={styles.buttonLabel}>Accept</Text>
+            <Text style={styles.buttonLabel}>{copy.common.accept}</Text>
           </View>
         </Animated.View>
       </View>

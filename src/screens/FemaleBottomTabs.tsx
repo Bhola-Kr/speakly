@@ -12,8 +12,8 @@ import NoFeedbackTabButton from '../components/NoFeedbackTabButton';
 
 const Tab = createBottomTabNavigator();
 
-const ACTIVE_TEAL = '#08A98F';
-const ACTIVE_SURFACE = '#DFF9F4';
+const ACTIVE_TEAL = Colors.primary;
+const ACTIVE_SURFACE = Colors.primaryLight;
 
 const HomeTabIcon = ({ focused }: { focused: boolean }) => (
   <View style={[styles.iconWrap, focused && styles.activeIconWrap]}>
@@ -85,7 +85,7 @@ const FemaleBottomTabs = () => {
           borderWidth: 0,
           elevation: 10,
 
-          shadowColor: '#0B5E55',
+          shadowColor: Colors.primary,
           shadowOffset: {
             width: 0,
             height: 8,
@@ -127,6 +127,7 @@ const FemaleBottomTabs = () => {
         name="History"
         component={FemaleHistoryScreen}
         options={{
+          tabBarLabel: 'Recents',
           tabBarIcon: HistoryTabIcon,
         }}
       />

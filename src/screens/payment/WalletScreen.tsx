@@ -29,6 +29,7 @@ import {
   listenActivePaymentGateways,
 } from '../../firebase/paymentGateways';
 import type { PaymentGateway } from '../../firebase/paymentGateways';
+import { copy } from '../../constants/strings';
 
 const WalletScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
@@ -95,7 +96,7 @@ const WalletScreen = ({ navigation }: any) => {
           setPacksError(
             error instanceof Error
               ? error.message
-              : 'Unable to load recharge packs.',
+              : 'Unable to load coin packs.',
           );
         }
       } finally {
@@ -136,20 +137,20 @@ const WalletScreen = ({ navigation }: any) => {
           : await openPayUCheckout(selectedPack.id);
       if (payment.status === 'success') {
         Alert.alert(
-          'Recharge Successful',
-          `${payment.creditedAmount} coins were added to your wallet.`,
+          'Coins Added',
+          `${payment.creditedAmount} coins were added to your balance.`,
         );
       } else if (payment.status === 'failed') {
         Alert.alert(
           'Payment Unsuccessful',
-          payment.failureReason || 'No amount was charged to your wallet.',
+          payment.failureReason || 'No coins were added to your balance.',
         );
       } else {
         Alert.alert(
           'Payment Verification Pending',
           `We are confirming this payment with ${
             paymentGateway === 'razorpay' ? 'Razorpay' : 'PayU'
-          }. Your wallet will update automatically after verification.`,
+          }. Your coin balance will update automatically after verification.`,
         );
       }
     } catch (error) {
@@ -176,7 +177,7 @@ const WalletScreen = ({ navigation }: any) => {
             size={26}
             color={Colors.text}
           />
-          <Text style={styles.headerTitle}>Wallet</Text>
+          <Text style={styles.headerTitle}>{copy.wallet.title}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -209,18 +210,18 @@ const WalletScreen = ({ navigation }: any) => {
           />
 
           <View style={styles.balanceContent}>
-            <Text style={styles.balanceLabel}>Your Coins</Text>
+            <Text style={styles.balanceLabel}>{copy.wallet.balanceLabel}</Text>
             <Text style={styles.balanceAmount}>
               {user?.wallet?.balance || 0}
             </Text>
             <Text style={styles.balanceDescription} numberOfLines={1}>
-              Recharge to continue voice calls
+              Add coins to continue voice calls
             </Text>
           </View>
         </LinearGradient>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose Recharge Pack</Text>
+          <Text style={styles.sectionTitle}>Choose a Coin Pack</Text>
 
           <Text style={styles.sectionSubTitle}>
             Bigger packs give you extra bonus balance.
@@ -241,7 +242,7 @@ const WalletScreen = ({ navigation }: any) => {
 
             {!loadingPacks && !packsError && packs.length === 0 && (
               <Text style={styles.packsStatus}>
-                No recharge packs are available right now.
+                No coin packs are available right now.
               </Text>
             )}
 

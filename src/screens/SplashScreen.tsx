@@ -13,6 +13,7 @@ import Colors from '../constants/colors';
 import authData from '../firebase/authData';
 import { hasValidUsername } from '../utils/profileValidation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { copy } from '../constants/strings';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -87,10 +88,10 @@ const SplashScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient
-        colors={['#F7FFFE', '#E7FAF6', '#FFFFFF']}
+        colors={[Colors.background, Colors.primaryLight, Colors.surface]}
         style={styles.container}
       >
-        <StatusBar backgroundColor="#F7FFFE" barStyle="dark-content" />
+        <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
         <View style={styles.content}>
           {/* Replace with your logo */}
           <View style={styles.logoMark}>
@@ -101,11 +102,9 @@ const SplashScreen = ({ navigation }: any) => {
             />
           </View>
 
-          <Text style={styles.title}>speakly</Text>
+          <Text style={styles.title}>{copy.brand.splash}</Text>
 
-          <Text style={styles.subtitle}>
-            Real conversations. Real confidence.
-          </Text>
+          <Text style={styles.subtitle}>{copy.brand.reassurance}</Text>
         </View>
 
         <View style={styles.bottom}>
@@ -123,7 +122,7 @@ const SplashScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F7FFFE',
+    backgroundColor: Colors.background,
   },
   container: {
     flex: 1,
@@ -134,6 +133,8 @@ const styles = StyleSheet.create({
 
   content: {
     flex: 1,
+    width: '100%',
+    paddingHorizontal: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -142,17 +143,19 @@ const styles = StyleSheet.create({
     width: 104,
     height: 104,
     borderRadius: 32,
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
 
   title: {
+    width: '100%',
     fontSize: 38,
     fontWeight: '900',
     color: Colors.text,
     letterSpacing: -1.5,
+    textAlign: 'center',
   },
 
   subtitle: {
@@ -160,6 +163,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.subText,
     letterSpacing: 0.5,
+    textAlign: 'center',
   },
 
   bottom: {

@@ -60,7 +60,7 @@ export const requestExpertWithdrawal = async () => {
     .ref(`users/${currentUser.uid}`)
     .once('value');
   const user = userSnapshot.val() || {};
-  if (user.isExpert !== true) throw new Error('Expert access is required.');
+  if (user.isExpert !== true) throw new Error('Host access is required.');
 
   // Read the latest value for every request so a config change is enforced
   // immediately, even if the dashboard was opened before it changed.
@@ -107,7 +107,7 @@ export const requestExpertWithdrawal = async () => {
     id: requestId,
     expertUid: currentUser.uid,
     expertName: String(
-      user.profile?.name || user.profile?.tamilName || 'Expert',
+      user.profile?.name || user.profile?.tamilName || 'Host',
     ),
     phone: String(user.phone || user.profile?.phone || ''),
     amount: reservedAmount,

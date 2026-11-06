@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import styles from './styles';
 import Colors from '../../constants/colors';
-import { femaleAvatars } from '../../constants/constants';
+import {
+  femaleAvatars,
+  normalizeCallRate,
+} from '../../constants/constants';
 
 import RoomService, { CallHistory } from '../../firebase/RoomService';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import SurfaceCard from '../../components/SurfaceCard';
+import { copy } from '../../constants/strings';
 
 interface Props {
   item: CallHistory;
@@ -39,15 +50,22 @@ const RecentCallCard = ({ item, navigation }: Props) => {
   const tamilName = String(item?.femaleInfo?.tamilName || '').trim();
   const englishName = String(item?.femaleInfo?.name || '').trim();
   const displayName = tamilName || englishName || 'N/A';
-  const showEnglishName = Boolean(
-    tamilName && englishName && tamilName !== englishName,
-  );
   const avatar =
     femaleAvatars.find(a => a.id === Number(item.femaleInfo.avatarId)) ??
     femaleAvatars[0];
-
-  const statusColor =
-    item.status === 'Completed' ? Colors.success : Colors.danger;
+  const primaryLanguage =
+    item.femaleInfo?.supportedLanguages?.[0] ||
+    item.femaleInfo?.practiceLanguage ||
+    'Not listed';
+  const callRate = normalizeCallRate(
+    item.callRatePerMinute || item.femaleInfo?.price,
+  );
+  const completed = item.status === 'Completed';
+  const statusColor = completed ? Colors.success : Colors.danger;
+  const statusBackground = completed
+    ? Colors.onlineSurface
+    : Colors.errorSurface;
+  const subtitle = copy.host.roleName;
 
   const handleCall = async () => {
     console.log('handleCall -> item', item);
@@ -84,7 +102,14 @@ const RecentCallCard = ({ item, navigation }: Props) => {
   return (
     <SurfaceCard style={styles.card}>
       <View style={styles.row}>
-        <Image source={avatar.image} style={styles.avatar} />
+        <View style={styles.avatarWrapper}>
+          <Image source={avatar.image} style={styles.avatar} />
+          <View style={styles.avatarDotOuter}>
+            <View
+              style={[styles.avatarDot, { backgroundColor: statusColor }]}
+            />
+          </View>
+        </View>
 
         <View style={styles.info}>
           <Text numberOfLines={1} style={styles.tamilName}>
@@ -92,29 +117,70 @@ const RecentCallCard = ({ item, navigation }: Props) => {
           </Text>
 
           <Text numberOfLines={1} style={styles.englishName}>
-            {showEnglishName ? englishName : 'Voice Call'}
+            {subtitle}
           </Text>
+
+          <View style={styles.cardChipRow}>
+            <View style={styles.cardLanguageChip}>
+              <MaterialCommunityIcons
+                name="translate"
+                size={17}
+                color={Colors.primary}
+              />
+              <Text numberOfLines={1} style={styles.cardLanguageText}>
+                {primaryLanguage}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.cardStatusChip,
+                { backgroundColor: statusBackground },
+              ]}
+            >
+              <View
+                style={[styles.cardStatusDot, { backgroundColor: statusColor }]}
+              />
+              <Text style={[styles.cardStatusText, { color: statusColor }]}>
+                {completed ? copy.call.ended : item.status}
+              </Text>
+            </View>
+          </View>
 
           <View style={styles.metaRow}>
             <Text style={styles.metaText}>{formatDate(item.startedAt)}</Text>
             <View style={styles.metaDot} />
             <Text style={styles.metaText}>{formatDuration(item.duration)}</Text>
           </View>
-
-          <Text style={[styles.compactStatus, { color: statusColor }]}>
-            {item.status}
-          </Text>
         </View>
 
-        <TouchableOpacity
-          disabled={calling}
-          onPress={handleCall}
-          accessibilityRole="button"
-          accessibilityLabel={`Call ${displayName} again`}
-          style={[styles.callButton, calling && styles.callButtonDisabled]}
-        >
-          <MaterialCommunityIcons name="phone" size={22} color={Colors.white} />
-        </TouchableOpacity>
+        <View style={styles.cardActions}>
+          <View style={styles.cardRatePill}>
+            <Text style={styles.cardRateValue}>{callRate}</Text>
+            <Text style={styles.cardRateUnit}> coins/min</Text>
+          </View>
+
+          <TouchableOpacity
+            disabled={calling}
+            onPress={handleCall}
+            accessibilityRole="button"
+            accessibilityLabel={`${copy.call.callAgain}: ${displayName}`}
+            style={[
+              styles.callButton,
+              calling && styles.callButtonDisabled,
+            ]}
+          >
+            {calling ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <MaterialCommunityIcons
+                name="phone"
+                size={24}
+                color={Colors.white}
+              />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </SurfaceCard>
   );

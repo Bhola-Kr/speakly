@@ -4,9 +4,10 @@ import { Alert } from 'react-native';
 import { normalizeCallRate } from '../constants/constants';
 import { useUser } from './UserContext';
 import { useActiveCall } from './ActiveCallContext';
+import { copy } from '../constants/strings';
 
 /**
- * Prevents learners from starting a paid session when their wallet is empty.
+ * Prevents callers from starting a paid call when their coin balance is low.
  */
 export const useCallBalanceGuard = (navigation: any) => {
   const { user } = useUser();
@@ -26,12 +27,12 @@ export const useCallBalanceGuard = (navigation: any) => {
     }
 
     Alert.alert(
-      'Insufficient Balance',
-      `You need at least ₹${callRate} in your wallet to start a call.`,
+      copy.wallet.lowBalanceTitle,
+      `You need at least ${callRate} coins to start a call.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Add Balance',
+          text: copy.wallet.addCoins,
           onPress: () => navigation.navigate('Wallet'),
         },
       ],

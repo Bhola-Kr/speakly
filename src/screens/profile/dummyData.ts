@@ -17,7 +17,7 @@ export const profile = {
 export const manAccountMenus = [
   {
     id: 1,
-    title: 'Recent Sessions',
+    title: 'Recents',
     icon: 'history',
     screen: 'Recents',
   },
@@ -32,7 +32,7 @@ export const manAccountMenus = [
 export const femaleAccountMenus = [
   {
     id: 1,
-    title: 'Recent Sessions',
+    title: 'Recents',
     icon: 'history',
     screen: 'Recents',
   },
@@ -41,7 +41,7 @@ export const femaleAccountMenus = [
 export const preferenceMenus = [
   {
     id: 1,
-    title: 'Language',
+    title: 'Conversation Language',
     value: 'Tamil',
     icon: 'translate',
     screen: 'Language',

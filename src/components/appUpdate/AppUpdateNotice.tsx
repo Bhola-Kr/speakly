@@ -90,7 +90,7 @@ export default function AppUpdateNotice({
             <View style={styles.hero}>
               <View style={styles.orbit}>
                 <LinearGradient
-                  colors={Colors.goldGradient}
+                  colors={Colors.buttonGradient}
                   style={styles.iconCircle}
                 >
                   <Icon

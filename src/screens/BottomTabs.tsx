@@ -8,16 +8,17 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import HomeScreen from './home/HomeScreen';
 import ManHistoryScreen from './recentScreen/ManHistoryScreen';
 import NoFeedbackTabButton from '../components/NoFeedbackTabButton';
+import Colors from '../constants/colors';
 
 const Tab = createBottomTabNavigator();
 
 const TAB_COLORS = {
-  teal: '#08AA91',
-  tealDark: '#078A7D',
-  mint: '#E1FAF5',
-  gray: '#96999F',
-  white: '#FFFFFF',
-  border: '#E1ECEA',
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  mint: Colors.primaryLight,
+  gray: Colors.offline,
+  white: Colors.surface,
+  border: Colors.border,
 };
 
 const HomeTabIcon = ({ focused }: { focused: boolean }) => (

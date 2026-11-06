@@ -335,7 +335,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         id: `profile-${expertUid}`,
         expertUid,
         expertName: String(
-          user.profile?.name || user.profile?.tamilName || 'Expert',
+          user.profile?.name || user.profile?.tamilName || 'Host',
         ),
         phone: String(user.phone || user.profile?.phone || ''),
         status:
@@ -583,7 +583,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           setExpertHistoryError(
             readableError(
               loadError,
-              'Unable to load this expert’s call history.',
+              'Unable to load this host’s call history.',
             ),
           );
         }
@@ -664,7 +664,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         decision === 'paid' ? 'Payment Recorded' : 'Request Rejected',
         decision === 'paid'
           ? `₹${request.amount} was marked as manually paid.`
-          : `₹${request.amount} was restored to the expert's available earnings.`,
+          : `₹${request.amount} was restored to the host's available earnings.`,
       );
     } catch (processError: any) {
       Alert.alert(
@@ -884,7 +884,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         (!Number.isFinite(expertCallRatePerMinute) ||
           expertCallRatePerMinute <= 0)
       ) {
-        throw new Error('Expert earning rate must be greater than zero.');
+        throw new Error('Host earning rate must be greater than zero.');
       }
       const avatarText = editingUser.avatarId.trim();
       const avatarId =
@@ -1011,16 +1011,16 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           return null;
         });
         Alert.alert(
-          'Expert Approved',
+          "You're Approved!",
           notification?.delivered
-            ? 'The user now has expert access and was notified.'
-            : 'The user now has expert access, but no notification could be delivered. Ask them to open Speakly and allow notifications.',
+            ? 'The user now has host access and was notified.'
+            : 'The user now has host access, but no notification could be delivered. Ask them to open Speakly and allow notifications.',
         );
         return;
       }
       Alert.alert(
         'Application Rejected',
-        'The user can continue using Speakly as a learner.',
+        'The user can continue using Speakly as a caller.',
       );
     } catch (reviewError: any) {
       Alert.alert(
@@ -1035,7 +1035,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const renderApplications = () => (
     <View style={styles.reviewSection}>
       <View style={styles.reviewHeadingRow}>
-        <Text style={styles.reviewHeading}>Expert applications</Text>
+        <Text style={styles.reviewHeading}>Host applications</Text>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>{applications.length}</Text>
         </View>
@@ -1104,7 +1104,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   {busy ? (
                     <ActivityIndicator color={Colors.white} />
                   ) : (
-                    <Text style={styles.approveButtonText}>Approve expert</Text>
+                    <Text style={styles.approveButtonText}>Approve host</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1171,7 +1171,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const renderExpertActivity = () => (
     <View style={styles.reviewSection}>
       <View style={styles.reviewHeadingRow}>
-        <Text style={styles.reviewHeading}>Expert activity history</Text>
+        <Text style={styles.reviewHeading}>Host activity history</Text>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>{expertGroups.length}</Text>
         </View>
@@ -1280,7 +1280,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           </Text>
           {isExpertAccount && preferredLanguage ? (
             <Text style={styles.userLanguage} numberOfLines={1}>
-              Expert language: {preferredLanguage}
+              Host language: {preferredLanguage}
             </Text>
           ) : null}
           {isExpertAccount ? (
@@ -1502,9 +1502,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 <Text style={styles.sectionTitle}>Verification</Text>
                 <View style={styles.switchRow}>
                   <View style={styles.switchCopy}>
-                    <Text style={styles.switchTitle}>Expert access</Text>
+                    <Text style={styles.switchTitle}>Host access</Text>
                     <Text style={styles.switchHelp}>
-                      Experts can go online and receive paid calls.
+                      Hosts can go online and receive paid calls.
                     </Text>
                   </View>
                   <Switch
@@ -1526,7 +1526,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                     trackColor={{ false: Colors.border, true: Colors.primary }}
                   />
                 </View>
-                <Text style={styles.sectionTitle}>Wallet</Text>
+                <Text style={styles.sectionTitle}>My Coins</Text>
                 <Text style={styles.label}>
                   User charge rate (coins per minute)
                 </Text>
@@ -1546,7 +1546,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 {editingUser.isExpert && (
                   <>
                     <Text style={styles.label}>
-                      Expert earning rate (₹ per minute)
+                      Host earning rate (₹ per minute)
                     </Text>
                     <TextInput
                       value={editingUser.expertCallRatePerMinute}
@@ -1562,7 +1562,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                       keyboardType="decimal-pad"
                     />
                     <Text style={styles.switchHelp}>
-                      Private payout rate. Only the expert and administrators
+                      Private payout rate. Only the host and administrators
                       can see it.
                     </Text>
                   </>
@@ -1615,7 +1615,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               style={styles.iconButton}
               onPress={() => setSelectedExpert(null)}
               accessibilityRole="button"
-              accessibilityLabel="Close expert history"
+              accessibilityLabel="Close host history"
             >
               <MaterialCommunityIcons
                 name="arrow-left"
@@ -1624,14 +1624,14 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               />
             </TouchableOpacity>
             <View style={styles.modalTitleCopy}>
-              <Text style={styles.editorTitle}>Expert history</Text>
+              <Text style={styles.editorTitle}>Host history</Text>
             </View>
             <TouchableOpacity
               disabled={loadingExpertHistory}
               style={styles.iconButton}
               onPress={() => setExpertHistoryRefreshKey(key => key + 1)}
               accessibilityRole="button"
-              accessibilityLabel="Refresh expert history"
+              accessibilityLabel="Refresh host history"
             >
               {loadingExpertHistory ? (
                 <ActivityIndicator size="small" color={Colors.secondary} />
@@ -1693,7 +1693,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 />
               ) : dailyExpertSummaries.length === 0 ? (
                 <Text style={styles.noApplications}>
-                  No daily activity is available for this expert.
+                  No daily activity is available for this host.
                 </Text>
               ) : (
                 dailyExpertSummaries.map(day => (
@@ -1749,14 +1749,14 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 <Text style={styles.error}>{expertHistoryError}</Text>
               ) : expertCallHistory.length === 0 ? (
                 <Text style={styles.noApplications}>
-                  No call history is available for this expert.
+                  No call history is available for this host.
                 </Text>
               ) : (
                 expertCallHistory.map(call => (
                   <View key={call.id} style={styles.expertCallCard}>
                     <View style={styles.expertCallCopy}>
                       <Text style={styles.expertCallName} numberOfLines={1}>
-                        {call.maleInfo?.name || 'Learner'}
+                        {call.maleInfo?.name || 'Caller'}
                       </Text>
                       <Text style={styles.expertCallMeta}>
                         {call.startedAt

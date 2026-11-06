@@ -1,13 +1,14 @@
 import React, { memo, useCallback } from 'react';
 import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Colors from '../../constants/colors';
 
 const COLORS = {
-  teal: '#08AA91',
-  tealDark: '#078A7D',
-  body: '#71788E',
-  white: '#FFFFFF',
-  border: '#E1ECEA',
+  teal: Colors.primary,
+  tealDark: Colors.primaryPressed,
+  body: Colors.textSecondary,
+  white: Colors.textOnPrimary,
+  border: Colors.border,
 };
 
 interface Props {
@@ -29,7 +30,9 @@ const CategoryList = ({ categories, selected, onSelect }: Props) => {
         >
           <LinearGradient
             colors={
-              active ? [COLORS.teal, COLORS.tealDark] : ['#FFFFFF', '#FFFFFF']
+              active
+                ? [COLORS.teal, COLORS.tealDark]
+                : [Colors.surface, Colors.surface]
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
