@@ -94,8 +94,13 @@ type DailyExpertSummary = {
   callDuration: number;
 };
 
-const PAGE_SIZE = 25;
 const DEFAULT_EXPERT_CALL_RATE_PER_MINUTE = 1;
+const USER_PAGE_SIZE = 50;
+const ADMIN_QUEUE_LIMIT = 100;
+const ACTIVITY_OVERVIEW_LIMIT = 50;
+const HISTORY_PAGE_SIZE = 50;
+type UserCursor = { createdAt: number; uid: string };
+type HistoryCursor = { startedAt: number; id: string };
 const USER_STATUSES = ['online', 'offline', 'busy'] as const;
 const formatDuration = (duration: number) => {
   const totalSeconds = Math.max(0, Math.floor(duration / 1000));
@@ -219,6 +224,28 @@ const readableError = (error: any, fallback: string) =>
   typeof error?.message === 'string' && error.message.trim()
     ? error.message
     : fallback;
+const getCreatedAt = (user: UserRecord) => {
+  const timestamp = Number(user.createdAt || 0);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+const sortNewestUsersFirst = (records: UserRecord[]) =>
+  [...records].sort((a, b) => getCreatedAt(b) - getCreatedAt(a));
+const formatCreatedAt = (value: unknown) => {
+  const timestamp = Number(value || 0);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return 'Date unavailable';
+  return new Date(timestamp).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+const formatEarning = (value: unknown) =>
+  Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 const getUser = (snapshot: any): UserRecord | null => {
   const value = snapshot.val();
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -255,10 +282,12 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [searchResults, setSearchResults] = useState<UserRecord[]>([]);
   const [query, setQuery] = useState('');
-  const [lastUid, setLastUid] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [userCursor, setUserCursor] = useState<UserCursor | null>(null);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const [loading, setLoading] = useState(allowed);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [expertHistoryRefreshKey, setExpertHistoryRefreshKey] = useState(0);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reviewingUid, setReviewingUid] = useState('');
@@ -271,6 +300,11 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     ExpertCallHistory[]
   >([]);
   const [loadingExpertHistory, setLoadingExpertHistory] = useState(false);
+  const [loadingMoreExpertHistory, setLoadingMoreExpertHistory] =
+    useState(false);
+  const [expertHistoryCursor, setExpertHistoryCursor] =
+    useState<HistoryCursor | null>(null);
+  const [hasMoreExpertHistory, setHasMoreExpertHistory] = useState(false);
   const [expertHistoryError, setExpertHistoryError] = useState('');
   const [processingWithdrawal, setProcessingWithdrawal] = useState('');
   const [error, setError] = useState('');
@@ -278,6 +312,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const [editingUser, setEditingUser] = useState<EditableUserFields | null>(
     null,
   );
+  const selectedExpertUid = selectedExpert?.expertUid || '';
   const isSearching = query.trim().length > 0;
   const displayedUsers = useMemo(
     () => (isSearching ? searchResults : users),
@@ -289,6 +324,27 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       const entries = groups.get(activity.expertUid) || [];
       entries.push(activity);
       groups.set(activity.expertUid, entries);
+    });
+
+    users.forEach(user => {
+      const expertUid = String(user.uid || '');
+      const isExpert =
+        user.isExpert === true || user.profile?.role === 'expert';
+      if (!expertUid || !isExpert || groups.has(expertUid)) return;
+      const fallbackActivity: ExpertActivity = {
+        id: `profile-${expertUid}`,
+        expertUid,
+        expertName: String(
+          user.profile?.name || user.profile?.tamilName || 'Expert',
+        ),
+        phone: String(user.phone || user.profile?.phone || ''),
+        status:
+          user.profile?.status === 'online' || user.profile?.status === 'active'
+            ? user.profile.status
+            : 'offline',
+        createdAt: Number(user.lastSeen || user.createdAt || 0),
+      };
+      groups.set(expertUid, [fallbackActivity]);
     });
 
     return [...groups.entries()]
@@ -318,7 +374,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           Number(b.latestActivity.createdAt) -
           Number(a.latestActivity.createdAt),
       );
-  }, [activities]);
+  }, [activities, users]);
   const dailyExpertSummaries = useMemo(
     () =>
       selectedExpert
@@ -329,41 +385,46 @@ export const AdminUsersScreen = ({ navigation }: any) => {
 
   const loadUsers = useCallback(
     async (append = false) => {
-      if (!allowed || (append && (!hasMore || loadingMore))) return;
+      if (!allowed || (append && (!hasMoreUsers || loadingMore))) return;
       try {
         append ? setLoadingMore(true) : setLoading(true);
         setError('');
-        let ref = database().ref('users').orderByKey();
-        if (append && lastUid) ref = ref.startAt(lastUid);
-        // A cursor query includes the cursor record, so request one extra item
-        // when appending and discard that duplicate below.
-        const snapshot = await ref
-          .limitToFirst(PAGE_SIZE + (append && lastUid ? 2 : 1))
+        let request = database().ref('users').orderByChild('createdAt');
+        if (append && userCursor) {
+          request = request.endAt(userCursor.createdAt, userCursor.uid);
+        }
+        const snapshot = await request
+          .limitToLast(USER_PAGE_SIZE + 1)
           .once('value');
-        let loaded: UserRecord[] = [];
+        const loaded: UserRecord[] = [];
         snapshot.forEach((child: any) => {
           const user = getUser(child);
           if (user) loaded.push(user);
           return false;
         });
-        if (append && lastUid)
-          loaded = loaded.filter(user => String(user.uid) !== lastUid);
-        const moreAvailable = loaded.length > PAGE_SIZE;
-        const pageUsers = loaded.slice(0, PAGE_SIZE);
+        const withoutCursor =
+          append && userCursor
+            ? loaded.filter(user => String(user.uid) !== userCursor.uid)
+            : loaded;
+        const page = sortNewestUsersFirst(withoutCursor).slice(
+          0,
+          USER_PAGE_SIZE,
+        );
         setUsers(previous => {
-          if (!append) return pageUsers;
+          if (!append) return page;
           const known = new Set(previous.map(user => String(user.uid)));
           return [
             ...previous,
-            ...pageUsers.filter(user => !known.has(String(user.uid))),
+            ...page.filter(user => !known.has(String(user.uid))),
           ];
         });
-        setLastUid(
-          pageUsers.length
-            ? String(pageUsers[pageUsers.length - 1].uid || '')
+        const oldest = page[page.length - 1];
+        setUserCursor(
+          oldest
+            ? { createdAt: getCreatedAt(oldest), uid: String(oldest.uid) }
             : null,
         );
-        setHasMore(moreAvailable);
+        setHasMoreUsers(loaded.length === USER_PAGE_SIZE + 1);
       } catch (loadError: any) {
         setError(
           readableError(loadError, 'Unable to load users. Please try again.'),
@@ -373,18 +434,34 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         setLoadingMore(false);
       }
     },
-    [allowed, hasMore, lastUid, loadingMore],
+    [allowed, hasMoreUsers, loadingMore, userCursor],
   );
+
+  const refreshAdminData = async () => {
+    if (refreshing) return;
+    try {
+      setRefreshing(true);
+      setUserCursor(null);
+      setHasMoreUsers(true);
+      await loadUsers(false);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (allowed) loadUsers(false);
-    // Pagination state must not restart the initial fetch.
+    // Pagination cursor changes must not restart the first page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed]);
 
   useEffect(() => {
     if (!allowed) return;
-    const withdrawalRef = database().ref('withdrawalRequests');
+    const withdrawalRef = database()
+      .ref('withdrawalRequests')
+      .orderByChild('status')
+      .equalTo('pending')
+      .limitToFirst(ADMIN_QUEUE_LIMIT);
     const withdrawalListener = withdrawalRef.on('value', snapshot => {
       const requests: WithdrawalRequest[] = [];
       snapshot.forEach((child: any) => {
@@ -400,21 +477,21 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       setWithdrawals(requests);
     });
 
-    const activityRef = database().ref('expertActivity');
+    const activityRef = database()
+      .ref('expertActivityLatest')
+      .orderByChild('createdAt')
+      .limitToLast(ACTIVITY_OVERVIEW_LIMIT);
     const activityListener = activityRef.on('value', snapshot => {
       const entries: ExpertActivity[] = [];
       snapshot.forEach((expertSnapshot: any) => {
-        expertSnapshot.forEach((entrySnapshot: any) => {
-          const value = entrySnapshot.val();
-          if (value?.status && value?.createdAt) {
-            entries.push({
-              ...value,
-              id: entrySnapshot.key || value.id,
-              expertUid: value.expertUid || expertSnapshot.key,
-            });
-          }
-          return false;
-        });
+        const value = expertSnapshot.val();
+        if (value?.status && value?.createdAt) {
+          entries.push({
+            ...value,
+            id: value.id || expertSnapshot.key,
+            expertUid: value.expertUid || expertSnapshot.key,
+          });
+        }
         return false;
       });
       entries.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
@@ -428,9 +505,11 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   }, [allowed]);
 
   useEffect(() => {
-    if (!selectedExpert) {
+    if (!selectedExpertUid) {
       setExpertCallHistory([]);
       setExpertHistoryError('');
+      setExpertHistoryCursor(null);
+      setHasMoreExpertHistory(false);
       return;
     }
 
@@ -439,11 +518,32 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       setLoadingExpertHistory(true);
       setExpertHistoryError('');
       try {
-        const snapshot = await database()
-          .ref(`callHistory/${selectedExpert.expertUid}`)
-          .once('value');
+        const [activitySnapshot, historySnapshot] = await Promise.all([
+          database()
+            .ref(`expertActivity/${selectedExpertUid}`)
+            .orderByChild('createdAt')
+            .limitToLast(ADMIN_QUEUE_LIMIT)
+            .once('value'),
+          database()
+          .ref(`callHistory/${selectedExpertUid}`)
+            .orderByChild('startedAt')
+            .limitToLast(HISTORY_PAGE_SIZE + 1)
+            .once('value'),
+        ]);
+        const recentActivities: ExpertActivity[] = [];
+        activitySnapshot.forEach((child: any) => {
+          const value = child.val();
+          if (value?.createdAt) {
+            recentActivities.push({
+              ...value,
+              id: child.key || value.id,
+              expertUid: value.expertUid || selectedExpertUid,
+            });
+          }
+          return false;
+        });
         const history: ExpertCallHistory[] = [];
-        snapshot.forEach((child: any) => {
+        historySnapshot.forEach((child: any) => {
           const value = child.val();
           if (value && !value.archivedAt) {
             history.push({
@@ -456,7 +556,28 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         history.sort(
           (a, b) => Number(b.startedAt || 0) - Number(a.startedAt || 0),
         );
-        if (active) setExpertCallHistory(history);
+        const page = history.slice(0, HISTORY_PAGE_SIZE);
+        const oldestCall = page[page.length - 1];
+        if (active) {
+          setExpertCallHistory(page);
+          setHasMoreExpertHistory(history.length > HISTORY_PAGE_SIZE);
+          setExpertHistoryCursor(
+            oldestCall
+              ? {
+                  startedAt: Number(oldestCall.startedAt || 0),
+                  id: oldestCall.id,
+                }
+              : null,
+          );
+          setSelectedExpert(current =>
+            current
+              ? {
+                  ...current,
+                  activities: recentActivities,
+                }
+              : current,
+          );
+        }
       } catch (loadError: any) {
         if (active) {
           setExpertHistoryError(
@@ -475,7 +596,61 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     return () => {
       active = false;
     };
-  }, [selectedExpert]);
+  }, [expertHistoryRefreshKey, selectedExpertUid]);
+
+  const loadMoreExpertCalls = async () => {
+    if (
+      !selectedExpertUid ||
+      !expertHistoryCursor ||
+      !hasMoreExpertHistory ||
+      loadingMoreExpertHistory
+    ) {
+      return;
+    }
+    try {
+      setLoadingMoreExpertHistory(true);
+      setExpertHistoryError('');
+      const snapshot = await database()
+        .ref(`callHistory/${selectedExpertUid}`)
+        .orderByChild('startedAt')
+        .endAt(expertHistoryCursor.startedAt, expertHistoryCursor.id)
+        .limitToLast(HISTORY_PAGE_SIZE + 1)
+        .once('value');
+      const loaded: ExpertCallHistory[] = [];
+      snapshot.forEach((child: any) => {
+        const value = child.val();
+        const id = child.key || value?.callId;
+        if (value && !value.archivedAt && id !== expertHistoryCursor.id) {
+          loaded.push({ ...value, id });
+        }
+        return false;
+      });
+      loaded.sort(
+        (a, b) => Number(b.startedAt || 0) - Number(a.startedAt || 0),
+      );
+      const page = loaded.slice(0, HISTORY_PAGE_SIZE);
+      setExpertCallHistory(previous => {
+        const known = new Set(previous.map(call => call.id));
+        return [...previous, ...page.filter(call => !known.has(call.id))];
+      });
+      const oldestCall = page[page.length - 1];
+      setExpertHistoryCursor(
+        oldestCall
+          ? {
+              startedAt: Number(oldestCall.startedAt || 0),
+              id: oldestCall.id,
+            }
+          : null,
+      );
+      setHasMoreExpertHistory(snapshot.numChildren() === HISTORY_PAGE_SIZE + 1);
+    } catch (loadError: any) {
+      setExpertHistoryError(
+        readableError(loadError, 'Unable to load older call history.'),
+      );
+    } finally {
+      setLoadingMoreExpertHistory(false);
+    }
+  };
 
   const processWithdrawal = async (
     request: WithdrawalRequest,
@@ -504,7 +679,11 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   useEffect(() => {
     if (!allowed) return;
     let active = true;
-    const ref = database().ref('expertApplications');
+    const ref = database()
+      .ref('expertApplications')
+      .orderByChild('status')
+      .equalTo('pending')
+      .limitToFirst(ADMIN_QUEUE_LIMIT);
     const listener = ref.on('value', async snapshot => {
       const pending: ExpertApplication[] = [];
       snapshot.forEach((child: any) => {
@@ -560,14 +739,23 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       try {
         setSearching(true);
         setError('');
-        const snapshot = await database().ref('users').once('value');
-        const found: UserRecord[] = [];
-        snapshot.forEach((child: any) => {
-          const user = getUser(child);
-          if (user && matches(user, needle)) found.push(user);
-          return false;
-        });
-        if (!cancelled) setSearchResults(found);
+        const found = users.filter(user => matches(user, needle));
+        const validFirebaseKey = !['.', '#', '$', '[', ']', '/'].some(
+          character => needle.includes(character),
+        );
+        if (validFirebaseKey) {
+          const exactSnapshot = await database()
+            .ref(`users/${needle}`)
+            .once('value');
+          const exact = getUser(exactSnapshot);
+          if (
+            exact &&
+            !found.some(user => String(user.uid) === String(exact.uid))
+          ) {
+            found.push(exact);
+          }
+        }
+        if (!cancelled) setSearchResults(sortNewestUsersFirst(found));
       } catch (searchError: any) {
         if (!cancelled) {
           setSearchResults([]);
@@ -581,7 +769,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [allowed, query]);
+  }, [allowed, query, users]);
 
   const selectUser = async (item: UserRecord) => {
     const uid = String(item.uid || '');
@@ -1071,6 +1259,8 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       item.isExpert === true ||
       item.profile?.role === 'expert' ||
       Boolean(item.expertApplication);
+    const availableEarnings = formatEarning(item.expertEarnings?.available);
+    const totalEarnings = formatEarning(item.expertEarnings?.total);
     return (
       <TouchableOpacity style={styles.userRow} onPress={() => selectUser(item)}>
         <View style={styles.userAvatar}>
@@ -1085,9 +1275,17 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           <Text style={styles.userMeta} numberOfLines={1}>
             {String(item.phone || uid)}
           </Text>
+          <Text style={styles.userCreated} numberOfLines={1}>
+            Joined {formatCreatedAt(item.createdAt)}
+          </Text>
           {isExpertAccount && preferredLanguage ? (
             <Text style={styles.userLanguage} numberOfLines={1}>
               Expert language: {preferredLanguage}
+            </Text>
+          ) : null}
+          {isExpertAccount ? (
+            <Text style={styles.userEarnings} numberOfLines={1}>
+              Earnings: ₹{availableEarnings} available · ₹{totalEarnings} total
             </Text>
           ) : null}
         </View>
@@ -1114,7 +1312,23 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           />
         </TouchableOpacity>
         <Text style={styles.title}>Manage Users</Text>
-        <View style={styles.iconButton} />
+        <TouchableOpacity
+          disabled={refreshing}
+          onPress={refreshAdminData}
+          style={styles.iconButton}
+          accessibilityRole="button"
+          accessibilityLabel="Refresh admin data"
+        >
+          {refreshing ? (
+            <ActivityIndicator size="small" color={Colors.secondary} />
+          ) : (
+            <MaterialCommunityIcons
+              name="refresh"
+              size={25}
+              color={Colors.secondary}
+            />
+          )}
+        </TouchableOpacity>
       </View>
       <FlatList
         data={displayedUsers}
@@ -1169,7 +1383,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               color={Colors.secondary}
               style={styles.footerLoader}
             />
-          ) : !isSearching && users.length > 0 && !hasMore ? (
+          ) : !isSearching && users.length > 0 && !hasMoreUsers ? (
             <Text style={styles.endText}>All users loaded</Text>
           ) : null
         }
@@ -1412,7 +1626,23 @@ export const AdminUsersScreen = ({ navigation }: any) => {
             <View style={styles.modalTitleCopy}>
               <Text style={styles.editorTitle}>Expert history</Text>
             </View>
-            <View style={styles.iconButton} />
+            <TouchableOpacity
+              disabled={loadingExpertHistory}
+              style={styles.iconButton}
+              onPress={() => setExpertHistoryRefreshKey(key => key + 1)}
+              accessibilityRole="button"
+              accessibilityLabel="Refresh expert history"
+            >
+              {loadingExpertHistory ? (
+                <ActivityIndicator size="small" color={Colors.secondary} />
+              ) : (
+                <MaterialCommunityIcons
+                  name="refresh"
+                  size={24}
+                  color={Colors.secondary}
+                />
+              )}
+            </TouchableOpacity>
           </View>
           {selectedExpert ? (
             <ScrollView
@@ -1551,6 +1781,19 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   </View>
                 ))
               )}
+              {hasMoreExpertHistory ? (
+                <TouchableOpacity
+                  disabled={loadingMoreExpertHistory}
+                  style={styles.loadMoreButton}
+                  onPress={loadMoreExpertCalls}
+                >
+                  {loadingMoreExpertHistory ? (
+                    <ActivityIndicator color={Colors.secondary} />
+                  ) : (
+                    <Text style={styles.loadMoreText}>Load older calls</Text>
+                  )}
+                </TouchableOpacity>
+              ) : null}
             </ScrollView>
           ) : null}
         </SafeAreaView>
@@ -1718,6 +1961,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   expertHistoryLoader: { marginVertical: 28 },
+  loadMoreButton: {
+    minHeight: 44,
+    marginTop: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreText: { color: Colors.secondary, fontSize: 13, fontWeight: '800' },
   dailyActivityCard: {
     marginBottom: 10,
     padding: 14,
@@ -1838,7 +2091,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   userRow: {
-    minHeight: 72,
+    minHeight: 88,
     paddingHorizontal: 15,
     paddingVertical: 10,
     flexDirection: 'row',
@@ -1865,11 +2118,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   userMeta: { color: Colors.subText, fontSize: 12 },
+  userCreated: {
+    marginTop: 3,
+    color: Colors.subText,
+    fontSize: 11,
+  },
   userLanguage: {
     marginTop: 3,
     color: Colors.secondary,
     fontSize: 12,
     fontWeight: '700',
+  },
+  userEarnings: {
+    marginTop: 3,
+    color: Colors.coinHighlight,
+    fontSize: 12,
+    fontWeight: '800',
   },
   empty: {
     color: Colors.subText,

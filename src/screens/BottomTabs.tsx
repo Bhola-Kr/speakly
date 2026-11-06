@@ -122,8 +122,8 @@ const BottomTabs = () => {
         tabBarInactiveTintColor: TAB_COLORS.gray,
 
         tabBarLabelStyle: {
-          fontSize: 12,
-          lineHeight: 15,
+          fontSize: 13,
+          lineHeight: 16,
           fontWeight: '800',
           marginTop: 3,
         },

@@ -1,7 +1,6 @@
 import { CALL_RATE_PER_MINUTE } from './constants';
 
-export const categories = [
-  'All',
+export const expertTopics = [
   'Everyday Conversations',
   'Workplace Conversations',
   'Interview Conversations',
@@ -9,6 +8,8 @@ export const categories = [
   'Confidence Building',
   'Open-Topic Practice',
 ];
+
+export const categories = ['All', ...expertTopics];
 
 export const experts = [
   {

@@ -62,16 +62,16 @@ export default memo(CategoryList);
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 14,
-    paddingBottom: 13,
+    paddingBottom: 8,
   },
   chipTouch: {
     marginRight: 9,
   },
   chip: {
-    height: 44,
-    minWidth: 78,
-    paddingHorizontal: 18,
-    borderRadius: 22,
+    height: 36,
+    minWidth: 68,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -83,6 +83,8 @@ const styles = StyleSheet.create({
   label: {
     color: COLORS.body,
     fontSize: 14,
+    lineHeight: 19,
+    paddingTop: 1,
     fontWeight: '700',
   },
   labelActive: {

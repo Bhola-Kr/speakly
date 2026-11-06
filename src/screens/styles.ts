@@ -1,4 +1,5 @@
 import Colors from '../constants/colors';
+import UI from '../constants/ui';
 // styles.ts
 
 import { Dimensions, StyleSheet } from 'react-native';
@@ -13,8 +14,8 @@ const CARD = Colors.screenSurface;
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
-    paddingHorizontal: 24,
+    backgroundColor: Colors.background,
+    paddingHorizontal: UI.spacing.xl,
   },
 
   backButton: {
@@ -32,25 +33,26 @@ export default StyleSheet.create({
 
   heading: {
     marginTop: 15,
-    fontSize: 31,
-    fontWeight: '800',
+    fontSize: UI.typography.display,
+    lineHeight: 38,
+    fontWeight: '900',
     color: TEXT,
     letterSpacing: -0.8,
   },
 
   subHeading: {
     marginTop: 10,
-    fontSize: 16,
+    fontSize: UI.typography.body,
     color: SUBTEXT,
     lineHeight: 24,
   },
 
   quoteCard: {
-    marginTop: 40,
+    marginTop: 28,
     backgroundColor: CARD,
-    borderRadius: 22,
-    paddingHorizontal: 22,
-    paddingVertical: 28,
+    borderRadius: UI.radius.card,
+    paddingHorizontal: 20,
+    paddingVertical: 22,
 
     borderWidth: 1,
     borderColor: Colors.screenBorder,
@@ -67,9 +69,9 @@ export default StyleSheet.create({
 
   quote: {
     textAlign: 'center',
-    fontSize: 20,
+    fontSize: UI.typography.sectionHeading,
     color: TEXT,
-    lineHeight: 34,
+    lineHeight: 30,
     fontWeight: '700',
   },
 
@@ -127,7 +129,7 @@ export default StyleSheet.create({
     marginTop: 22,
     textAlign: 'center',
     color: SUBTEXT,
-    fontSize: 17,
+    fontSize: UI.typography.body,
     fontWeight: '500',
   },
 
@@ -159,15 +161,15 @@ export default StyleSheet.create({
 
   failedTitle: {
     marginTop: 28,
-    fontSize: 30,
-    fontWeight: '800',
+    fontSize: UI.typography.screenTitle,
+    fontWeight: '900',
     color: Colors.text,
   },
 
   failedSubtitle: {
     marginTop: 15,
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: UI.typography.body,
     color: Colors.gray102,
     lineHeight: 28,
     paddingHorizontal: 25,
@@ -213,8 +215,8 @@ export default StyleSheet.create({
 
   successTitle: {
     marginTop: 28,
-    fontSize: 30,
-    fontWeight: '800',
+    fontSize: UI.typography.screenTitle,
+    fontWeight: '900',
     color: TEXT,
   },
 
@@ -222,7 +224,7 @@ export default StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
     color: SUBTEXT,
-    fontSize: 17,
+    fontSize: UI.typography.body,
     lineHeight: 26,
     paddingHorizontal: 35,
   },
@@ -253,8 +255,8 @@ export default StyleSheet.create({
 
   continueText: {
     color: Colors.white,
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: UI.typography.body,
+    fontWeight: '800',
   },
 
   //---------------------------------
@@ -295,14 +297,14 @@ export default StyleSheet.create({
 
   verifyTitle: {
     marginTop: 30,
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: UI.typography.screenTitle,
+    fontWeight: '900',
     color: TEXT,
   },
 
   verifySubTitle: {
     marginTop: 10,
-    fontSize: 16,
+    fontSize: UI.typography.body,
     textAlign: 'center',
     color: SUBTEXT,
     lineHeight: 25,

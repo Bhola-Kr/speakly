@@ -30,6 +30,8 @@ const PROMPTS: Record<string, string> = {
     'Hello, I am joining Speakly as a language expert. I will help learners speak clearly and confidently.',
   Hindi:
     'नमस्ते, मैं स्पीकली पर भाषा विशेषज्ञ के रूप में जुड़ रहा हूँ। मैं सीखने वालों को आत्मविश्वास से बोलने में मदद करूँगा।',
+  Sanskrit:
+    'नमस्ते, अहं स्पीकली-मञ्चे भाषाविशेषज्ञरूपेण सम्मिलितो भवामि। शिक्षार्थिनः आत्मविश्वासेन वक्तुं साहाय्यं करिष्यामि।',
   Tamil:
     'வணக்கம், நான் ஸ்பீக்லியில் மொழி நிபுணராக இணைகிறேன். பயனர்கள் நம்பிக்கையுடன் பேச நான் உதவுவேன்.',
   Telugu:
@@ -520,7 +522,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 36,
+    paddingBottom: 24,
     alignItems: 'center',
   },
   brandRow: {
@@ -545,7 +547,7 @@ const styles = StyleSheet.create({
   reviewIllustration: {
     width: 150,
     height: 150,
-    marginTop: 34,
+    marginTop: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -661,7 +663,7 @@ const styles = StyleSheet.create({
   },
   submittedText: { marginTop: 6, color: Colors.placeholder, fontSize: 11 },
   secondaryButton: {
-    marginTop: 30,
+    marginTop: 24,
     minHeight: 50,
     borderRadius: 14,
     borderWidth: 1,

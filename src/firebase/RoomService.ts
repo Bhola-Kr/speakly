@@ -96,7 +96,7 @@ class RoomService {
   ) {
     const user = await this.getUser(expertUid).catch(() => null);
     const entryRef = database().ref(`expertActivity/${expertUid}`).push();
-    await entryRef.set({
+    const activity = {
       id: entryRef.key,
       expertUid,
       expertName: String(
@@ -106,6 +106,10 @@ class RoomService {
       status,
       callId: callId || '',
       createdAt: Date.now(),
+    };
+    await database().ref().update({
+      [`expertActivity/${expertUid}/${entryRef.key}`]: activity,
+      [`expertActivityLatest/${expertUid}`]: activity,
     });
   }
 

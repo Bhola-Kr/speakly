@@ -33,41 +33,19 @@ const Banner = ({ randomCall, calling }: Props) => {
         end={{ x: 1, y: 1 }}
         style={styles.banner}
       >
-        <View style={styles.decorLine} />
-
-        <View pointerEvents="none" style={styles.artContainer}>
-          <View style={styles.artGlowOuter} />
-          <View style={styles.artGlowInner} />
-          <View style={styles.artSurface}>
-            <MaterialCommunityIcons
-              name="account-voice"
-              size={72}
-              color={COLORS.tealDark}
-            />
-          </View>
+        <View pointerEvents="none" style={styles.iconBubble}>
           <MaterialCommunityIcons
-            name="star-four-points"
-            size={18}
-            color="#52D8C4"
-            style={styles.sparkleTop}
-          />
-          <MaterialCommunityIcons
-            name="star-four-points"
-            size={15}
-            color="#16BBA4"
-            style={styles.sparkleBottom}
+            name="account-voice"
+            size={35}
+            color={COLORS.tealDark}
           />
         </View>
 
         <View style={styles.copy}>
-          <Text style={styles.title}>
-            Practice with{`\n`}
-            <Text style={styles.titleAccent}>Language Experts</Text>
-          </Text>
+          <Text style={styles.title}>Speak. Practice. Improve.</Text>
 
           <Text style={styles.description}>
-            Pick a conversation topic and build fluency through a focused
-            one-to-one voice session.
+            Start a live voice session now.
           </Text>
 
           <TouchableOpacity
@@ -90,7 +68,7 @@ const Banner = ({ randomCall, calling }: Props) => {
                   color={COLORS.white}
                 />
 
-                <Text style={styles.buttonText}>Find an expert</Text>
+                <Text style={styles.buttonText}>Start now</Text>
               </>
             )}
           </TouchableOpacity>
@@ -105,8 +83,8 @@ export default memo(Banner);
 const styles = StyleSheet.create({
   bannerShadow: {
     marginHorizontal: 14,
-    marginTop: 8,
-    borderRadius: 25,
+    marginTop: 6,
+    borderRadius: 18,
     backgroundColor: COLORS.white,
     shadowColor: COLORS.tealDark,
     shadowOffset: { width: 0, height: 10 },
@@ -115,48 +93,47 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   banner: {
-    minHeight: 228,
-    borderRadius: 25,
-    paddingHorizontal: 18,
-    paddingTop: 31,
-    paddingBottom: 19,
+    minHeight: 104,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E0F3EF',
   },
   copy: {
-    width: '100%',
+    flex: 1,
+    marginLeft: 12,
     zIndex: 2,
   },
   title: {
-    maxWidth: '72%',
     color: COLORS.navy,
-    fontSize: 27,
-    lineHeight: 30,
+    fontSize: 20,
+    lineHeight: 27,
+    paddingTop: 2,
     fontWeight: '900',
     letterSpacing: -0.8,
   },
-  titleAccent: {
-    color: COLORS.tealDark,
-  },
   description: {
-    maxWidth: '74%',
     color: COLORS.body,
     fontSize: 14,
     lineHeight: 20,
-    marginTop: 9,
+    paddingTop: 1,
+    marginTop: 2,
   },
   button: {
-    marginTop: 14,
+    marginTop: 7,
     backgroundColor: COLORS.tealDark,
-    height: 46,
-    borderRadius: 16,
+    height: 34,
+    borderRadius: 12,
     alignSelf: 'flex-start',
-    paddingHorizontal: 20,
+    paddingHorizontal: 13,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 157,
+    minWidth: 112,
     shadowColor: COLORS.tealDark,
     shadowOffset: { width: 0, height: 7 },
     shadowOpacity: 0.22,
@@ -169,59 +146,19 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.white,
     fontWeight: '800',
-    fontSize: 15,
-    marginLeft: 10,
+    fontSize: 14,
+    lineHeight: 19,
+    paddingTop: 1,
+    marginLeft: 6,
   },
-  decorLine: {
-    position: 'absolute',
-    top: 22,
-    left: 18,
-    width: 22,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: COLORS.tealDark,
-  },
-  artContainer: {
-    position: 'absolute',
-    right: 10,
-    top: 25,
-    width: 142,
-    height: 154,
+  iconBubble: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  artGlowOuter: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(190,246,235,0.30)',
-  },
-  artGlowInner: {
-    position: 'absolute',
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-    backgroundColor: 'rgba(171,242,228,0.52)',
-  },
-  artSurface: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: COLORS.mintSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.95)',
-  },
-  sparkleTop: {
-    position: 'absolute',
-    left: 4,
-    top: 17,
-  },
-  sparkleBottom: {
-    position: 'absolute',
-    left: 10,
-    bottom: 17,
+    borderColor: COLORS.mint,
   },
 });

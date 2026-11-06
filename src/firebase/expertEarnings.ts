@@ -1,7 +1,41 @@
 import auth from '@react-native-firebase/auth';
 import { scopedDatabase as database } from './firebase';
 
-export const MIN_EXPERT_WITHDRAWAL_AMOUNT = 49;
+export const DEFAULT_MIN_EXPERT_WITHDRAWAL_AMOUNT = 99;
+
+const parseMinimumWithdrawalAmount = (value: unknown) => {
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount > 0
+    ? amount
+    : DEFAULT_MIN_EXPERT_WITHDRAWAL_AMOUNT;
+};
+
+export const getMinimumWithdrawalAmount = async () => {
+  try {
+    const snapshot = await database()
+      .ref('configs/minimumWithdrawalAmount')
+      .once('value');
+    return parseMinimumWithdrawalAmount(snapshot.val());
+  } catch (error) {
+    console.warn('Unable to read minimum withdrawal amount:', error);
+    return DEFAULT_MIN_EXPERT_WITHDRAWAL_AMOUNT;
+  }
+};
+
+export const listenMinimumWithdrawalAmount = (
+  callback: (amount: number) => void,
+) => {
+  const ref = database().ref('configs/minimumWithdrawalAmount');
+  const listener = ref.on(
+    'value',
+    snapshot => callback(parseMinimumWithdrawalAmount(snapshot.val())),
+    error => {
+      console.warn('Unable to load minimum withdrawal amount:', error);
+      callback(DEFAULT_MIN_EXPERT_WITHDRAWAL_AMOUNT);
+    },
+  );
+  return () => ref.off('value', listener);
+};
 
 export type WithdrawalStatus = 'pending' | 'paid' | 'rejected';
 
@@ -28,6 +62,10 @@ export const requestExpertWithdrawal = async () => {
   const user = userSnapshot.val() || {};
   if (user.isExpert !== true) throw new Error('Expert access is required.');
 
+  // Read the latest value for every request so a config change is enforced
+  // immediately, even if the dashboard was opened before it changed.
+  const minimumWithdrawalAmount = await getMinimumWithdrawalAmount();
+
   const requestId = database().ref('withdrawalRequests').push().key;
   if (!requestId) throw new Error('Unable to create withdrawal request.');
   const now = Date.now();
@@ -41,7 +79,7 @@ export const requestExpertWithdrawal = async () => {
     const available = Number(earnings.available || 0);
     if (
       !Number.isFinite(available) ||
-      available < MIN_EXPERT_WITHDRAWAL_AMOUNT
+      available < minimumWithdrawalAmount
     ) {
       return;
     }
@@ -59,8 +97,8 @@ export const requestExpertWithdrawal = async () => {
       reservation.snapshot.val()?.pendingWithdrawal?.id
         ? 'A withdrawal request is already pending.'
         : available > 0 &&
-            available < MIN_EXPERT_WITHDRAWAL_AMOUNT
-          ? `Minimum withdrawal amount is ₹${MIN_EXPERT_WITHDRAWAL_AMOUNT}.`
+            available < minimumWithdrawalAmount
+          ? `Minimum withdrawal amount is ₹${minimumWithdrawalAmount}.`
           : 'No earnings are available for withdrawal.',
     );
   }

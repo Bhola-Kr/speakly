@@ -24,14 +24,14 @@ export default GradientInput;
 
 const styles = StyleSheet.create({
   border: {
-    marginTop: 28,
+    marginTop: 22,
     marginHorizontal: UI.spacing.lg,
     borderRadius: UI.radius.card,
     padding: 1.5,
   },
 
   container: {
-    minHeight: 58,
+    minHeight: UI.size.inputHeight,
     borderRadius: UI.radius.button,
     backgroundColor: Colors.inputBackground,
     justifyContent: 'center',

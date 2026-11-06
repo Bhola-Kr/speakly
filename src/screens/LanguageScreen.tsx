@@ -37,26 +37,31 @@ const LANGUAGES: Language[] = [
   },
   {
     id: 2,
+    name: 'Sanskrit',
+    symbol: 'सं',
+  },
+  {
+    id: 3,
     name: 'Telugu',
     symbol: 'అ',
   },
   {
-    id: 3,
+    id: 4,
     name: 'Bangla',
     symbol: 'অ',
   },
   {
-    id: 4,
+    id: 5,
     name: 'Tamil',
     symbol: 'அ',
   },
   {
-    id: 5,
+    id: 6,
     name: 'Kannada',
     symbol: 'ಅ',
   },
   {
-    id: 6,
+    id: 7,
     name: 'Malayalam',
     symbol: 'അ',
   },
@@ -119,15 +124,11 @@ const LanguageScreen: React.FC<Props> = ({ navigation, route }) => {
         keyExtractor={item => item.id.toString()}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: 15,
-        }}
+        contentContainerStyle={styles.listContent}
       />
 
       <GradientButton
-        style={{
-          marginBottom: 25,
-        }}
+        style={styles.continueButton}
         title={loading ? 'Please wait...' : 'Continue'}
         disabled={loading}
         onPress={async () => {
@@ -154,12 +155,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.white,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
 
   header: {
-    marginTop: 72,
-    marginBottom: 26,
+    marginTop: 24,
+    marginBottom: 18,
+  },
+  listContent: {
+    paddingBottom: 15,
+  },
+  continueButton: {
+    marginBottom: 25,
   },
 
   smallTitle: {
@@ -183,11 +190,11 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    height: 112,
+    height: 78,
 
-    borderRadius: 24,
+    borderRadius: 18,
 
-    marginBottom: 16,
+    marginBottom: 10,
 
     backgroundColor: Colors.blueLight,
 
@@ -200,7 +207,7 @@ const styles = StyleSheet.create({
 
     overflow: 'hidden',
 
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
 
   selectedCard: {
@@ -208,10 +215,10 @@ const styles = StyleSheet.create({
   },
 
   radio: {
-    width: 34,
-    height: 34,
+    width: 28,
+    height: 28,
 
-    borderRadius: 17,
+    borderRadius: 14,
 
     borderWidth: 3,
 
@@ -228,10 +235,10 @@ const styles = StyleSheet.create({
   },
 
   innerRadio: {
-    width: 22,
-    height: 22,
+    width: 18,
+    height: 18,
 
-    borderRadius: 11,
+    borderRadius: 9,
 
     backgroundColor: Colors.white,
 
@@ -246,9 +253,9 @@ const styles = StyleSheet.create({
   },
 
   language: {
-    marginLeft: 18,
+    marginLeft: 14,
 
-    fontSize: 25,
+    fontSize: 21,
 
     fontWeight: '700',
 
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
 
     bottom: -10,
 
-    fontSize: 90,
+    fontSize: 64,
 
     fontWeight: '700',
 

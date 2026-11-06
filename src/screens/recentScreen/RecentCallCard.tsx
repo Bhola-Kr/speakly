@@ -87,46 +87,21 @@ const RecentCallCard = ({ item, navigation }: Props) => {
         <Image source={avatar.image} style={styles.avatar} />
 
         <View style={styles.info}>
-          <Text style={styles.tamilName}>{displayName}</Text>
+          <Text numberOfLines={1} style={styles.tamilName}>
+            {displayName}
+          </Text>
 
-          <Text style={styles.englishName}>
+          <Text numberOfLines={1} style={styles.englishName}>
             {showEnglishName ? englishName : 'Voice Call'}
           </Text>
-        </View>
-      </View>
 
-      <View style={styles.divider} />
-
-      <View style={styles.metricsRow}>
-        <View style={styles.metric}>
-          <Text style={styles.label}>Date</Text>
-          <Text style={styles.value}>{formatDate(item.startedAt)}</Text>
-        </View>
-
-        <View style={styles.metric}>
-          <Text style={styles.label}>Duration</Text>
-          <Text style={styles.value}>{formatDuration(item.duration)}</Text>
-        </View>
-
-        {/* <View>
-          <Text style={styles.label}>Amount</Text>
-
-          <View style={styles.receiveContainer}>
-            <Image
-              source={require('../../assets/coin.png')}
-              style={styles.receiveCoin}
-            />
-
-            <Text style={styles.value}>{item.amount}</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaText}>{formatDate(item.startedAt)}</Text>
+            <View style={styles.metaDot} />
+            <Text style={styles.metaText}>{formatDuration(item.duration)}</Text>
           </View>
-        </View> */}
-      </View>
 
-      <View style={styles.cardFooter}>
-        <View
-          style={[styles.statusChip, { backgroundColor: `${statusColor}18` }]}
-        >
-          <Text style={[styles.statusText, { color: statusColor }]}>
+          <Text style={[styles.compactStatus, { color: statusColor }]}>
             {item.status}
           </Text>
         </View>
@@ -134,13 +109,11 @@ const RecentCallCard = ({ item, navigation }: Props) => {
         <TouchableOpacity
           disabled={calling}
           onPress={handleCall}
+          accessibilityRole="button"
+          accessibilityLabel={`Call ${displayName} again`}
           style={[styles.callButton, calling && styles.callButtonDisabled]}
         >
-          <MaterialCommunityIcons name="phone" size={18} color={Colors.white} />
-
-          <Text style={styles.callText}>
-            {calling ? 'Calling...' : 'Call Again'}
-          </Text>
+          <MaterialCommunityIcons name="phone" size={22} color={Colors.white} />
         </TouchableOpacity>
       </View>
     </SurfaceCard>

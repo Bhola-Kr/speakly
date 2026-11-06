@@ -68,7 +68,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
   const displayName = tamilName || englishName || 'N/A';
   const subtitle = [
     tamilName && tamilName !== englishName ? englishName : '',
-    'Conversation expert',
+    'Voice expert',
   ]
     .filter(Boolean)
     .join(' • ');
@@ -82,8 +82,15 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
   const callRate = normalizeCallRate(item?.profile?.price);
 
   return (
-    <SurfaceCard style={styles.card}>
-      <View style={styles.row}>
+    <TouchableOpacity
+      activeOpacity={0.88}
+      onPress={() => onCall(item)}
+      disabled={calling}
+      accessibilityRole="button"
+      accessibilityLabel={`Call ${displayName}`}
+    >
+      <SurfaceCard style={[styles.card, calling && styles.cardDisabled]}>
+        <View style={styles.row}>
         <View style={styles.avatarWrapper}>
           <Image source={avatar} style={styles.avatar} />
 
@@ -121,7 +128,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
                   color={HOME_COLORS.tealDark}
                 />
                 <Text style={styles.languageText}>
-                  Supports: {practiceLanguage}
+                  {practiceLanguage}
                 </Text>
               </View>
             )}
@@ -157,58 +164,44 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
             </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.divider} />
-
-      <View style={styles.footer}>
-        <LinearGradient
-          colors={['#FFFDF5', '#FFF0CE']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.coinCard}
-        >
-          <Image
-            source={require('../../assets/coin.png')}
-            style={styles.coin}
-          />
-
-          <View style={styles.priceCopy}>
+        <View style={styles.actions}>
+          <View style={styles.rateRow}>
+            <Image
+              source={require('../../assets/coin.png')}
+              style={styles.coin}
+            />
             <Text style={styles.price}>{callRate}</Text>
-
-            <Text style={styles.perMinute}>₹ / min</Text>
+            <Text style={styles.perMinute}>coins/min</Text>
           </View>
-        </LinearGradient>
 
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => onCall(item)}
-          disabled={calling}
-          style={styles.callButtonTouch}
-        >
-          <LinearGradient
-            colors={['#10B49B', '#078A7D']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.callButton, calling && styles.callButtonDisabled]}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onCall(item)}
+            disabled={calling}
+            style={styles.callButtonTouch}
           >
-            {calling ? (
-              <ActivityIndicator size="small" color={HOME_COLORS.white} />
-            ) : (
-              <>
+            <LinearGradient
+              colors={['#10B49B', '#078A7D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.callButton, calling && styles.callButtonDisabled]}
+            >
+              {calling ? (
+                <ActivityIndicator size="small" color={HOME_COLORS.white} />
+              ) : (
                 <MaterialCommunityIcons
                   name="phone"
-                  size={21}
+                  size={23}
                   color={HOME_COLORS.white}
                 />
-
-                <Text style={styles.callText}>Practice</Text>
-              </>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    </SurfaceCard>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+        </View>
+      </SurfaceCard>
+    </TouchableOpacity>
   );
 };
 
@@ -217,15 +210,19 @@ export default memo(UserCard);
 const styles = StyleSheet.create({
   card: {
     marginHorizontal: 14,
-    marginBottom: 14,
-    padding: 15,
-    borderRadius: 24,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 18,
     borderColor: HOME_COLORS.border,
     shadowColor: HOME_COLORS.tealDark,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 3,
+  },
+  cardDisabled: {
+    opacity: 0.72,
   },
   row: {
     flexDirection: 'row',
@@ -235,42 +232,45 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatar: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: HOME_COLORS.mint,
   },
   onlineDotOuter: {
     position: 'absolute',
     right: 0,
-    bottom: 3,
-    width: 19,
-    height: 19,
-    borderRadius: 10,
+    bottom: 1,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
     backgroundColor: HOME_COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
   onlineDot: {
-    width: 12,
-    height: 12,
+    width: 11,
+    height: 11,
     borderRadius: 6,
     backgroundColor: Colors.onlineStatus,
   },
   info: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: 10,
+    minWidth: 0,
   },
   name: {
-    fontSize: 23,
-    lineHeight: 27,
+    fontSize: 19,
+    lineHeight: 25,
+    paddingTop: 2,
     fontWeight: '900',
     color: HOME_COLORS.navy,
   },
   subTitle: {
-    marginTop: 2,
-    fontSize: 14,
+    marginTop: 1,
+    fontSize: 13,
     lineHeight: 18,
+    paddingTop: 1,
     color: HOME_COLORS.body,
   },
   location: {
@@ -282,15 +282,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   languageChip: {
     minWidth: 0,
     maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 12,
     backgroundColor: HOME_COLORS.mint,
   },
@@ -298,15 +298,15 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     marginLeft: 5,
     color: HOME_COLORS.tealDark,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   ratingChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.coinSurface,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 12,
   },
   ratingText: {
@@ -319,12 +319,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.onlineSurface,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   onlineChipSpaced: {
-    marginLeft: 7,
+    marginLeft: 5,
   },
   greenDot: {
     width: 7,
@@ -335,52 +335,38 @@ const styles = StyleSheet.create({
   onlineText: {
     marginLeft: 5,
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.onlineStatus,
   },
-  divider: {
-    height: 1,
-    backgroundColor: HOME_COLORS.border,
-    marginTop: 13,
-    marginBottom: 11,
-  },
-  priceCopy: {
-    marginLeft: 6,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  actions: {
+    marginLeft: 7,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  coinCard: {
+  rateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 53,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: Colors.coinBorder,
-    minWidth: 109,
+    marginBottom: 4,
   },
   coin: {
-    width: 27,
-    height: 27,
+    width: 20,
+    height: 20,
     resizeMode: 'contain',
   },
   price: {
-    fontSize: 23,
+    marginLeft: 0,
+    fontSize: 14,
     fontWeight: '900',
     color: HOME_COLORS.amber,
-    lineHeight: 24,
   },
   perMinute: {
-    marginTop: -1,
-    fontSize: 12,
+    marginLeft: 2,
+    fontSize: 10,
     fontWeight: '700',
     color: HOME_COLORS.amber,
   },
   callButtonTouch: {
-    borderRadius: 16,
+    borderRadius: 21,
     shadowColor: HOME_COLORS.tealDark,
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -388,19 +374,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   callButton: {
-    height: 49,
-    minWidth: 125,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   callButtonDisabled: { opacity: 0.65 },
-  callText: {
-    marginLeft: 9,
-    fontSize: 15,
-    fontWeight: '800',
-    color: HOME_COLORS.white,
-  },
 });

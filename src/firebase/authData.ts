@@ -17,6 +17,8 @@ export type UpdateProfileData = {
   practiceLanguage?: string;
   nativeLanguage?: string;
   supportedLanguages?: string[];
+  topics?: string[];
+  category?: string;
   birthYear?: number | string;
   avatarId?: number | string;
   avatarSelected?: boolean;

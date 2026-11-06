@@ -21,16 +21,10 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
     return unsubscribe;
   }, []);
 
-  const Header = () => (
+  const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            flex: 1,
-          }}
-        >
+        <View style={styles.headerMain}>
           {showBack && (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
@@ -44,15 +38,14 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
             </TouchableOpacity>
           )}
 
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Call History</Text>
+          <View style={styles.headerCopy}>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Call History</Text>
+              <Text style={styles.count}>{history.length}</Text>
+            </View>
 
             <Text style={styles.subtitle}>
-              View all your completed and missed voice calls.
-            </Text>
-
-            <Text style={styles.count}>
-              {history.length} {history.length === 1 ? 'Call' : 'Calls'}
+              Completed and missed calls
             </Text>
           </View>
         </View>
@@ -111,7 +104,7 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
         <View style={styles.backgroundWaveLeft} />
         <View style={styles.backgroundWaveRight} />
       </View>
-      <Header />
+      {renderHeader()}
 
       {history.length === 0 ? (
         <EmptyState onPress={() => navigation.navigate('Home')} />

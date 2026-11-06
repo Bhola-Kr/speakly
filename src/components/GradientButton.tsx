@@ -60,7 +60,7 @@ export default GradientButton;
 const styles = StyleSheet.create({
   touchable: {
     marginHorizontal: UI.spacing.lg,
-    marginTop: 28,
+    marginTop: 22,
   },
   button: {
     height: UI.size.primaryButtonHeight,
@@ -78,6 +78,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: UI.typography.body,
     fontWeight: '800',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
 });

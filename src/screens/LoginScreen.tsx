@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   },
   heroCopyRow: {
     height: 218,
-    marginTop: 37,
+    marginTop: 24,
     zIndex: 1,
   },
   heading: {
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginTop: 5,
     paddingHorizontal: 24,
-    paddingTop: 34,
+    paddingTop: 24,
     paddingBottom: 27,
     borderRadius: 22,
     backgroundColor: COLORS.card,

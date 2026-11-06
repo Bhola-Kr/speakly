@@ -47,19 +47,19 @@ export default StyleSheet.create({
 
   content: {
     paddingHorizontal: UI.spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: 110,
   },
 
   clearButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
 
   clearText: {
     marginTop: 2,
-    fontSize: 12,
+    fontSize: UI.typography.secondary,
     fontWeight: '600',
     color: Colors.danger,
   },
@@ -71,14 +71,22 @@ export default StyleSheet.create({
     marginBottom: 18,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
 
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  headerMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerCopy: {
+    flex: 1,
   },
 
   backButton: {
@@ -97,26 +105,25 @@ export default StyleSheet.create({
   },
 
   title: {
-    fontSize: 28,
-    lineHeight: 35,
+    fontSize: 24,
+    lineHeight: 29,
     fontWeight: '900',
     letterSpacing: -0.8,
     color: '#071A2D',
   },
 
   subtitle: {
-    marginTop: 4,
-    fontSize: 14,
+    marginTop: 1,
+    fontSize: UI.typography.secondary,
     color: '#747B91',
-    lineHeight: 22,
+    lineHeight: 18,
   },
 
   count: {
-    alignSelf: 'flex-start',
-    marginTop: 13,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 15,
+    marginLeft: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 11,
     overflow: 'hidden',
     backgroundColor: '#DFF9F4',
     fontSize: 13,
@@ -125,9 +132,10 @@ export default StyleSheet.create({
   },
 
   card: {
-    padding: 18,
-    marginBottom: 18,
-    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 9,
+    borderRadius: UI.radius.card,
   },
 
   row: {
@@ -144,21 +152,20 @@ export default StyleSheet.create({
   },
 
   avatar: {
-    width: 72,
-
-    height: 72,
-
-    borderRadius: 18,
+    width: 58,
+    height: 58,
+    borderRadius: 16,
   },
 
   info: {
     flex: 1,
 
-    marginLeft: 14,
+    marginLeft: 11,
+    minWidth: 0,
   },
 
   tamilName: {
-    fontSize: UI.typography.sectionHeading,
+    fontSize: 19,
 
     fontWeight: '700',
 
@@ -166,11 +173,11 @@ export default StyleSheet.create({
   },
 
   englishName: {
-    fontSize: UI.typography.secondary,
+    fontSize: 13,
 
     color: Colors.subText,
 
-    marginTop: 3,
+    marginTop: 1,
   },
 
   location: {
@@ -179,41 +186,37 @@ export default StyleSheet.create({
     color: Colors.subText,
   },
 
-  divider: {
-    height: 1,
-
-    backgroundColor: Colors.border,
-
-    marginVertical: 16,
-  },
-  metricsRow: {
+  titleRow: {
     flexDirection: 'row',
-  },
-  metric: {
-    flex: 1,
-  },
-  cardFooter: {
-    marginTop: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statusChip: {
-    minHeight: 34,
-    paddingHorizontal: 14,
-    borderRadius: 17,
+  metaRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 4,
   },
-  statusText: {
-    fontSize: 13,
+  metaText: {
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    marginHorizontal: 6,
+    backgroundColor: Colors.subText,
+  },
+  compactStatus: {
+    marginTop: 3,
+    fontSize: 12,
     fontWeight: '700',
   },
 
   label: {
     color: Colors.subText,
 
-    fontSize: 13,
+    fontSize: UI.typography.secondary,
   },
   receiveContainer: {
     flexDirection: 'row',
@@ -222,11 +225,11 @@ export default StyleSheet.create({
   },
 
   receiveCoin: {
-    marginTop: 5,
-    width: 18,
-    height: 18,
-    resizeMode: 'none',
-    marginRight: 4,
+    marginTop: 3,
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+    marginRight: 0,
   },
 
   value: {
@@ -240,29 +243,16 @@ export default StyleSheet.create({
   },
 
   callButton: {
+    width: 44,
     height: 44,
-
-    borderRadius: UI.radius.button,
-
+    borderRadius: 22,
     backgroundColor: Colors.secondary,
-
     justifyContent: 'center',
-
     alignItems: 'center',
-
-    flexDirection: 'row',
-
-    paddingHorizontal: 20,
+    marginLeft: 10,
   },
   callButtonDisabled: {
     opacity: 0.6,
   },
 
-  callText: {
-    color: Colors.white,
-
-    fontWeight: '700',
-
-    marginLeft: 8,
-  },
 });

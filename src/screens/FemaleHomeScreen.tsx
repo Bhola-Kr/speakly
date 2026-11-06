@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,7 +20,8 @@ import RoomService from '../firebase/RoomService';
 import { useActiveCall } from '../hooks/ActiveCallContext';
 import { useUser } from '../hooks/UserContext';
 import {
-  MIN_EXPERT_WITHDRAWAL_AMOUNT,
+  DEFAULT_MIN_EXPERT_WITHDRAWAL_AMOUNT,
+  listenMinimumWithdrawalAmount,
   requestExpertWithdrawal,
 } from '../firebase/expertEarnings';
 
@@ -108,6 +109,9 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [page, setPage] = useState(0);
   const [goingOnline, setGoingOnline] = useState(false);
   const [requestingWithdrawal, setRequestingWithdrawal] = useState(false);
+  const [minimumWithdrawalAmount, setMinimumWithdrawalAmount] = useState(
+    DEFAULT_MIN_EXPERT_WITHDRAWAL_AMOUNT,
+  );
   const bannerRef = useRef<FlatList>(null);
 
   const { user } = useUser();
@@ -122,6 +126,11 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const totalEarnings = Number(user?.expertEarnings?.total || 0);
   const availableEarnings = Number(user?.expertEarnings?.available || 0);
   const pendingWithdrawal = user?.expertEarnings?.pendingWithdrawal;
+
+  useEffect(
+    () => listenMinimumWithdrawalAmount(setMinimumWithdrawalAmount),
+    [],
+  );
 
   const requestWithdrawal = async () => {
     if (requestingWithdrawal) return;
@@ -328,13 +337,13 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             activeOpacity={0.85}
             disabled={
               requestingWithdrawal ||
-              availableEarnings < MIN_EXPERT_WITHDRAWAL_AMOUNT ||
+              availableEarnings < minimumWithdrawalAmount ||
               Boolean(pendingWithdrawal?.id)
             }
             onPress={requestWithdrawal}
             style={[
               styles.withdrawButton,
-              (availableEarnings < MIN_EXPERT_WITHDRAWAL_AMOUNT ||
+              (availableEarnings < minimumWithdrawalAmount ||
                 pendingWithdrawal?.id) &&
                 styles.withdrawButtonDisabled,
             ]}
@@ -353,9 +362,9 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
           {!pendingWithdrawal?.id &&
             availableEarnings > 0 &&
-            availableEarnings < MIN_EXPERT_WITHDRAWAL_AMOUNT && (
+            availableEarnings < minimumWithdrawalAmount && (
               <Text style={styles.withdrawalMinimum}>
-                Minimum withdrawal is ₹{MIN_EXPERT_WITHDRAWAL_AMOUNT}.
+                Minimum withdrawal is ₹{minimumWithdrawalAmount}.
               </Text>
             )}
         </View>
@@ -509,7 +518,7 @@ const styles = StyleSheet.create({
   },
   tutorialCard: {
     height: 230,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
     paddingTop: 25,
   },
   sectionTitle: {
@@ -788,7 +797,7 @@ const styles = StyleSheet.create({
     minHeight: 180,
     marginHorizontal: 20,
     marginBottom: 20,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
     paddingVertical: 23,
     borderWidth: 1,
     borderColor: '#F9E7DA',
@@ -845,7 +854,7 @@ const styles = StyleSheet.create({
   statusCard: {
     minHeight: 180,
     marginHorizontal: 20,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
     paddingVertical: 25,
     borderWidth: 1,
     borderColor: '#EEF0F5',

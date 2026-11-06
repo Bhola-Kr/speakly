@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   },
 
   titleContainer: {
-    marginTop: 50,
+    marginTop: 28,
     paddingHorizontal: 24,
   },
 
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
 
   gradientBorder: {
-    marginTop: 55,
+    marginTop: 32,
     marginHorizontal: 20,
     borderRadius: 20,
     padding: 1.5,

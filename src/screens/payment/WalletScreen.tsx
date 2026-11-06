@@ -491,10 +491,10 @@ const styles = StyleSheet.create({
   },
 
   coinImage: {
-    width: 50,
-    height: 50,
+    width: 58,
+    height: 58,
     resizeMode: 'contain',
-    marginRight: 14,
+    marginRight: 6,
   },
 
   balanceContent: {
@@ -631,9 +631,9 @@ const styles = StyleSheet.create({
   },
 
   receiveCoin: {
-    width: 24,
-    height: 24,
-    marginEnd: 4,
+    width: 29,
+    height: 29,
+    marginEnd: 0,
     alignSelf: 'center',
     resizeMode: 'contain',
   },

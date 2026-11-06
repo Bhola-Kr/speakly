@@ -16,6 +16,7 @@ import GradientButton from '../components/GradientButton';
 export const ONBOARDING_LANGUAGES = [
   { name: 'English', nativeName: 'English' },
   { name: 'Hindi', nativeName: 'हिन्दी' },
+  { name: 'Sanskrit', nativeName: 'संस्कृतम्' },
   { name: 'Tamil', nativeName: 'தமிழ்' },
   { name: 'Telugu', nativeName: 'తెలుగు' },
   { name: 'Kannada', nativeName: 'ಕನ್ನಡ' },
@@ -207,7 +208,7 @@ export default OnboardingPreferencesScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { paddingHorizontal: 24, paddingTop: 18, paddingBottom: 42 },
+  content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 28 },
   step: {
     marginTop: 12,
     color: Colors.secondary,

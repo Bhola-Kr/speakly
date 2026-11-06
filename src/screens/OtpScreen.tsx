@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
 
   keyboardAvoidingView: {
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   },
 
   otpSection: {
-    marginTop: 43,
+    marginTop: 28,
     alignItems: 'center',
   },
 
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
   verifyButton: {
     height: 59,
     marginHorizontal: 28,
-    marginTop: 37,
+    marginTop: 24,
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   },
 
   timerContainer: {
-    marginTop: 36,
+    marginTop: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -52,6 +52,12 @@ interface Props {
 
 const keyExtractor = (item: any) => item?.uid;
 
+const STATUS_PRIORITY: Record<string, number> = {
+  online: 0,
+  busy: 1,
+  offline: 2,
+};
+
 const hasCompleteFemaleProfile = (item: any) => {
   const profile = item?.profile;
   const hasName = Boolean(
@@ -180,13 +186,34 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     [canStartCall, navigation],
   );
 
-  const filtered = useMemo(
-    () =>
+  const filtered = useMemo(() => {
+    const categoryUsers =
       selected === 'All'
         ? femaleUsers
-        : femaleUsers.filter(item => item.profile?.category === selected),
-    [femaleUsers, selected],
-  );
+        : femaleUsers.filter(item => {
+            const topics = Array.isArray(item.profile?.topics)
+              ? item.profile.topics
+                  .map((topic: unknown) => String(topic).trim())
+                  .filter(Boolean)
+              : [];
+
+            return (
+              topics.includes(selected) || item.profile?.category === selected
+            );
+          });
+
+    return categoryUsers
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const aStatus = String(a.item?.profile?.status || '').toLowerCase();
+        const bStatus = String(b.item?.profile?.status || '').toLowerCase();
+        const aPriority = STATUS_PRIORITY[aStatus] ?? STATUS_PRIORITY.offline;
+        const bPriority = STATUS_PRIORITY[bStatus] ?? STATUS_PRIORITY.offline;
+
+        return aPriority - bPriority || a.index - b.index;
+      })
+      .map(({ item }) => item);
+  }, [femaleUsers, selected]);
 
   const onRandomCall = useCallback(async () => {
     if (callInProgressRef.current) return;
@@ -235,8 +262,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
         <Banner randomCall={onRandomCall} calling={randomCalling} />
 
-        <Text style={styles.eyebrow}>CHOOSE YOUR CONVERSATION</Text>
-        <Text style={styles.heading}>Experts ready to talk</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.heading}>Available experts</Text>
+          <Text style={styles.sectionHint}>Tap a card to call</Text>
+        </View>
 
         <CategoryList
           categories={categories}
@@ -260,7 +289,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <StatusBar
         backgroundColor={HOME_COLORS.background}
         barStyle="dark-content"
@@ -353,23 +382,27 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 25,
-    lineHeight: 31,
+    fontSize: 21,
+    lineHeight: 28,
+    paddingTop: 2,
     fontWeight: '900',
     color: HOME_COLORS.navy,
-    marginHorizontal: 17,
-    marginTop: 5,
-    marginBottom: 14,
     letterSpacing: -0.7,
   },
-
-  eyebrow: {
-    color: HOME_COLORS.tealDark,
-    fontSize: 10.5,
-    fontWeight: '900',
-    letterSpacing: 1.8,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginHorizontal: 17,
-    marginTop: 25,
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  sectionHint: {
+    color: HOME_COLORS.tealDark,
+    fontSize: 13,
+    lineHeight: 18,
+    paddingTop: 1,
+    fontWeight: '700',
   },
 
   listContent: {

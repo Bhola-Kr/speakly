@@ -16,7 +16,7 @@ export default StyleSheet.create({
   header: {
     minHeight: 48,
     marginTop: 6,
-    marginBottom: 18,
+    marginBottom: 14,
 
     flexDirection: 'row',
 
@@ -27,7 +27,7 @@ export default StyleSheet.create({
 
   title: {
     fontSize: UI.typography.screenTitle,
-    fontWeight: '600',
+    fontWeight: '900',
     color: Colors.text,
   },
 
@@ -50,19 +50,19 @@ export default StyleSheet.create({
 
     fontWeight: '700',
 
-    marginHorizontal: 8,
+    marginHorizontal: 4,
   },
 
   walletCoin: {
-    width: 24,
-    height: 24,
+    width: 29,
+    height: 29,
     resizeMode: 'contain',
   },
 
   walletBalanceText: {
     color: Colors.white,
     fontWeight: '700',
-    marginHorizontal: 8,
+    marginHorizontal: 4,
   },
 
   leftHeader: {
@@ -98,7 +98,7 @@ export default StyleSheet.create({
 
     borderRadius: UI.radius.card,
 
-    padding: 22,
+    padding: 20,
 
     borderWidth: 1,
     borderColor: Colors.border,
@@ -263,13 +263,13 @@ export default StyleSheet.create({
   },
 
   sectionTitle: {
-    marginTop: 26,
+    marginTop: 22,
 
     marginBottom: 12,
 
     fontSize: UI.typography.sectionHeading,
 
-    fontWeight: '600',
+    fontWeight: '800',
 
     color: Colors.text,
   },
@@ -344,9 +344,9 @@ export default StyleSheet.create({
   footer: {
     alignItems: 'center',
 
-    marginTop: 40,
+    marginTop: 24,
 
-    marginBottom: 30,
+    marginBottom: 20,
   },
 
   footerTitle: {

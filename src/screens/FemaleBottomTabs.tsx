@@ -105,7 +105,7 @@ const FemaleBottomTabs = () => {
         tabBarInactiveTintColor: Colors.gray143,
 
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 13,
           lineHeight: 14,
           fontWeight: '700',
           marginTop: 5,

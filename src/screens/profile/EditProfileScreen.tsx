@@ -17,6 +17,7 @@ import Colors from '../../constants/colors';
 import GradientButton from '../../components/GradientButton';
 import { getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
+import { expertTopics } from '../../constants/dummyData';
 
 export const EditProfileScreen = ({ navigation }: any) => {
   const { user, updateProfile } = useUser();
@@ -24,10 +25,28 @@ export const EditProfileScreen = ({ navigation }: any) => {
   const profile = user?.profile;
 
   const gender = profile?.gender || 'male';
+  const isExpert = user?.isExpert === true || profile?.role === 'expert';
 
   const [loading, setLoading] = useState(false);
 
   const [nickname, setNickname] = useState(profile?.name || '');
+  const existingTopics: string[] = Array.isArray(profile?.topics)
+    ? profile.topics
+        .map((topic: unknown) => String(topic).trim())
+        .filter((topic: string) => expertTopics.includes(topic))
+    : expertTopics.includes(profile?.category)
+      ? [profile.category]
+      : [];
+  const [topics, setTopics] = useState<string[]>(existingTopics);
+  const [topicsOpen, setTopicsOpen] = useState(false);
+
+  const toggleTopic = (topic: string) => {
+    setTopics(current =>
+      current.includes(topic)
+        ? current.filter(item => item !== topic)
+        : [...current, topic],
+    );
+  };
 
   const validate = () => {
     if (!nickname.trim()) {
@@ -40,6 +59,11 @@ export const EditProfileScreen = ({ navigation }: any) => {
         'Validation',
         'Nickname should contain at least 2 characters.',
       );
+      return false;
+    }
+
+    if (isExpert && topics.length === 0) {
+      Alert.alert('Choose Topics', 'Select at least one conversation topic.');
       return false;
     }
 
@@ -56,6 +80,12 @@ export const EditProfileScreen = ({ navigation }: any) => {
 
       await updateProfile({
         name: nickname.trim(),
+        ...(isExpert
+          ? {
+              topics,
+              category: topics[0],
+            }
+          : {}),
       });
 
       Alert.alert('Success', 'Profile updated successfully.', [
@@ -132,6 +162,85 @@ export const EditProfileScreen = ({ navigation }: any) => {
             style={styles.input}
             maxLength={20}
           />
+
+          {isExpert && (
+            <>
+              <Text style={styles.label}>Conversation Topics</Text>
+              <Text style={styles.helperText}>
+                Choose every topic you are comfortable discussing.
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: topicsOpen }}
+                onPress={() => setTopicsOpen(open => !open)}
+                style={[
+                  styles.topicSelect,
+                  topicsOpen && styles.topicSelectOpen,
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="message-text-outline"
+                  size={20}
+                  color={Colors.secondary}
+                />
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.topicSelectText,
+                    topics.length === 0 && styles.topicPlaceholder,
+                  ]}
+                >
+                  {topics.length === 0
+                    ? 'Select topics'
+                    : topics.length === 1
+                      ? topics[0]
+                      : `${topics.length} topics selected`}
+                </Text>
+                <MaterialCommunityIcons
+                  name={topicsOpen ? 'chevron-up' : 'chevron-down'}
+                  size={22}
+                  color={Colors.subText}
+                />
+              </TouchableOpacity>
+
+              {topicsOpen && (
+                <View style={styles.topicMenu}>
+                  {expertTopics.map((topic, index) => {
+                    const selected = topics.includes(topic);
+
+                    return (
+                      <TouchableOpacity
+                        key={topic}
+                        activeOpacity={0.78}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: selected }}
+                        onPress={() => toggleTopic(topic)}
+                        style={[
+                          styles.topicOption,
+                          index < expertTopics.length - 1 &&
+                            styles.topicOptionBorder,
+                        ]}
+                      >
+                        <Text style={styles.topicOptionText}>{topic}</Text>
+                        <MaterialCommunityIcons
+                          name={
+                            selected
+                              ? 'checkbox-marked'
+                              : 'checkbox-blank-outline'
+                          }
+                          size={22}
+                          color={
+                            selected ? Colors.secondary : Colors.placeholder
+                          }
+                        />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </>
+          )}
         </View>
         <View style={styles.spacer} />
 
@@ -156,7 +265,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
 
   header: {
@@ -198,7 +307,7 @@ const styles = StyleSheet.create({
   formCard: {
     marginTop: 22,
     padding: 20,
-    paddingBottom: 0,
+    paddingBottom: 20,
     borderRadius: 24,
     backgroundColor: Colors.white,
     borderWidth: 1,
@@ -262,6 +371,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  helperText: {
+    marginTop: -6,
+    marginBottom: 12,
+    color: Colors.subText,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  topicSelect: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  topicSelectOpen: {
+    borderColor: Colors.secondary,
+  },
+  topicSelectText: {
+    flex: 1,
+    marginHorizontal: 10,
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  topicPlaceholder: {
+    color: Colors.placeholder,
+    fontWeight: '500',
+  },
+  topicMenu: {
+    marginTop: 8,
+    overflow: 'hidden',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  topicOption: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+  },
+  topicOptionBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  topicOptionText: {
+    flex: 1,
+    marginRight: 12,
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

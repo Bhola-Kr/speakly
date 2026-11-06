@@ -171,8 +171,8 @@ const styles = StyleSheet.create({
     marginTop: UI.spacing.lg,
     color: Colors.text,
     fontSize: UI.typography.screenTitle,
-    lineHeight: 31,
-    fontWeight: '600',
+    lineHeight: 34,
+    fontWeight: '800',
     textAlign: 'center',
   },
   message: {

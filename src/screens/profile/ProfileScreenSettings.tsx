@@ -573,7 +573,7 @@ const expertStyles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 80,
+    paddingBottom: 40,
   },
   header: {
     minHeight: 72,
@@ -762,8 +762,8 @@ const expertStyles = StyleSheet.create({
     backgroundColor: EXPERT_COLORS.tealPale,
   },
   walletCoin: {
-    width: 39,
-    height: 39,
+    width: 44,
+    height: 44,
     resizeMode: 'contain',
   },
   walletValue: {
@@ -884,7 +884,7 @@ const expertStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 32,
+    marginTop: 24,
     marginBottom: 20,
   },
   footerText: {

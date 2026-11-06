@@ -466,8 +466,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
-    paddingBottom: 90,
+    paddingHorizontal: 24,
+    paddingBottom: 72,
   },
   emptyIcon: {
     width: 78,
