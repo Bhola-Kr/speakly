@@ -47,6 +47,7 @@ import {
   normalizeCallRate,
 } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
+import { trackCallStarted } from '../../firebase/analytics';
 
 type Props = {
   route: { params: Record<string, any> };
@@ -118,6 +119,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const billingChargeInProgressRef = useRef(false);
   const peerRecoveryRef = useRef<(() => void) | null>(null);
   const callEndedRef = useRef(false);
+  const callStartedTrackedRef = useRef(false);
   const countdownAlertedRef = useRef(false);
 
   const seconds = useRef(0);
@@ -425,6 +427,10 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         startTimer();
 
         await RoomService.callConnected(femaleUid);
+        if (isCaller && !callStartedTrackedRef.current) {
+          callStartedTrackedRef.current = true;
+          trackCallStarted('caller', callRatePerMinute);
+        }
         await startBilling();
       },
 
@@ -498,10 +504,12 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       clientRoleType: ClientRoleType.ClientRoleBroadcaster,
     });
   }, [
+    callRatePerMinute,
     channelName,
     femaleUid,
     finishCall,
     finishCallFromRemote,
+    isCaller,
     requestPermission,
     startTimer,
     startBilling,

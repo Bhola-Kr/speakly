@@ -22,6 +22,7 @@ import { resendMSGOtp, verifyMSGOtp } from '../api/calls';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../constants/colors';
 import { createAnonymousName } from '../utils/profileValidation';
+import { trackLoginSuccess } from '../firebase/analytics';
 
 const COLORS = {
   background: Colors.background,
@@ -156,6 +157,8 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       }
 
       await refreshUser();
+
+      trackLoginSuccess(firebaseUser.uid, userInfo?.isExpert === true);
 
       navigation.reset({
         index: 0,

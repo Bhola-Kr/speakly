@@ -30,6 +30,7 @@ import {
 } from '../../firebase/paymentGateways';
 import type { PaymentGateway } from '../../firebase/paymentGateways';
 import { copy } from '../../constants/strings';
+import { trackPaymentSuccess } from '../../firebase/analytics';
 
 const WalletScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
@@ -136,6 +137,7 @@ const WalletScreen = ({ navigation }: any) => {
           ? await openRazorpayCheckout(selectedPack.id)
           : await openPayUCheckout(selectedPack.id);
       if (payment.status === 'success') {
+        trackPaymentSuccess(payment, paymentGateway);
         Alert.alert(
           'Coins Added',
           `${payment.creditedAmount} coins were added to your balance.`,

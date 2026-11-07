@@ -63,6 +63,11 @@ import database from '@react-native-firebase/database';
 import { databaseRef } from './firebase/firebase';
 import AppAlert from './components/AppAlert';
 import HomeScreen from './screens/home/HomeScreen';
+import {
+  identifyAnalyticsUser,
+  trackScreenView,
+} from './firebase/analytics';
+import { recordFirstInstall } from './firebase/installTracking';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -265,6 +270,18 @@ Thank you.`);
   const femaleUid = user?.isExpert === true ? String(user?.uid || '') : '';
   const syncActiveScreen = () =>
     setActiveScreen(navigationRef.getCurrentRoute()?.name ?? 'Splash');
+
+  React.useEffect(() => {
+    if (!user?.uid) return;
+    identifyAnalyticsUser(
+      String(user.uid),
+      user.isExpert === true ? 'expert' : 'caller',
+    );
+  }, [user?.isExpert, user?.uid]);
+
+  React.useEffect(() => {
+    trackScreenView(activeScreen);
+  }, [activeScreen]);
 
   const applyStatusBarAppearance = React.useCallback(() => {
     StatusBar.setBarStyle(statusBarAppearance.barStyle, true);
@@ -522,6 +539,9 @@ Thank you.`);
 export default function App({ isHeadless = false }: { isHeadless?: boolean }) {
   React.useEffect(() => {
     if (!isHeadless) return startPushNotifications();
+  }, [isHeadless]);
+  React.useEffect(() => {
+    if (!isHeadless) recordFirstInstall();
   }, [isHeadless]);
   if (isHeadless) return null;
   return (
