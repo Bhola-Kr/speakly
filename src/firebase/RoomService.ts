@@ -13,6 +13,7 @@ const FEMALE_AVAILABILITY_KEY = 'femaleAvailabilityEnabled';
 export type RoomStatus =
   | 'offline'
   | 'waiting'
+  | 'calling'
   | 'ringing'
   | 'accepted'
   | 'active'
@@ -244,7 +245,9 @@ class RoomService {
     const room = roomSnapshot.val() as Room | null;
     if (
       room &&
-      ['waiting', 'ringing', 'accepted', 'active'].includes(room.status)
+      ['waiting', 'calling', 'ringing', 'accepted', 'active'].includes(
+        room.status,
+      )
     ) {
       await this.armOfflineOnDisconnect(firebaseUser.uid);
       if (room.status === 'waiting' && user?.profile?.status !== 'online') {
@@ -328,7 +331,7 @@ class RoomService {
       if (room.status !== 'waiting') {
         return;
       }
-      room.status = 'ringing';
+      room.status = 'calling';
       room.currentCallId = callId;
       room.callRequestedAt = Date.now();
       room.male = {
@@ -371,7 +374,7 @@ class RoomService {
         throw new Error('This user is currently offline.');
       }
 
-      if (['ringing', 'accepted', 'active'].includes(room.status)) {
+      if (['calling', 'ringing', 'accepted', 'active'].includes(room.status)) {
         throw new Error('This user is currently busy on another call.');
       }
 
@@ -386,9 +389,23 @@ class RoomService {
       femaleUid,
       callId,
       callerName: String(male?.profile?.name || 'Someone'),
-    }).catch(error =>
-      console.warn('Unable to send incoming call push:', error),
-    );
+    })
+      .then(response => {
+        if (!response?.success || response.delivered === false) return;
+        return roomRef.transaction(room => {
+          if (
+            !room ||
+            room.status !== 'calling' ||
+            room.currentCallId !== callId
+          ) {
+            return;
+          }
+          return { ...room, status: 'ringing', updatedAt: Date.now() };
+        });
+      })
+      .catch(error =>
+        console.warn('Unable to send incoming call push:', error),
+      );
     return claimedRoom;
   }
 
@@ -446,7 +463,7 @@ class RoomService {
     const roomRef = database().ref(`rooms/${femaleUid}`);
 
     const transaction = await roomRef.transaction(room => {
-      if (!room || room.status !== 'ringing') {
+      if (!room || !['calling', 'ringing'].includes(room.status)) {
         return;
       }
 

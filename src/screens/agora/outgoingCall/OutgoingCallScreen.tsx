@@ -44,6 +44,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const timedOut = useRef(false);
 
   const [cancelling, setCancelling] = useState(false);
+  const [callPhase, setCallPhase] = useState<'calling' | 'ringing'>('calling');
 
   const cancelCall = async () => {
     if (cancelling) {
@@ -67,7 +68,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
     const timeout = setTimeout(async () => {
       const snapshot = await database().ref(`rooms/${femaleUid}`).once('value');
       const room = snapshot.val();
-      if (room?.status === 'ringing') {
+      if (['calling', 'ringing'].includes(room?.status)) {
         timedOut.current = true;
         await RoomService.menRejectCall(femaleUid);
       }
@@ -102,6 +103,14 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
         };
 
         switch (room?.status) {
+          case 'calling':
+            setCallPhase('calling');
+            break;
+
+          case 'ringing':
+            setCallPhase('ringing');
+            break;
+
           case 'accepted':
             if (callResolved.current) {
               return;
@@ -225,14 +234,17 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       <View style={[styles.header, compactLayout && styles.headerCompact]}>
         <Text style={styles.logo}>{strings.appName}</Text>
 
-        <Text style={styles.status}>{copy.call.outgoing}</Text>
+        <Text style={styles.status}>
+          {callPhase === 'ringing' ? 'Ringing...' : copy.call.outgoing}
+        </Text>
 
         <Text style={styles.statusSub}>
-          Waiting for <Text style={styles.statusTamilName}>{displayName}</Text>
+          {callPhase === 'ringing' ? 'Ringing ' : 'Calling '}
+          <Text style={styles.statusTamilName}>{displayName}</Text>
           {showEnglishName && (
             <Text style={styles.statusEnglishName}>{` (${englishName})`}</Text>
           )}{' '}
-          to answer
+          {callPhase === 'calling' ? '...' : ''}
         </Text>
       </View>
 
@@ -303,7 +315,9 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             <Icon name="phone" size={24} color={Colors.inkBlue} />
           </TouchableOpacity>
 
-          <Text style={styles.callingText}>Waiting for an answer</Text>
+          <Text style={styles.callingText}>
+            {callPhase === 'ringing' ? 'Waiting for an answer' : 'Contacting host'}
+          </Text>
         </View>
       </View>
 

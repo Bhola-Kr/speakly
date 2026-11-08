@@ -1,5 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
+import {
+  GoogleSignin,
+  isSuccessResponse,
+} from '@react-native-google-signin/google-signin';
 import { fetchFirebaseToken } from '../api/calls';
 import { Alert } from 'react-native';
 import { normalizeCallRate } from '../constants/constants';
@@ -34,6 +38,25 @@ const ACCOUNT_DELETION_DELAY_MS = 15 * 24 * 60 * 60 * 1000;
 
 class AuthData {
   confirmation: any = null;
+
+  loginWithGoogle = async () => {
+    GoogleSignin.configure({
+      webClientId:
+        '336180604339-851dn2fb8qb8pgut3puigmr1na346h58.apps.googleusercontent.com',
+    });
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    const response = await GoogleSignin.signIn();
+    if (!isSuccessResponse(response)) return null;
+
+    const tokens = await GoogleSignin.getTokens();
+    const credential = auth.GoogleAuthProvider.credential(
+      response.data.idToken || tokens.idToken,
+      tokens.accessToken,
+    );
+    const result = await auth().signInWithCredential(credential);
+    await AsyncStorage.setItem('uid', result.user.uid);
+    return result.user;
+  };
 
   firebaseLogin = async (phone: string) => {
     try {
@@ -88,7 +111,8 @@ class AuthData {
     }
 
     const uid = user.uid;
-    const phone = user.phoneNumber || uid;
+    const phone = user.phoneNumber || '';
+    const email = user.email || '';
     const now = Date.now();
 
     await databaseRef(`users/${uid}`).transaction(currentUser => {
@@ -100,6 +124,7 @@ class AuthData {
         ...existing,
         uid,
         phone: existing.phone || phone,
+        email: existing.email || email,
         createdAt: existing.createdAt || now,
         lastSeen: now,
         isExpert: existing.isExpert === true,
@@ -118,6 +143,7 @@ class AuthData {
           price: normalizeCallRate(profile.price),
           uid,
           phone: profile.phone || phone,
+          email: profile.email || email,
           gender,
           role: existing.profile?.role || role,
           practiceLanguage: existing.profile?.practiceLanguage || language,
@@ -126,7 +152,7 @@ class AuthData {
             existing.profile?.supportedLanguages || [language],
         },
         verification: {
-          phoneVerified: true,
+          phoneVerified: Boolean(phone),
           voiceVerified: false,
           ...(existing.verification || {}),
         },
@@ -165,6 +191,9 @@ class AuthData {
     }
     await unregisterPushNotifications();
     await auth().signOut();
+    if (GoogleSignin.hasPreviousSignIn()) {
+      await GoogleSignin.signOut().catch(() => null);
+    }
 
     await AsyncStorage.removeItem('uid');
   };
