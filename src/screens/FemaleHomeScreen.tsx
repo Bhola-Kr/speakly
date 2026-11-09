@@ -174,6 +174,40 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const goOffline = () => {
+    if (activeCall) {
+      showCall();
+      return;
+    }
+    if (goingOnline) return;
+
+    Alert.alert(
+      'Go Offline?',
+      'You will not receive any incoming calls while you are offline.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: copy.host.goOffline,
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setGoingOnline(true);
+              await RoomService.goOffline();
+            } catch (error) {
+              console.log('Unable to go offline:', error);
+              Alert.alert(
+                'Unable to Go Offline',
+                'Please try again in a moment.',
+              );
+            } finally {
+              setGoingOnline(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
@@ -215,7 +249,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 
         <TouchableOpacity
           activeOpacity={0.88}
-          onPress={goOnLine}
+          onPress={isOnline ? goOffline : goOnLine}
           disabled={goingOnline}
           style={styles.onlineButtonTouch}
         >
@@ -229,23 +263,41 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               {goingOnline ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
-                <Ionicons name="radio-outline" size={29} color={COLORS.white} />
+                <Ionicons
+                  name={isOnline ? 'power-outline' : 'radio-outline'}
+                  size={29}
+                  color={COLORS.white}
+                />
               )}
             </View>
 
             <View style={styles.onlineButtonCopy}>
               <Text style={styles.onlineText}>
-                {goingOnline ? 'GOING ONLINE…' : copy.host.goOnline.toUpperCase()}
+                {goingOnline
+                  ? isOnline
+                    ? 'GOING OFFLINE…'
+                    : 'GOING ONLINE…'
+                  : isOnline
+                  ? copy.host.goOffline.toUpperCase()
+                  : copy.host.goOnline.toUpperCase()}
               </Text>
               <Text style={styles.onlineDescription}>
                 {goingOnline
-                  ? 'Preparing your host room'
+                  ? isOnline
+                    ? 'Updating your availability'
+                    : 'Preparing your host room'
+                  : isOnline
+                  ? 'Stop receiving incoming calls'
                   : 'Become visible and start receiving calls'}
               </Text>
             </View>
 
             <View style={styles.onlineArrow}>
-              <Ionicons name="arrow-forward" size={24} color={COLORS.white} />
+              <Ionicons
+                name={isOnline ? 'power' : 'arrow-forward'}
+                size={24}
+                color={COLORS.white}
+              />
             </View>
           </LinearGradient>
         </TouchableOpacity>

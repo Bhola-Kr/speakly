@@ -382,7 +382,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
           />
           <Text style={styles.consentText}>
             I choose to be contacted by the Speakly team for assistance in
-            onboarding. The team may contact opted-in hosts with setup guidance
+            onboarding. The team may contact opted-in Experts with setup guidance
             and early-host updates.
           </Text>
         </TouchableOpacity>

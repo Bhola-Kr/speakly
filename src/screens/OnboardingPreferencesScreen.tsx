@@ -74,7 +74,7 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
             {
               value: 'learner' as const,
               title: 'Join conversations',
-              detail: 'Discover hosts and start calls',
+              detail: 'Discover Experts and start calls',
               icon: 'account-voice',
               color: Colors.accent,
               softColor: Colors.accentLight,
@@ -183,7 +183,7 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
               color={Colors.secondary}
             />
             <Text style={styles.infoText}>
-              Hosts submit one short recording for voice verification. Review
+              Experts submit one short recording for voice verification. Review
               usually completes within 30 minutes. Host access is enabled after
               approval.
             </Text>

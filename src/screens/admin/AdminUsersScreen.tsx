@@ -1504,7 +1504,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   <View style={styles.switchCopy}>
                     <Text style={styles.switchTitle}>Host access</Text>
                     <Text style={styles.switchHelp}>
-                      Hosts can go online and receive paid calls.
+                      Experts can go online and receive paid calls.
                     </Text>
                   </View>
                   <Switch

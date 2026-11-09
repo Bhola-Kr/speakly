@@ -20,14 +20,14 @@ export const copy = {
   home: {
     heading: 'Who Would You Like to Talk To?',
     supportingText: 'Start a conversation.',
-    availableHosts: 'Available Hosts',
+    availableHosts: 'Available Experts',
     online: 'Online',
     busy: 'Busy',
     offline: 'Offline',
     startCall: 'Start Call',
     randomMatch: 'Find Someone to Talk To',
     talkAgain: 'Talk Again',
-    noHosts: 'No hosts are available right now',
+    noHosts: 'No Experts are available right now',
     noHostsHint: 'Try another topic or check back in a little while.',
   },
   recents: {

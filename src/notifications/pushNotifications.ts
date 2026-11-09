@@ -8,6 +8,7 @@ import messaging, {
 import notifee, {
   AndroidImportance,
   AndroidCategory,
+  AndroidVisibility,
   AuthorizationStatus,
   EventType,
   Event,
@@ -18,7 +19,10 @@ import { hasCompletedSignup } from '../utils/profileValidation';
 import { scopedDatabase as database } from '../firebase/firebase';
 
 const CHANNEL_ID = 'voicetamil_general';
-const INCOMING_CALL_CHANNEL_ID = 'voicetamil_incoming_calls_v2';
+// Android notification-channel sound settings are immutable after creation.
+// Keep this versioned whenever call sound/importance changes so existing
+// installs receive the corrected ringtone configuration.
+const INCOMING_CALL_CHANNEL_ID = 'speakly_incoming_calls_v3';
 const PENDING_ACCEPTED_CALL_KEY = 'pendingAcceptedNotificationCall';
 const MISSED_CALL_DELAY_MS = 30_000;
 export const ACCEPTED_CALL_EVENT = 'SpeaklyAcceptedNotificationCall';
@@ -112,10 +116,13 @@ export async function displayIncomingCallNotification(
   await configureIncomingCallActions();
   const channelId = await notifee.createChannel({
     id: INCOMING_CALL_CHANNEL_ID,
-    name: 'Incoming call alerts',
+    name: 'Incoming voice calls',
+    description: 'Rings when a learner starts a voice call with you',
     importance: AndroidImportance.HIGH,
     vibration: true,
+    vibrationPattern: [300, 500, 300, 500],
     sound: 'default',
+    visibility: AndroidVisibility.PUBLIC,
   });
   await notifee.displayNotification({
     id: `incoming-call-${callId}`,
@@ -128,6 +135,7 @@ export async function displayIncomingCallNotification(
       pressAction: { id: 'default' },
       importance: AndroidImportance.HIGH,
       category: AndroidCategory.CALL,
+      visibility: AndroidVisibility.PUBLIC,
       sound: 'default',
       loopSound: true,
       actions: [
