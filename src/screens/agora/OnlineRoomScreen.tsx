@@ -325,7 +325,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
             style={styles.offlineButtonTouch}
           >
             <LinearGradient
-              colors={Colors.buttonGradient}
+              colors={[Colors.error, '#B91C1C']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.offlineButton}
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   },
   offlineButtonTouch: {
     width: '100%',
-    shadowColor: COLORS.tealDark,
+    shadowColor: Colors.error,
     shadowOpacity: 0.22,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 10 },

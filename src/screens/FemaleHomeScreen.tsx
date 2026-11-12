@@ -251,10 +251,17 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           activeOpacity={0.88}
           onPress={isOnline ? goOffline : goOnLine}
           disabled={goingOnline}
-          style={styles.onlineButtonTouch}
+          style={[
+            styles.onlineButtonTouch,
+            { shadowColor: isOnline ? Colors.error : Colors.successStrong },
+          ]}
         >
           <LinearGradient
-            colors={Colors.buttonGradient}
+            colors={
+              isOnline
+                ? [Colors.error, '#B91C1C']
+                : [Colors.successStrong, '#15803D']
+            }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.onlineButton, goingOnline && styles.loadingButton]}

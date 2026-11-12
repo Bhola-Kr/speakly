@@ -26,6 +26,7 @@ import {
   updateExpertCompensation,
 } from './expertCompensation';
 import { notifyAdminsOnUserOnboarded } from './onboardingNotifications';
+import { cleanupStaleCalls } from './staleCalls';
 
 const app = express();
 
@@ -759,6 +760,7 @@ export {
   reconcilePayuPayments,
   notifyAdminsOnExpertApplicationCreated,
   notifyAdminsOnUserOnboarded,
+  cleanupStaleCalls,
 };
 export const api = onRequest(
   {

@@ -69,6 +69,9 @@ export async function displayPushNotification(
   message: FirebaseMessagingTypes.RemoteMessage,
 ) {
   if (message.data?.type === 'incoming_call') {
+    // While foregrounded, the room listener shows the in-app incoming call
+    // screen and ringtone. A system notification here would duplicate it.
+    if (AppState.currentState === 'active') return;
     const callId = String(message.data?.callId || '');
     const femaleUid = String(message.data?.femaleUid || '');
     if (callId && femaleUid) {

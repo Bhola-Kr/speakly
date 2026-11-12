@@ -319,10 +319,14 @@ Thank you.`);
     return RoomService.listenCallStatus(femaleUid, room => {
       if (room?.status === 'ringing' && room.male && !activeCall) {
         setIncomingRoom(room);
-        if (
-          AppState.currentState !== 'active' &&
-          incomingNotificationRef.current !== room.currentCallId
-        ) {
+        if (AppState.currentState === 'active') {
+          if (incomingNotificationRef.current === room.currentCallId) {
+            incomingNotificationRef.current = '';
+          }
+          cancelIncomingCallNotification(room.currentCallId).catch(error =>
+            console.warn('Unable to clear foreground incoming notification:', error),
+          );
+        } else if (incomingNotificationRef.current !== room.currentCallId) {
           incomingNotificationRef.current = room.currentCallId;
           displayIncomingCallNotification(
             room.currentCallId,
@@ -366,6 +370,7 @@ Thank you.`);
           maleGender: room.male?.gender,
           femaleUid,
           callRatePerMinute: room.callRatePerMinute,
+          callId: room.currentCallId,
           uid: room.roomId,
           agora: room.agora,
         });
@@ -409,6 +414,7 @@ Thank you.`);
       maleGender: room.male?.gender,
       femaleUid,
       callRatePerMinute: room.callRatePerMinute,
+      callId: room.currentCallId,
       uid: room.roomId,
       agora: room.agora,
     });

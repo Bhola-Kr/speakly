@@ -1,6 +1,6 @@
 import auth from '@react-native-firebase/auth';
 import { scopedDatabase as database } from './firebase';
-import { calculateCallAmount, normalizeCallRate } from '../constants/constants';
+import { normalizeCallRate } from '../constants/constants';
 import {
   fetchAgoraToken,
   sendIncomingCallPush,
@@ -336,6 +336,9 @@ class RoomService {
       room.status = 'calling';
       room.currentCallId = callId;
       room.callRequestedAt = Date.now();
+      room.callStartedAt = null;
+      room.chargedAmount = 0;
+      room.callSettled = null;
       room.male = {
         uid: firebaseUser.uid,
         name: male.profile.name,
@@ -482,20 +485,41 @@ class RoomService {
     }
   }
 
-  async callConnected(femaleUid: string) {
+  async callConnected(femaleUid: string): Promise<number> {
     const roomRef = database().ref(`rooms/${femaleUid}`);
-    const snapshot = await roomRef.once('value');
-    const room = snapshot.val() as Room | null;
-    await roomRef.update({
-      status: 'active',
-      callStartedAt: Date.now(),
-      updatedAt: Date.now(),
+    const connectedAt = Date.now();
+    const transaction = await roomRef.transaction(room => {
+      if (!room || room.status === 'ended' || room.status === 'waiting') {
+        return;
+      }
+
+      return {
+        ...room,
+        status: 'active',
+        callStartedAt: room.callStartedAt || connectedAt,
+        updatedAt: connectedAt,
+      };
     });
+    const room = transaction.snapshot.val() as Room | null;
+    if (!transaction.committed || !room) return connectedAt;
     await this.logExpertActivity(
       femaleUid,
       'active',
-      room?.currentCallId,
+      room.currentCallId,
     ).catch(error => console.warn('Unable to record expert activity:', error));
+    return Number(room.callStartedAt || connectedAt);
+  }
+
+  async startCallPresence(callId: string, uid: string) {
+    const presenceRef = database().ref(`callPresence/${callId}/${uid}`);
+    await presenceRef.onDisconnect().remove();
+    await presenceRef.set(true);
+  }
+
+  async stopCallPresence(callId: string, uid: string) {
+    const presenceRef = database().ref(`callPresence/${callId}/${uid}`);
+    await presenceRef.onDisconnect().cancel();
+    await presenceRef.remove();
   }
 
   async chargeCallMinute(femaleUid: string): Promise<boolean> {
@@ -601,6 +625,7 @@ class RoomService {
           [`rooms/${femaleUid}/status`]: 'waiting',
           [`rooms/${femaleUid}/currentCallId`]: '',
           [`rooms/${femaleUid}/male`]: null,
+          [`rooms/${femaleUid}/callStartedAt`]: null,
           [`rooms/${femaleUid}/callSettled`]: null,
           [`rooms/${femaleUid}/chargedAmount`]: null,
           [`rooms/${femaleUid}/updatedAt`]: updatedAt,
@@ -614,18 +639,16 @@ class RoomService {
       return;
     }
 
-    const duration = room.callStartedAt ? endedAt - room.callStartedAt : 0;
-
+    // Only wallet debits recorded while the room was active are billable.
+    // Clamp malformed or stale values to whole call minutes at the snapshotted
+    // rate, and derive history duration from those billed minutes.
+    const rate = normalizeCallRate(room.callRatePerMinute);
+    const recordedAmount = Number(room.chargedAmount);
     const amount =
-      typeof room.chargedAmount === 'number'
-        ? room.chargedAmount
-        : room.callStartedAt
-        ? calculateCallAmount(
-            room.callStartedAt,
-            endedAt,
-            room.callRatePerMinute,
-          )
+      Number.isFinite(recordedAmount) && recordedAmount > 0
+        ? Math.floor(recordedAmount / rate) * rate
         : 0;
+    const duration = (amount / rate) * 60 * 1000;
 
     const history = {
       callId: room.currentCallId,
@@ -637,7 +660,7 @@ class RoomService {
       endedAt,
       duration,
       amount,
-      callRatePerMinute: normalizeCallRate(room.callRatePerMinute),
+      callRatePerMinute: rate,
       status: duration === 0 ? 'Missed' : 'Completed',
       maleInfo: room.male,
       femaleInfo: room.female,
@@ -659,15 +682,6 @@ class RoomService {
       );
     }
 
-    if (
-      amount > 0 &&
-      room.male?.uid &&
-      typeof room.chargedAmount !== 'number'
-    ) {
-      await database()
-        .ref(`users/${room.male.uid}/wallet/balance`)
-        .transaction(balance => Math.max(0, Number(balance || 0) - amount));
-    }
   }
 
   async getCallHistory() {

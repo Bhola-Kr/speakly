@@ -46,6 +46,62 @@ const publicRate = (value: any, fallback: number) => {
   return Number.isFinite(configured) && configured > 0 ? configured : fallback;
 };
 
+export const creditExpertEarningsForCall = async (
+  callId: string,
+  history: any,
+) => {
+  const callerRate = Number(history.callRatePerMinute);
+  const chargedAmount = Number(history.amount);
+  const expertUid = String(history.femaleInfo?.uid || '');
+  if (
+    !callId ||
+    !expertUid ||
+    history.status !== 'Completed' ||
+    !Number.isFinite(callerRate) ||
+    callerRate <= 0 ||
+    !Number.isFinite(chargedAmount) ||
+    chargedAmount <= 0
+  ) {
+    return;
+  }
+
+  const expertRateSnapshot = await admin
+    .database()
+    .ref(`${DATA_ROOT}/expertCompensation/${expertUid}`)
+    .once('value');
+  const expertRate = publicRate(
+    expertRateSnapshot.val(),
+    DEFAULT_EXPERT_CALL_RATE_PER_MINUTE,
+  );
+  const paidMinutes = Math.floor(chargedAmount / callerRate);
+  if (paidMinutes <= 0) return;
+  const expertAmount = paidMinutes * expertRate;
+  await admin
+    .database()
+    .ref(`${DATA_ROOT}/users/${expertUid}/expertEarnings`)
+    .transaction((value: any) => {
+      const earnings = value && typeof value === 'object' ? value : {};
+      const creditedCalls = earnings.creditedCalls || {};
+      if (creditedCalls[callId]) return;
+      return {
+        ...earnings,
+        total: Number(earnings.total || 0) + expertAmount,
+        available: Number(earnings.available || 0) + expertAmount,
+        withdrawn: Number(earnings.withdrawn || 0),
+        creditedCalls: {
+          ...creditedCalls,
+          [callId]: {
+            amount: expertAmount,
+            minutes: paidMinutes,
+            ratePerMinute: expertRate,
+            creditedAt: Date.now(),
+          },
+        },
+        updatedAt: Date.now(),
+      };
+    });
+};
+
 export const getMyExpertCompensation = async (req: Request, res: Response) => {
   try {
     const uid = await authenticatedUid(req);
@@ -370,51 +426,12 @@ export const settleExpertEarnings = async (req: Request, res: Response) => {
     }
     const callerRate = Number(history.callRatePerMinute);
     const chargedAmount = Number(history.amount);
-    if (
-      !expertUid ||
-      !Number.isFinite(callerRate) ||
-      callerRate <= 0 ||
-      !Number.isFinite(chargedAmount) ||
-      chargedAmount <= 0
-    ) {
+    if (!expertUid || !Number.isFinite(callerRate) || callerRate <= 0 || !Number.isFinite(chargedAmount) || chargedAmount <= 0) {
       return res
         .status(400)
         .json({ success: false, message: 'Invalid call billing data' });
     }
-    const compensationSnapshot = await admin
-      .database()
-      .ref(`${DATA_ROOT}/expertCompensation/${expertUid}`)
-      .once('value');
-    const expertRate = publicRate(
-      compensationSnapshot.val(),
-      DEFAULT_EXPERT_CALL_RATE_PER_MINUTE,
-    );
-    const paidMinutes = Math.max(1, Math.round(chargedAmount / callerRate));
-    const expertAmount = paidMinutes * expertRate;
-    await admin
-      .database()
-      .ref(`${DATA_ROOT}/users/${expertUid}/expertEarnings`)
-      .transaction((value: any) => {
-        const earnings = value && typeof value === 'object' ? value : {};
-        const creditedCalls = earnings.creditedCalls || {};
-        if (creditedCalls[callId]) return;
-        return {
-          ...earnings,
-          total: Number(earnings.total || 0) + expertAmount,
-          available: Number(earnings.available || 0) + expertAmount,
-          withdrawn: Number(earnings.withdrawn || 0),
-          creditedCalls: {
-            ...creditedCalls,
-            [callId]: {
-              amount: expertAmount,
-              minutes: paidMinutes,
-              ratePerMinute: expertRate,
-              creditedAt: Date.now(),
-            },
-          },
-          updatedAt: Date.now(),
-        };
-      });
+    await creditExpertEarningsForCall(callId, history);
     return res.json({ success: true });
   } catch (error: any) {
     logger.error('Settle expert earnings failed', error);

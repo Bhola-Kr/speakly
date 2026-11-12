@@ -251,10 +251,12 @@ export default StyleSheet.create({
   },
 
   callerBalance: {
-    marginTop: 12,
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.darkSurfaceMuted,
+    backgroundColor: Colors.coinSurface,
+    borderWidth: 1,
+    borderColor: Colors.coinBorder,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -267,16 +269,29 @@ export default StyleSheet.create({
   },
 
   callerBalanceLabel: {
-    color: Colors.darkTextMuted,
+    color: Colors.coinText,
     fontSize: 12,
     marginLeft: 6,
   },
 
   callerBalanceValue: {
-    color: Colors.secondary,
+    color: Colors.coinDark,
     fontSize: 14,
     fontWeight: '700',
     marginLeft: 8,
+  },
+
+  balanceEstimate: {
+    marginTop: 4,
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  callBalanceCoin: {
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
   },
 
   callDurationLabel: {
