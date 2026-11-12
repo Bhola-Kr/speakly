@@ -73,7 +73,7 @@ export const securityMenus = [
 export const supportMenus = [
   {
     id: 7,
-    title: 'About Speakly',
+    title: 'About Speakly 121',
     icon: 'information-outline',
     screen: 'About',
   },

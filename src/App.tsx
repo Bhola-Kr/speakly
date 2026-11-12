@@ -63,10 +63,7 @@ import database from '@react-native-firebase/database';
 import { databaseRef } from './firebase/firebase';
 import AppAlert from './components/AppAlert';
 import HomeScreen from './screens/home/HomeScreen';
-import {
-  identifyAnalyticsUser,
-  trackScreenView,
-} from './firebase/analytics';
+import { identifyAnalyticsUser, trackScreenView } from './firebase/analytics';
 import { recordFirstInstall } from './firebase/installTracking';
 
 const Stack = createNativeStackNavigator();
@@ -166,7 +163,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'About Speakly',
+          title: 'About Speakly 121',
         }}
         name="About"
         component={AboutScreen}
@@ -246,7 +243,7 @@ function AppNavigator() {
 
   const contactDeletionAdmin = React.useCallback(() => {
     const subject = encodeURIComponent('Account Deletion Support');
-    const body = encodeURIComponent(`Hello Speakly Support Team,
+    const body = encodeURIComponent(`Hello Speakly 121 Support Team,
 
 I need help with my pending account deletion request.
 

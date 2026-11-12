@@ -10,19 +10,21 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
 import Colors from '../../constants/colors';
 import { sendOtp, verifyMSGOtp } from '../../api/calls';
 import authData from '../../firebase/authData';
 import { createAnonymousName } from '../../utils/profileValidation';
+import { copy } from '../../constants/strings';
+import { trackGuestAuthentication } from '../../firebase/analytics';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onAuthenticated: (isExpert: boolean) => void;
+  onAuthenticated: (isExpert: boolean) => void | Promise<void>;
   onOpenTerms: () => void;
   onOpenPrivacy: () => void;
+  hostName?: string;
 };
 
 const GuestLoginModal = ({
@@ -31,6 +33,7 @@ const GuestLoginModal = ({
   onAuthenticated,
   onOpenTerms,
   onOpenPrivacy,
+  hostName,
 }: Props) => {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
@@ -81,6 +84,7 @@ const GuestLoginModal = ({
       }
       const firebaseUser = await authData.loginWithCustomToken(response.token);
       const existing = await authData.getUser(firebaseUser.uid);
+      const isNewUser = !existing;
       if (!existing) {
         await authData.createUser(firebaseUser, 'male', 'learner', 'English');
         await authData.updateProfile({
@@ -94,7 +98,13 @@ const GuestLoginModal = ({
           supportedLanguages: ['English'],
         });
       }
-      onAuthenticated(existing?.isExpert === true);
+      trackGuestAuthentication(
+        firebaseUser.uid,
+        existing?.isExpert === true,
+        'phone_otp',
+        isNewUser,
+      );
+      await onAuthenticated(existing?.isExpert === true);
     } catch (error: any) {
       Alert.alert('Login failed', error?.message || 'Please try again.');
     } finally {
@@ -112,6 +122,7 @@ const GuestLoginModal = ({
       if (!firebaseUser) return;
 
       const existing = await authData.getUser(firebaseUser.uid);
+      const isNewUser = !existing;
       if (!existing) {
         await authData.createUser(firebaseUser, 'male', 'learner', 'English');
         await authData.updateProfile({
@@ -127,12 +138,15 @@ const GuestLoginModal = ({
           supportedLanguages: ['English'],
         });
       }
-      onAuthenticated(existing?.isExpert === true);
-    } catch (error: any) {
-      Alert.alert(
-        'Google login failed',
-        error?.message || 'Please try again.',
+      trackGuestAuthentication(
+        firebaseUser.uid,
+        existing?.isExpert === true,
+        'google',
+        isNewUser,
       );
+      await onAuthenticated(existing?.isExpert === true);
+    } catch (error: any) {
+      Alert.alert('Google login failed', error?.message || 'Please try again.');
     } finally {
       setLoading(false);
       setAuthMethod(null);
@@ -172,11 +186,15 @@ const GuestLoginModal = ({
           </View>
 
           <Text style={styles.title}>
-            {step === 'phone' ? 'Login to start calling' : 'Enter your OTP'}
+            {step === 'phone'
+              ? hostName
+                ? `Sign in to call ${hostName}`
+                : 'Sign in to start your free call'
+              : 'Enter your OTP'}
           </Text>
           <Text style={styles.subtitle}>
             {step === 'phone'
-              ? 'Continue with your mobile number or Google account.'
+              ? copy.brand.offer
               : `We sent a 4-digit code to +91 ${phone}.`}
           </Text>
           <View style={styles.privacyNote}>
@@ -221,7 +239,10 @@ const GuestLoginModal = ({
           )}
 
           <TouchableOpacity
-            disabled={loading || (step === 'phone' ? phone.length !== 10 : otp.length !== 4)}
+            disabled={
+              loading ||
+              (step === 'phone' ? phone.length !== 10 : otp.length !== 4)
+            }
             onPress={step === 'phone' ? requestOtp : verifyOtp}
             style={[
               styles.primaryButton,
@@ -234,7 +255,7 @@ const GuestLoginModal = ({
               <ActivityIndicator color={Colors.white} />
             ) : (
               <Text style={styles.primaryText}>
-                {step === 'phone' ? 'Get OTP' : 'Login & call'}
+                {step === 'phone' ? 'Get OTP' : 'Verify & Start Call'}
               </Text>
             )}
           </TouchableOpacity>
@@ -246,14 +267,33 @@ const GuestLoginModal = ({
                 <Text style={styles.dividerText}>or</Text>
                 <View style={styles.dividerLine} />
               </View>
-              <GoogleSigninButton
+              <TouchableOpacity
+                accessibilityRole="button"
                 accessibilityLabel="Sign in with Google"
                 disabled={loading}
                 onPress={loginWithGoogle}
-                size={GoogleSigninButton.Size.Wide}
-                color={GoogleSigninButton.Color.Light}
-                style={styles.googleSignInButton}
-              />
+                activeOpacity={0.82}
+                style={[
+                  styles.googleButton,
+                  loading && styles.googleButtonDisabled,
+                ]}
+              >
+                <View style={styles.googleIconWrap}>
+                  {loading && authMethod === 'google' ? (
+                    <ActivityIndicator size="small" color="#4285F4" />
+                  ) : (
+                    <MaterialCommunityIcons
+                      name="google"
+                      size={21}
+                      color="#4285F4"
+                    />
+                  )}
+                </View>
+                <Text style={styles.googleButtonText}>
+                  Continue with Google
+                </Text>
+                <View style={styles.googleButtonSpacer} />
+              </TouchableOpacity>
             </>
           )}
 
@@ -262,19 +302,15 @@ const GuestLoginModal = ({
               <Text style={styles.changeNumber}>Change number</Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.legal}>By continuing, you agree to Speakly’s</Text>
+          <Text style={styles.legal}>
+            By continuing, you agree to Speakly 121’s
+          </Text>
           <View style={styles.legalLinks}>
-            <TouchableOpacity
-              accessibilityRole="link"
-              onPress={onOpenTerms}
-            >
+            <TouchableOpacity accessibilityRole="link" onPress={onOpenTerms}>
               <Text style={styles.legalLink}>Terms & Conditions</Text>
             </TouchableOpacity>
             <Text style={styles.legalSeparator}>and</Text>
-            <TouchableOpacity
-              accessibilityRole="link"
-              onPress={onOpenPrivacy}
-            >
+            <TouchableOpacity accessibilityRole="link" onPress={onOpenPrivacy}>
               <Text style={styles.legalLink}>Privacy Policy</Text>
             </TouchableOpacity>
           </View>
@@ -390,12 +426,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  googleSignInButton: {
-    width: 312,
-    height: 48,
-    marginTop: 4,
-    alignSelf: 'center',
+  googleButton: {
+    width: '100%',
+    minHeight: 48,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.white,
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
+  googleButtonDisabled: { opacity: 0.55 },
+  googleIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  googleButtonText: {
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  googleButtonSpacer: { width: 32 },
   changeNumber: {
     marginTop: 6,
     color: Colors.primary,

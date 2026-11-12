@@ -92,7 +92,10 @@ const SplashScreen = ({ navigation }: any) => {
         colors={[Colors.background, Colors.primaryLight, Colors.surface]}
         style={styles.container}
       >
-        <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
+        <StatusBar
+          backgroundColor={Colors.background}
+          barStyle="dark-content"
+        />
         <View style={styles.content}>
           {/* Replace with your logo */}
           <View style={styles.logoMark}>
@@ -105,7 +108,10 @@ const SplashScreen = ({ navigation }: any) => {
 
           <Text style={styles.title}>{copy.brand.splash}</Text>
 
-          <Text style={styles.subtitle}>{copy.brand.reassurance}</Text>
+          <Text style={styles.subtitle}>{copy.brand.tagline}</Text>
+          <Text style={styles.valueProposition}>
+            {copy.brand.valueProposition}
+          </Text>
         </View>
 
         <View style={styles.bottom}>
@@ -164,6 +170,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.subText,
     letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+
+  valueProposition: {
+    marginTop: 10,
+    color: Colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'center',
   },
 

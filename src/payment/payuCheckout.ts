@@ -188,7 +188,7 @@ export const openPayUCheckout = async (
         payUCheckoutProConfig: {
           primaryColor: Colors.primary,
           secondaryColor: Colors.textPrimary,
-          merchantName: 'Speakly',
+          merchantName: 'Speakly 121',
           showExitConfirmationOnCheckoutScreen: true,
           showExitConfirmationOnPaymentScreen: true,
         },

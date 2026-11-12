@@ -385,7 +385,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       console.error('Unable to start background call service:', error);
       Alert.alert(
         'Unable to start call',
-        'Please reopen Speakly and try again.',
+        'Please reopen Speakly 121 and try again.',
       );
       await finishCall();
       return;
@@ -436,10 +436,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
       onUserOffline: (_connection, _remoteUid, reason) => {
         if (reason === UserOfflineReasonType.UserOfflineQuit) {
-          finishCallFromRemote(
-            true,
-            'The host ended the call.',
-          );
+          finishCallFromRemote(true, 'The host ended the call.');
         } else {
           setStatus(copy.call.reconnecting);
           if (!peerRecoveryRef.current) {

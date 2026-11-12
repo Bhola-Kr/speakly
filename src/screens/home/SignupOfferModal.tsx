@@ -14,19 +14,12 @@ import UI from '../../constants/ui';
 
 type Props = {
   visible: boolean;
-  amount: number;
   claiming: boolean;
   onClaim: () => void;
   onDismiss: () => void;
 };
 
-const SignupOfferModal = ({
-  visible,
-  amount,
-  claiming,
-  onClaim,
-  onDismiss,
-}: Props) => (
+const SignupOfferModal = ({ visible, claiming, onClaim, onDismiss }: Props) => (
   <Modal
     transparent
     visible={visible}
@@ -44,9 +37,9 @@ const SignupOfferModal = ({
           />
         </View>
         <Text style={styles.eyebrow}>WELCOME OFFER</Text>
-        <Text style={styles.title}>Get {amount} free coins</Text>
+        <Text style={styles.title}>Your first 2 minutes are free</Text>
         <Text style={styles.message}>
-          Claim your one-time signup reward and start talking.
+          Continue from ₹4/min after your free time. No subscription.
         </Text>
         <TouchableOpacity
           disabled={claiming}
@@ -56,7 +49,7 @@ const SignupOfferModal = ({
           {claiming ? (
             <ActivityIndicator color={Colors.white} />
           ) : (
-            <Text style={styles.claimText}>Claim {amount} Coins</Text>
+            <Text style={styles.claimText}>Claim 2 Free Minutes</Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity disabled={claiming} onPress={onDismiss}>

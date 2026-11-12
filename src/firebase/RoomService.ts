@@ -110,10 +110,12 @@ class RoomService {
       callId: callId || '',
       createdAt: Date.now(),
     };
-    await database().ref().update({
-      [`expertActivity/${expertUid}/${entryRef.key}`]: activity,
-      [`expertActivityLatest/${expertUid}`]: activity,
-    });
+    await database()
+      .ref()
+      .update({
+        [`expertActivity/${expertUid}/${entryRef.key}`]: activity,
+        [`expertActivityLatest/${expertUid}`]: activity,
+      });
   }
 
   private async armOfflineOnDisconnect(uid: string) {
@@ -859,7 +861,7 @@ class RoomService {
     });
 
     if (rooms.length === 0) {
-      throw new Error('No Experts are currently online.');
+      throw new Error('No hosts are currently online.');
     }
 
     // Shuffle so every user has an equal chance
@@ -885,7 +887,7 @@ class RoomService {
       }
     }
 
-    throw new Error('No Experts are currently online.');
+    throw new Error('No hosts are currently online.');
   }
 }
 

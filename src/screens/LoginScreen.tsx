@@ -148,13 +148,11 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
                     color={COLORS.white}
                   />
                 </View>
-                <Text style={styles.logo}>Speakly</Text>
+                <Text style={styles.logo}>{copy.brand.appName}</Text>
               </View>
 
               <View style={styles.heroCopyRow}>
-                <Text style={styles.heading}>
-                  {copy.login.heroTitle}
-                </Text>
+                <Text style={styles.heading}>{copy.login.heroTitle}</Text>
 
                 <View style={styles.heroArtwork} pointerEvents="none">
                   <View style={styles.manPortraitCard}>
@@ -209,9 +207,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
           >
             <View style={styles.formHeader}>
               <Text style={styles.formTitle}>{copy.login.heading}</Text>
-              <Text style={styles.formSubtitle}>
-                {copy.login.subtitle} Enter your mobile number to continue.
-              </Text>
+              <Text style={styles.formSubtitle}>{copy.login.subtitle}</Text>
             </View>
 
             <View style={styles.inputBox}>
@@ -280,7 +276,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
               </TouchableOpacity>
 
               <Text style={styles.consentText}>
-                I have read and agree to Speakly&apos;s{' '}
+                I have read and agree to Speakly 121&apos;s{' '}
                 <Text
                   style={styles.link}
                   onPress={() => navigation.navigate('TermsAndConditions')}
@@ -334,9 +330,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
             <View style={styles.disclaimerRow}>
               <View style={styles.disclaimerLine} />
-              <Text style={styles.safeText}>
-                {copy.login.safetyNote}
-              </Text>
+              <Text style={styles.safeText}>{copy.login.safetyNote}</Text>
               <View style={styles.disclaimerLine} />
             </View>
           </View>

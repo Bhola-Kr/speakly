@@ -28,7 +28,7 @@ import UI from '../../constants/ui';
 import { categories } from '../../constants/dummyData';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
-import { useFirstCallReview } from '../../hooks/useFirstCallReview';
+import { useFirstCallRechargePrompt } from '../../hooks/useFirstCallRechargePrompt';
 import { useUser } from '../../hooks/UserContext';
 import SignupOfferModal from './SignupOfferModal';
 import {
@@ -41,6 +41,7 @@ import { copy } from '../../constants/strings';
 import auth from '@react-native-firebase/auth';
 import GuestLoginModal from './GuestLoginModal';
 import { isAnonymousProfileName } from '../../utils/profileValidation';
+import { trackFirstCallOfferApplied } from '../../firebase/analytics';
 
 const HOME_COLORS = {
   background: Colors.background,
@@ -74,7 +75,7 @@ const hasCompleteFemaleProfile = (item: any) => {
 };
 
 const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
-  useFirstCallReview();
+  useFirstCallRechargePrompt(navigation);
   const { user } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
@@ -120,7 +121,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     user?.isExpert !== true &&
     isAnonymousProfileName(user?.profile?.name);
   const showOffer =
-    (!auth().currentUser || Boolean(user)) &&
+    Boolean(auth().currentUser && user) &&
     user?.isExpert !== true &&
     offer.active &&
     offer.amount > 0 &&
@@ -132,10 +133,10 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     claimingOfferRef.current = true;
     try {
       setClaimingOffer(true);
-      const creditedAmount = await claimSignupOffer();
+      await claimSignupOffer();
       Alert.alert(
         'Offer Claimed',
-        `${creditedAmount} coins were added to your balance.`,
+        'Your first 2 free minutes are ready. Choose a host and start talking.',
       );
     } catch (error: any) {
       Alert.alert(
@@ -319,31 +320,25 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   }, [handleCall, navigation, onRandomCall, route?.params?.pendingCall, user]);
 
-  const walletPress = useCallback(
-    () => {
-      if (auth().currentUser) {
-        navigation.navigate('Wallet');
-        return;
-      }
-      setGuestPendingCall(null);
-      setGuestDestination('Wallet');
-      setLoginVisible(true);
-    },
-    [navigation],
-  );
+  const walletPress = useCallback(() => {
+    if (auth().currentUser) {
+      navigation.navigate('Wallet');
+      return;
+    }
+    setGuestPendingCall(null);
+    setGuestDestination('Wallet');
+    setLoginVisible(true);
+  }, [navigation]);
 
-  const userProfilePress = useCallback(
-    () => {
-      if (auth().currentUser) {
-        navigation.navigate('ProfileSetting', { gender: 'male' });
-        return;
-      }
-      setGuestPendingCall(null);
-      setGuestDestination('ProfileSetting');
-      setLoginVisible(true);
-    },
-    [navigation],
-  );
+  const userProfilePress = useCallback(() => {
+    if (auth().currentUser) {
+      navigation.navigate('ProfileSetting', { gender: 'male' });
+      return;
+    }
+    setGuestPendingCall(null);
+    setGuestDestination('ProfileSetting');
+    setLoginVisible(true);
+  }, [navigation]);
 
   const listHeader = useMemo(
     () => (
@@ -379,7 +374,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.heading}>{copy.home.availableHosts}</Text>
-          <Text style={styles.sectionHint}>{copy.home.supportingText}</Text>
+          <Text style={styles.sectionHint}>{copy.home.sectionHint}</Text>
         </View>
 
         <CategoryList
@@ -446,9 +441,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
                   />
                 </View>
                 <Text style={styles.emptyTitle}>{copy.home.noHosts}</Text>
-                <Text style={styles.emptyText}>
-                  {copy.home.noHostsHint}
-                </Text>
+                <Text style={styles.emptyText}>{copy.home.noHostsHint}</Text>
               </>
             ) : (
               <ActivityIndicator color={Colors.secondary} size="large" />
@@ -460,7 +453,6 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
 
       <SignupOfferModal
         visible={showOffer}
-        amount={offer.amount}
         claiming={claimingOffer}
         onClaim={handleOfferClaim}
         onDismiss={() => setOfferDismissed(true)}
@@ -468,6 +460,11 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
 
       <GuestLoginModal
         visible={loginVisible}
+        hostName={String(
+          guestPendingCall?.profile?.tamilName ||
+            guestPendingCall?.profile?.name ||
+            '',
+        ).trim()}
         onOpenTerms={() => {
           setLoginVisible(false);
           navigation.navigate('TermsAndConditions');
@@ -481,7 +478,19 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
           setGuestPendingCall(null);
           setGuestDestination(null);
         }}
-        onAuthenticated={isExpert => {
+        onAuthenticated={async isExpert => {
+          if (!isExpert && !offerClaimed) {
+            try {
+              const creditedAmount = await claimSignupOffer();
+              trackFirstCallOfferApplied(creditedAmount);
+            } catch (error) {
+              // Existing users may already have claimed the offer. Authentication
+              // and the pending call should continue even if the claim is stale.
+              if (__DEV__) {
+                console.warn('Unable to auto-apply first-call offer:', error);
+              }
+            }
+          }
           setLoginVisible(false);
           const learnerRoutes: any[] = [
             { name: 'Main', params: { pendingCall: guestPendingCall } },

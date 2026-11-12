@@ -1,16 +1,27 @@
 import auth from '@react-native-firebase/auth';
 import { databaseRef } from './firebase';
+import { CALL_RATE_PER_MINUTE } from '../constants/constants';
 
 export type SignupOfferConfig = {
   active: boolean;
   amount: number;
 };
 
+export const FIRST_CALL_FREE_MINUTES = 2;
+export const MINIMUM_FIRST_CALL_CREDIT =
+  FIRST_CALL_FREE_MINUTES * CALL_RATE_PER_MINUTE;
+
 const parseConfig = (value: any): SignupOfferConfig => {
   const amount = Number(value?.offerdAmount);
   return {
-    active: value?.isActiveOffer === true,
-    amount: Number.isFinite(amount) && amount > 0 ? amount : 0,
+    // The first-call promise is part of the permanent acquisition experience.
+    // Remote config may increase the reward, but cannot reduce it below the
+    // two-minute minimum advertised throughout the app.
+    active: true,
+    amount:
+      Number.isFinite(amount) && amount > 0
+        ? Math.max(amount, MINIMUM_FIRST_CALL_CREDIT)
+        : MINIMUM_FIRST_CALL_CREDIT,
   };
 };
 
@@ -23,7 +34,10 @@ export const listenSignupOffer = (
     snapshot => callback(parseConfig(snapshot.val())),
     error => {
       console.warn('Unable to load signup offer:', error);
-      callback({ active: false, amount: 0 });
+      callback({
+        active: true,
+        amount: MINIMUM_FIRST_CALL_CREDIT,
+      });
     },
   );
   return () => ref.off('value', listener);
@@ -37,9 +51,8 @@ export const claimSignupOffer = async (): Promise<number> => {
   // is never credited even if an older modal was already visible.
   const configSnapshot = await databaseRef('configs').once('value');
   const config = parseConfig(configSnapshot.val());
-  if (!config.active || config.amount <= 0) {
-    throw new Error('This offer is no longer available.');
-  }
+  if (config.amount <= 0)
+    throw new Error('Unable to apply the free-call offer.');
 
   const userRef = databaseRef(`users/${uid}`);
   const initialSnapshot = await userRef.once('value');

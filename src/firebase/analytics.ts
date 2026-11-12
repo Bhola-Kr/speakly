@@ -20,10 +20,7 @@ const safelyTrack = (operation: () => Promise<void>) => {
     });
 };
 
-export const identifyAnalyticsUser = (
-  uid: string,
-  role: 'caller' | 'expert',
-) =>
+export const identifyAnalyticsUser = (uid: string, role: 'caller' | 'expert') =>
   safelyTrack(async () => {
     const analytics = getAnalytics();
     await setUserId(analytics, uid);
@@ -41,6 +38,43 @@ export const trackLoginSuccess = (uid: string, isExpert: boolean) =>
     );
     await logLogin(analytics, { method: 'phone_otp' });
   });
+
+export const trackGuestAuthentication = (
+  uid: string,
+  isExpert: boolean,
+  method: 'phone_otp' | 'google',
+  isNewUser: boolean,
+) =>
+  safelyTrack(async () => {
+    const analytics = getAnalytics();
+    await setUserId(analytics, uid);
+    await setUserProperty(
+      analytics,
+      'user_role',
+      isExpert ? 'expert' : 'caller',
+    );
+    await logLogin(analytics, { method });
+    if (isNewUser) {
+      await logEvent(analytics, 'sign_up', { method });
+    }
+  });
+
+export const trackFirstCallOfferApplied = (coins: number) =>
+  safelyTrack(() =>
+    logEvent(getAnalytics(), 'first_call_offer_applied', {
+      free_minutes: 2,
+      coins_credited: coins,
+    }),
+  );
+
+export const trackCheckoutStarted = (amount: number, coins: number) =>
+  safelyTrack(() =>
+    logEvent(getAnalytics(), 'begin_checkout', {
+      currency: 'INR',
+      value: amount,
+      coins,
+    }),
+  );
 
 export const trackScreenView = (screenName: string) =>
   safelyTrack(() => {
@@ -80,4 +114,3 @@ export const trackPaymentSuccess = (
     await logPurchase(analytics, purchase);
     await logEvent(analytics, 'payment_success', purchase);
   });
-

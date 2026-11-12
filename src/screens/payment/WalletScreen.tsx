@@ -30,9 +30,12 @@ import {
 } from '../../firebase/paymentGateways';
 import type { PaymentGateway } from '../../firebase/paymentGateways';
 import { copy } from '../../constants/strings';
-import { trackPaymentSuccess } from '../../firebase/analytics';
+import {
+  trackCheckoutStarted,
+  trackPaymentSuccess,
+} from '../../firebase/analytics';
 
-const WalletScreen = ({ navigation }: any) => {
+const WalletScreen = ({ navigation, route }: any) => {
   const insets = useSafeAreaInsets();
   const { user } = useUser();
   const [packs, setPacks] = useState<RechargePack[]>([]);
@@ -85,10 +88,14 @@ const WalletScreen = ({ navigation }: any) => {
         }
 
         setPacks(response);
+        const preferredAmount = Number(route?.params?.preferredAmount || 20);
         setSelectedPack(
           response?.find(
-            (pack: any) => pack.tag?.toUpperCase() === 'POPULAR',
+            (pack: RechargePack) => Number(pack.amount) === preferredAmount,
           ) ||
+            response?.find(
+              (pack: RechargePack) => Number(pack.amount) === 20,
+            ) ||
             response?.[0] ||
             null,
         );
@@ -112,7 +119,7 @@ const WalletScreen = ({ navigation }: any) => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [route?.params?.preferredAmount]);
 
   const totalReceive = useMemo(() => {
     return selectedPack ? selectedPack.amount + selectedPack.bonus : 0;
@@ -122,6 +129,7 @@ const WalletScreen = ({ navigation }: any) => {
     if (!selectedPack || paying) return;
     try {
       setPaying(true);
+      trackCheckoutStarted(selectedPack.amount, totalReceive);
       const currentGateways = await getActivePaymentGateways();
       setActivePaymentGateways(currentGateways);
       if (!currentGateways.includes(paymentGateway)) {
@@ -258,9 +266,11 @@ const WalletScreen = ({ navigation }: any) => {
                   onPress={() => setSelectedPack(pack)}
                   style={[styles.card, selected && styles.selectedCard]}
                 >
-                  {!!pack.tag && (
+                  {(Number(pack.amount) === 20 || !!pack.tag) && (
                     <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{pack.tag}</Text>
+                      <Text style={styles.badgeText}>
+                        {Number(pack.amount) === 20 ? 'STARTER' : pack.tag}
+                      </Text>
                     </View>
                   )}
 
@@ -276,7 +286,7 @@ const WalletScreen = ({ navigation }: any) => {
 
                   <Text style={styles.amount}>₹{pack.amount}</Text>
 
-                  <Text style={styles.bonus}>Bonus ₹{pack.bonus}</Text>
+                  <Text style={styles.bonus}>{pack.bonus} bonus coins</Text>
 
                   <View style={styles.divider} />
 
@@ -318,7 +328,7 @@ const WalletScreen = ({ navigation }: any) => {
               </View>
 
               <Text style={styles.summaryBonus}>
-                Includes Bonus ₹{selectedPack.bonus}
+                Includes {selectedPack.bonus} bonus coins
               </Text>
             </View>
 
@@ -346,7 +356,8 @@ const WalletScreen = ({ navigation }: any) => {
             )}
 
           {!gatewayConfigLoading &&
-            !gatewayConfigError && activePaymentGateways.length > 1 && 
+            !gatewayConfigError &&
+            activePaymentGateways.length > 1 &&
             activePaymentGateways.length > 0 && (
               <View style={styles.gatewayRow}>
                 {activePaymentGateways.map(gateway => {
@@ -362,11 +373,11 @@ const WalletScreen = ({ navigation }: any) => {
                         selected && styles.gatewayOptionSelected,
                       ]}
                     >
-                        <MaterialCommunityIcons
-                          name={selected ? 'radiobox-marked' : 'radiobox-blank'}
-                          size={18}
-                          color={selected ? Colors.secondary : Colors.subText}
-                        />
+                      <MaterialCommunityIcons
+                        name={selected ? 'radiobox-marked' : 'radiobox-blank'}
+                        size={18}
+                        color={selected ? Colors.secondary : Colors.subText}
+                      />
                       <Text
                         style={[
                           styles.gatewayText,

@@ -34,7 +34,7 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
           <View style={[styles.logoBar, styles.logoBarMedium]} />
           <View style={[styles.logoBar, styles.logoBarSmall]} />
         </View>
-        <Text style={styles.brand}>Speakly</Text>
+        <Text style={styles.brand}>{'Speakly 121'}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -117,12 +117,12 @@ const styles = StyleSheet.create({
   logoBarTall: { height: 21 },
   brand: {
     marginLeft: 11,
-    fontSize: 27,
-    lineHeight: 34,
+    fontSize: 22,
+    lineHeight: 29,
     paddingTop: 2,
     fontWeight: '900',
     color: COLORS.navy,
-    letterSpacing: -1.4,
+    letterSpacing: -1,
   },
   actions: { flexDirection: 'row', alignItems: 'center' },
   wallet: {

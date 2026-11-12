@@ -2,32 +2,37 @@ import { CALL_RATE_PER_MINUTE } from './constants';
 
 export const copy = {
   brand: {
-    appName: 'Speakly',
-    splash: 'Speakly — Baat Ho Jaaye?',
+    appName: 'Speakly 121',
+    splash: 'Speakly 121',
     tagline: 'Baat Ho Jaaye?',
-    reassurance: 'Koi Hai, Jo Sunega.',
+    valueProposition: 'Live one-to-one conversations.',
+    offer: 'First 2 minutes free · Then from ₹4/min · No subscription',
   },
   login: {
     heading: 'Baat Ho Jaaye?',
-    subtitle: 'Koi Hai, Jo Sunega.',
-    heroTitle: 'Real conversations start here',
-    supportingText: 'Meet new people and enjoy genuine voice conversations.',
+    subtitle:
+      'Live one-to-one conversations. First 2 minutes free, then from ₹4/min. No subscription.',
+    heroTitle: 'Live one-to-one conversations',
+    supportingText:
+      'Choose an available host. First 2 minutes free, then from ₹4/min.',
     cta: 'Continue',
     phonePlaceholder: 'Your Mobile Number',
     safetyNote:
-      'Social audio conversations only. Speakly is not a dating, therapy, or professional advice service.',
+      'Social audio conversations only. Speakly 121 is not a dating, therapy, or professional advice service.',
   },
   home: {
     heading: 'Who Would You Like to Talk To?',
-    supportingText: 'Start a conversation.',
-    availableHosts: 'Available Experts',
+    supportingText: 'Live one-to-one conversations.',
+    offer: 'First 2 minutes free · Then from ₹4/min · No subscription',
+    sectionHint: 'Choose an available host.',
+    availableHosts: 'Available Hosts',
     online: 'Online',
     busy: 'Busy',
     offline: 'Offline',
     startCall: 'Start Call',
     randomMatch: 'Find Someone to Talk To',
     talkAgain: 'Talk Again',
-    noHosts: 'No Experts are available right now',
+    noHosts: 'No hosts are available right now',
     noHostsHint: 'Try another topic or check back in a little while.',
   },
   recents: {
@@ -41,7 +46,11 @@ export const copy = {
     addCoins: 'Add Coins',
     balanceLabel: 'My Coins',
     lowBalanceTitle: 'Not Enough Coins',
-    lowBalanceMessage: `You need at least ${CALL_RATE_PER_MINUTE} coins to start a call.`,
+    lowBalanceMessage:
+      'Calls start from ₹4/min. Add coins to continue your conversation.',
+    starterTitle: 'Keep the conversation going',
+    starterMessage: 'Add ₹20 for about 4–5 more minutes.',
+    starterAction: 'Add ₹20',
   },
   call: {
     outgoing: 'Calling...',
@@ -74,12 +83,18 @@ export const copy = {
     decline: 'Decline',
     tryAgain: 'Please try again.',
   },
+  postCall: {
+    title: 'Want to keep talking?',
+    message: 'Add ₹20 for about 4–5 more minutes.',
+    action: 'Add ₹20 & Talk Again',
+    later: 'Maybe later',
+  },
 } as const;
 
 export default {
   appName: copy.brand.appName,
   heading: copy.home.heading,
-  subHeading: `Start a conversation @ ${CALL_RATE_PER_MINUTE} coins/min`,
+  subHeading: `Live conversations from ₹${CALL_RATE_PER_MINUTE}/min`,
   phonePlaceholder: copy.login.phonePlaceholder,
   otp: copy.login.cta,
 };

@@ -225,9 +225,9 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   };
 
   const handleContactUs = async () => {
-    const subject = encodeURIComponent('Speakly Support');
+    const subject = encodeURIComponent('Speakly 121 Support');
 
-    const body = encodeURIComponent(`Hello Speakly Support Team,
+    const body = encodeURIComponent(`Hello Speakly 121 Support Team,
 
 Please describe your issue below:
 
@@ -260,8 +260,8 @@ Thank you.
   const handleShareApp = async () => {
     try {
       await Share.share({
-        title: 'Speakly',
-        message: `Discover people and start genuine voice conversations on Speakly.
+        title: 'Speakly 121',
+        message: `Baat Ho Jaaye? Discover people and start live one-to-one voice conversations on Speakly 121.
 
 Download now:
 ${PLAY_STORE_URL}`,

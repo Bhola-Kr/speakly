@@ -47,7 +47,7 @@ function ensureNotificationPermissionRequested() {
 export async function createNotificationChannel() {
   return notifee.createChannel({
     id: CHANNEL_ID,
-    name: 'Speakly notifications',
+    name: 'Speakly 121 notifications',
     importance: AndroidImportance.HIGH,
     sound: 'default',
   });
@@ -87,7 +87,7 @@ export async function displayPushNotification(
   const channelId = await createNotificationChannel();
   await notifee.displayNotification({
     id: message.messageId,
-    title: typeof title === 'string' ? title : 'Speakly',
+    title: typeof title === 'string' ? title : 'Speakly 121',
     body: typeof body === 'string' ? body : undefined,
     data: message.data,
     android: {
@@ -208,11 +208,7 @@ export async function handleNotificationEvent(event: Event) {
 
   const roomRef = database().ref(`rooms/${femaleUid}`);
   const transaction = await roomRef.transaction(room => {
-    if (
-      !room ||
-      room.status !== 'ringing' ||
-      room.currentCallId !== callId
-    ) {
+    if (!room || room.status !== 'ringing' || room.currentCallId !== callId) {
       return;
     }
     return {
@@ -224,18 +220,14 @@ export async function handleNotificationEvent(event: Event) {
 
   if (transaction.committed) {
     if (action === 'accept-call') {
-      await database()
-        .ref(`users/${femaleUid}/profile/status`)
-        .set('busy');
+      await database().ref(`users/${femaleUid}/profile/status`).set('busy');
       await AsyncStorage.setItem(
         PENDING_ACCEPTED_CALL_KEY,
         JSON.stringify({ femaleUid, callId }),
       );
       DeviceEventEmitter.emit(ACCEPTED_CALL_EVENT);
     } else {
-      await database()
-        .ref(`users/${femaleUid}/profile/status`)
-        .set('online');
+      await database().ref(`users/${femaleUid}/profile/status`).set('online');
       await new Promise<void>(resolve => setTimeout(resolve, 1000));
       await roomRef.transaction(room => {
         if (

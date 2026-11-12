@@ -47,7 +47,9 @@ export default function AppUpdateNotice({
             color={Colors.coinText}
           />
           <View style={styles.bannerCopy}>
-            <Text style={styles.bannerTitle}>A smoother Speakly is here</Text>
+            <Text style={styles.bannerTitle}>
+              A smoother Speakly 121 is here
+            </Text>
             <Text style={styles.bannerMessage}>
               Version {latestVersion} is available. Install for better
               performance.
@@ -116,16 +118,18 @@ export default function AppUpdateNotice({
                   : 'Your next upgrade is here'}
               </Text>
               <Text style={styles.heroSubtitle}>
-                Better conversations start with Speakly.
+                Better conversations start with Speakly 121.
               </Text>
             </View>
             <View style={styles.body}>
               <Text style={styles.title}>
-                {required ? 'Update to continue' : 'Meet the latest Speakly'}
+                {required
+                  ? 'Update to continue'
+                  : 'Meet the latest Speakly 121'}
               </Text>
               <Text style={styles.description}>
                 {required
-                  ? 'A new version is ready. Please update Speakly to continue enjoying your conversations.'
+                  ? 'A new version is ready. Please update Speakly 121 to continue enjoying your conversations.'
                   : 'Enjoy the latest improvements and a better calling experience. Update now, or keep chatting and do it later.'}
               </Text>
               {error && (
@@ -135,7 +139,7 @@ export default function AppUpdateNotice({
               )}
               <TouchableOpacity
                 accessibilityRole="button"
-                accessibilityLabel="Update Speakly"
+                accessibilityLabel="Update Speakly 121"
                 onPress={onUpdate}
                 disabled={opening}
                 activeOpacity={0.85}
@@ -160,7 +164,7 @@ export default function AppUpdateNotice({
               </TouchableOpacity>
               {required ? (
                 <Text style={styles.footnote}>
-                  This update is required to use Speakly.
+                  This update is required to use Speakly 121.
                 </Text>
               ) : (
                 <TouchableOpacity

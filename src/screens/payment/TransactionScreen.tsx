@@ -88,9 +88,9 @@ const TransactionScreen = ({ navigation }: any) => {
   };
 
   const handleContactUs = async () => {
-    const subject = encodeURIComponent('Speakly Support');
+    const subject = encodeURIComponent('Speakly 121 Support');
 
-    const body = encodeURIComponent(`Hello Speakly Support Team,
+    const body = encodeURIComponent(`Hello Speakly 121 Support Team,
   
   Please describe your issue below:
   
@@ -222,9 +222,7 @@ const TransactionScreen = ({ navigation }: any) => {
           <>
             <View style={styles.infoRow}>
               <Text style={styles.label}>
-                {item.status === 'success'
-                  ? 'Coins Added'
-                  : 'Expected Coins'}
+                {item.status === 'success' ? 'Coins Added' : 'Expected Coins'}
               </Text>
 
               <Text style={styles.price}>{item.creditedAmount} coins</Text>

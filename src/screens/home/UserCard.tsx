@@ -139,10 +139,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
                   ]}
                 />
                 <Text
-                  style={[
-                    styles.onlineText,
-                    { color: currentStatus.color },
-                  ]}
+                  style={[styles.onlineText, { color: currentStatus.color }]}
                 >
                   {currentStatus.text}
                 </Text>
@@ -152,8 +149,8 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
 
           <View style={styles.actions}>
             <View style={styles.ratePill}>
-              <Text style={styles.price}>{callRate}</Text>
-              <Text style={styles.perMinute}> coins/min</Text>
+              <Text style={styles.price}>₹{callRate}</Text>
+              <Text style={styles.perMinute}>/min</Text>
             </View>
 
             <TouchableOpacity

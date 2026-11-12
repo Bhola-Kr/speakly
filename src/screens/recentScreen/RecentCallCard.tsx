@@ -12,10 +12,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import styles from './styles';
 import Colors from '../../constants/colors';
-import {
-  femaleAvatars,
-  normalizeCallRate,
-} from '../../constants/constants';
+import { femaleAvatars, normalizeCallRate } from '../../constants/constants';
 
 import RoomService, { CallHistory } from '../../firebase/RoomService';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
@@ -156,8 +153,8 @@ const RecentCallCard = ({ item, navigation }: Props) => {
 
         <View style={styles.cardActions}>
           <View style={styles.cardRatePill}>
-            <Text style={styles.cardRateValue}>{callRate}</Text>
-            <Text style={styles.cardRateUnit}> coins/min</Text>
+            <Text style={styles.cardRateValue}>₹{callRate}</Text>
+            <Text style={styles.cardRateUnit}>/min</Text>
           </View>
 
           <TouchableOpacity
@@ -165,10 +162,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
             onPress={handleCall}
             accessibilityRole="button"
             accessibilityLabel={`${copy.call.callAgain}: ${displayName}`}
-            style={[
-              styles.callButton,
-              calling && styles.callButtonDisabled,
-            ]}
+            style={[styles.callButton, calling && styles.callButtonDisabled]}
           >
             {calling ? (
               <ActivityIndicator size="small" color={Colors.white} />

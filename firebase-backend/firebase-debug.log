@@ -1,0 +1,79 @@
+[debug] [2026-11-12T06:14:05.521Z] ----------------------------------------------------------------------
+[debug] [2026-11-12T06:14:05.522Z] Command:       /Users/t2b/.nvm/versions/node/v22.22.0/bin/node /Users/t2b/.nvm/versions/node/v22.22.0/bin/firebase projects:list --json
+[debug] [2026-11-12T06:14:05.522Z] CLI Version:   15.23.0
+[debug] [2026-11-12T06:14:05.522Z] Platform:      darwin
+[debug] [2026-11-12T06:14:05.522Z] Node Version:  v22.22.0
+[debug] [2026-11-12T06:14:05.522Z] Detected Agent: codex_cli
+[debug] [2026-11-12T06:14:05.522Z] Time:          Thu Nov 12 2026 11:44:05 GMT+0530 (India Standard Time)
+[debug] [2026-11-12T06:14:05.522Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-11-12T06:14:05.527Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-11-12T06:14:05.604Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-11-12T06:14:05.605Z] > authorizing via signed-in user (hemant.9793@gmail.com)
+[debug] [2026-11-12T06:14:05.606Z] Checked if tokens are valid: false, expires at: 1794131645291
+[debug] [2026-11-12T06:14:05.606Z] Checked if tokens are valid: false, expires at: 1794131645291
+[debug] [2026-11-12T06:14:05.606Z] > refreshing access token with scopes: []
+[debug] [2026-11-12T06:14:05.606Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-11-12T06:14:05.606Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-11-12T06:14:05.765Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-11-12T06:14:05.765Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-11-12T06:14:05.772Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2026-11-12T06:14:06.284Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-11-12T06:14:06.284Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-11-12T06:14:07.413Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2026-11-12T06:14:07.413Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[info] ┌──────────────────────┬──────────────────────┬────────────────┬──────────────────────┐
+│ Project Display Name │ Project ID           │ Project Number │ Resource Location ID │
+├──────────────────────┼──────────────────────┼────────────────┼──────────────────────┤
+│ cafeManagement       │ cafemanagement-54cd0 │ 572022820143   │ [Not specified]      │
+├──────────────────────┼──────────────────────┼────────────────┼──────────────────────┤
+│ CoupleApp            │ coupleapp-1f6e2      │ 654233299274   │ [Not specified]      │
+├──────────────────────┼──────────────────────┼────────────────┼──────────────────────┤
+│ EmiCalculator        │ emicalculator-146e7  │ 194842741786   │ [Not specified]      │
+├──────────────────────┼──────────────────────┼────────────────┼──────────────────────┤
+│ finalapp2            │ finalapp2-2f011      │ 854169440747   │ us-central           │
+├──────────────────────┼──────────────────────┼────────────────┼──────────────────────┤
+│ PropertyOS           │ propertyos-3a231     │ 483014451960   │ [Not specified]      │
+├──────────────────────┼──────────────────────┼────────────────┼──────────────────────┤
+│ RNDemoApp-6965       │ rndemoapp-6965       │ 205745522742   │ [Not specified]      │
+├──────────────────────┼──────────────────────┼────────────────┼──────────────────────┤
+│ test                 │ test-23d1c           │ 83125245468    │ [Not specified]      │
+├──────────────────────┼──────────────────────┼────────────────┼──────────────────────┤
+│ WithIn               │ within-773e4         │ 853149349872   │ [Not specified]      │
+└──────────────────────┴──────────────────────┴────────────────┴──────────────────────┘
+[info] 
+[info] 8 project(s) total.
+[debug] [2026-11-12T06:14:45.991Z] ----------------------------------------------------------------------
+[debug] [2026-11-12T06:14:45.992Z] Command:       /Users/t2b/.nvm/versions/node/v22.22.0/bin/node /Users/t2b/.nvm/versions/node/v22.22.0/bin/firebase database:get /.settings/rules --project recent-chat-7fd34 --pretty
+[debug] [2026-11-12T06:14:45.992Z] CLI Version:   15.23.0
+[debug] [2026-11-12T06:14:45.992Z] Platform:      darwin
+[debug] [2026-11-12T06:14:45.992Z] Node Version:  v22.22.0
+[debug] [2026-11-12T06:14:45.992Z] Detected Agent: codex_cli
+[debug] [2026-11-12T06:14:45.992Z] Time:          Thu Nov 12 2026 11:44:45 GMT+0530 (India Standard Time)
+[debug] [2026-11-12T06:14:45.992Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-11-12T06:14:46.668Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-11-12T06:14:46.668Z] > authorizing via signed-in user (hemant.9793@gmail.com)
+[debug] [2026-11-12T06:14:46.668Z] [iam] checking project recent-chat-7fd34 for permissions ["firebase.projects.get","firebasedatabase.instances.get"]
+[debug] [2026-11-12T06:14:46.672Z] Checked if tokens are valid: true, expires at: 1794467644765
+[debug] [2026-11-12T06:14:46.672Z] Checked if tokens are valid: true, expires at: 1794467644765
+[debug] [2026-11-12T06:14:46.673Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/recent-chat-7fd34:testIamPermissions [none]
+[debug] [2026-11-12T06:14:46.673Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/recent-chat-7fd34:testIamPermissions  x-goog-user-project=recent-chat-7fd34
+[debug] [2026-11-12T06:14:46.673Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/recent-chat-7fd34:testIamPermissions {"permissions":["firebase.projects.get","firebasedatabase.instances.get"]}
+[debug] [2026-11-12T06:14:48.236Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/recent-chat-7fd34:testIamPermissions 403
+[debug] [2026-11-12T06:14:48.237Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/recent-chat-7fd34:testIamPermissions {"error":{"code":403,"message":"Caller does not have required permission to use project recent-chat-7fd34. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=recent-chat-7fd34 and then retry. Propagation of the new permission may take a few minutes.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"USER_PROJECT_DENIED","domain":"googleapis.com","metadata":{"consumer":"projects/recent-chat-7fd34","containerInfo":"recent-chat-7fd34","service":"cloudresourcemanager.googleapis.com","consoleUrl":"https://console.developers.google.com/iam-admin/iam?project=recent-chat-7fd34"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Caller does not have required permission to use project recent-chat-7fd34. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=recent-chat-7fd34 and then retry. Propagation of the new permission may take a few minutes."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developer console IAM admin","url":"https://console.developers.google.com/iam-admin/iam?project=recent-chat-7fd34"}]}]}}
+[debug] [2026-11-12T06:14:48.238Z] [iam] error while checking permissions, command may fail: Request to https://cloudresourcemanager.googleapis.com/v1/projects/recent-chat-7fd34:testIamPermissions had HTTP Error: 403, Caller does not have required permission to use project recent-chat-7fd34. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=recent-chat-7fd34 and then retry. Propagation of the new permission may take a few minutes.
+[debug] [2026-11-12T06:14:48.239Z] Checked if tokens are valid: true, expires at: 1794467644765
+[debug] [2026-11-12T06:14:48.239Z] Checked if tokens are valid: true, expires at: 1794467644765
+[debug] [2026-11-12T06:14:48.239Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/recent-chat-7fd34 [none]
+[debug] [2026-11-12T06:14:49.082Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/recent-chat-7fd34 403
+[debug] [2026-11-12T06:14:49.082Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/recent-chat-7fd34 {"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}
+[debug] [2026-11-12T06:14:49.083Z] Request to https://firebase.googleapis.com/v1beta1/projects/recent-chat-7fd34 had HTTP Error: 403, The caller does not have permission
+[debug] [2026-11-12T06:14:49.201Z] FirebaseError: Failed to get Firebase project recent-chat-7fd34. Please make sure the project exists and your account has permission to access it.
+    at getFirebaseProject (/Users/t2b/.nvm/versions/node/v22.22.0/lib/node_modules/firebase-tools/lib/management/projects.js:384:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async getDefaultDatabaseInstance (/Users/t2b/.nvm/versions/node/v22.22.0/lib/node_modules/firebase-tools/lib/getDefaultDatabaseInstance.js:6:28)
+    at async Object.requireDatabaseInstance [as fn] (/Users/t2b/.nvm/versions/node/v22.22.0/lib/node_modules/firebase-tools/lib/requireDatabaseInstance.js:15:20)
+    at async /Users/t2b/.nvm/versions/node/v22.22.0/lib/node_modules/firebase-tools/lib/command.js:278:17
+[error] 
+[error] Error: Failed to get details for project: recent-chat-7fd34.

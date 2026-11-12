@@ -37,7 +37,9 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
     route.params?.role === 'expert' ? 'expert' : 'learner';
   const selectedLanguage = String(route.params?.language || 'English');
   const selectedLanguages: string[] = Array.isArray(route.params?.languages)
-    ? route.params.languages.map((item: unknown) => String(item)).filter(Boolean)
+    ? route.params.languages
+        .map((item: unknown) => String(item))
+        .filter(Boolean)
     : [selectedLanguage];
 
   const [gender, setGender] = useState<Gender>(
@@ -221,7 +223,7 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         />
 
         <Text style={styles.note}>
-          Speakly is for social voice conversations—not dating, therapy, or
+          Speakly 121 is for social voice conversations—not dating, therapy, or
           professional advice.
         </Text>
 

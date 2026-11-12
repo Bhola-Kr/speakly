@@ -46,8 +46,15 @@ const Banner = ({ randomCall, calling }: Props) => {
         <View style={styles.copy}>
           <Text style={styles.title}>{copy.home.heading}</Text>
 
-          <Text style={styles.description}>
-            {copy.home.supportingText}
+          <Text style={styles.description}>{copy.home.supportingText}</Text>
+
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.82}
+            style={styles.offer}
+          >
+            {copy.home.offer}
           </Text>
 
           <TouchableOpacity
@@ -124,6 +131,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingTop: 1,
     marginTop: 2,
+  },
+  offer: {
+    color: COLORS.tealDark,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+    fontWeight: '700',
   },
   button: {
     marginTop: 7,

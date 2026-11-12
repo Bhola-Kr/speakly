@@ -24,7 +24,7 @@ const FAQScreen = () => {
         <Text style={styles.title}>Frequently Asked Questions</Text>
 
         <Text style={styles.subtitle}>
-          Find answers to the most commonly asked questions about Speakly.
+          Find answers to the most commonly asked questions about Speakly 121.
         </Text>
 
         {faqs.map(item => {

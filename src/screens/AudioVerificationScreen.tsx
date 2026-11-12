@@ -27,7 +27,7 @@ const REVIEW_WINDOW_MS = 30 * 60 * 1000;
 const MIN_RECORDING_SECONDS = 5;
 const MAX_RECORDING_SECONDS = 10;
 const HOST_VERIFICATION_PROMPT =
-  'Hello, I am joining Speakly as a conversation host. I will welcome callers with respect and keep every conversation safe and genuine.';
+  'Hello, I am joining Speakly 121 as a conversation host. I will welcome callers with respect and keep every conversation safe and genuine.';
 const PROMPTS: Record<string, string> = {
   English: HOST_VERIFICATION_PROMPT,
   Hindi: HOST_VERIFICATION_PROMPT,
@@ -197,7 +197,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
     if (!contactConsent) {
       Alert.alert(
         'Consent Required',
-        'Please confirm that the Speakly team may contact you for onboarding assistance.',
+        'Please confirm that the Speakly 121 team may contact you for onboarding assistance.',
       );
       return;
     }
@@ -262,7 +262,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
                 color={Colors.white}
               />
             </View>
-            <Text style={styles.brandName}>Speakly</Text>
+            <Text style={styles.brandName}>Speakly 121</Text>
           </View>
 
           <View style={styles.reviewIllustration}>
@@ -344,7 +344,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.eyebrow}>{copy.host.verification.toUpperCase()}</Text>
+        <Text style={styles.eyebrow}>
+          {copy.host.verification.toUpperCase()}
+        </Text>
         <Text style={styles.title}>Record in {language}</Text>
         <Text style={styles.subtitle}>
           Read the text naturally. An admin will listen and normally review it
@@ -381,9 +383,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
             color={contactConsent ? Colors.secondary : Colors.placeholder}
           />
           <Text style={styles.consentText}>
-            I choose to be contacted by the Speakly team for assistance in
-            onboarding. The team may contact opted-in Experts with setup guidance
-            and early-host updates.
+            I choose to be contacted by the Speakly 121 team for assistance in
+            onboarding. The team may contact opted-in Experts with setup
+            guidance and early-host updates.
           </Text>
         </TouchableOpacity>
 

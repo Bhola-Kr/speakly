@@ -525,7 +525,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
             .limitToLast(ADMIN_QUEUE_LIMIT)
             .once('value'),
           database()
-          .ref(`callHistory/${selectedExpertUid}`)
+            .ref(`callHistory/${selectedExpertUid}`)
             .orderByChild('startedAt')
             .limitToLast(HISTORY_PAGE_SIZE + 1)
             .once('value'),
@@ -1014,13 +1014,13 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           "You're Approved!",
           notification?.delivered
             ? 'The user now has host access and was notified.'
-            : 'The user now has host access, but no notification could be delivered. Ask them to open Speakly and allow notifications.',
+            : 'The user now has host access, but no notification could be delivered. Ask them to open Speakly 121 and allow notifications.',
         );
         return;
       }
       Alert.alert(
         'Application Rejected',
-        'The user can continue using Speakly as a caller.',
+        'The user can continue using Speakly 121 as a caller.',
       );
     } catch (reviewError: any) {
       Alert.alert(
@@ -1562,8 +1562,8 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                       keyboardType="decimal-pad"
                     />
                     <Text style={styles.switchHelp}>
-                      Private payout rate. Only the host and administrators
-                      can see it.
+                      Private payout rate. Only the host and administrators can
+                      see it.
                     </Text>
                   </>
                 )}
