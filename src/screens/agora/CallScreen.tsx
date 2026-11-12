@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  Modal,
   TouchableOpacity,
   PermissionsAndroid,
   Platform,
@@ -139,9 +140,37 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const [safetyActionLoading, setSafetyActionLoading] = useState(false);
 
   const [callerBalance, setCallerBalance] = useState<number | null>(null);
+  const [freeCallEndsAt, setFreeCallEndsAt] = useState(0);
+  const [showFreeCallModal, setShowFreeCallModal] = useState(false);
+  const [freeCallMinutes, setFreeCallMinutes] = useState(2);
 
   const walletBalance = Number(user?.wallet?.balance);
   const countdownBalance = gender === 'male' ? walletBalance : callerBalance;
+
+  useEffect(() => {
+    if (!connected || gender !== 'male' || !user?.uid || !user?.offers?.signupOffer?.claimedAt || !femaleUid) return;
+    let cancelled = false;
+    const configureFirstFreeCall = async () => {
+      const [historySnapshot, minutesSnapshot, roomSnapshot] = await Promise.all([
+        database().ref(`callHistory/${user.uid}`).once('value'),
+        database().ref('configs/firstCallFreeMinutes').once('value'),
+        database().ref(`rooms/${femaleUid}`).once('value'),
+      ]);
+      if (cancelled) return;
+      const history = historySnapshot.val() || {};
+      const hasCompletedCall = Object.values(history).some((item: any) => item?.status === 'Completed');
+      if (hasCompletedCall) return;
+      const configured = Number(minutesSnapshot.val());
+      const minutes = Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : 2;
+      const room = roomSnapshot.val();
+      const startedAt = Number(room?.callStartedAt || Date.now());
+      setFreeCallMinutes(minutes);
+      setFreeCallEndsAt(startedAt + minutes * BILLING_INTERVAL_MS);
+      setShowFreeCallModal(true);
+    };
+    configureFirstFreeCall().catch(error => console.warn('Unable to load first-call free limit:', error));
+    return () => { cancelled = true; };
+  }, [connected, femaleUid, gender, user?.offers?.signupOffer?.claimedAt, user?.uid]);
 
   useEffect(() => {
     if (
@@ -289,6 +318,15 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     },
     [femaleUid, onFinished, stopBilling, stopTimer],
   );
+
+  useEffect(() => {
+    if (!freeCallEndsAt || !connected) return;
+    const tick = setCallInterval(() => {
+      if (Date.now() >= freeCallEndsAt) finishCall();
+    }, 1000);
+    if (Date.now() >= freeCallEndsAt) finishCall();
+    return tick;
+  }, [connected, finishCall, freeCallEndsAt]);
 
   const finishCallFromRemote = useCallback(
     (updateRoom: boolean, message: string) => {
@@ -717,6 +755,23 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           barStyle={isCaller ? 'dark-content' : 'light-content'}
         />
       )}
+      <Modal transparent visible={showFreeCallModal} animationType="fade" onRequestClose={() => setShowFreeCallModal(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(37,27,32,0.58)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <View style={{ width: '100%', maxWidth: 360, borderRadius: 28, padding: 26, alignItems: 'center', backgroundColor: Colors.surface }}>
+            <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.primaryLight }}>
+              <MaterialCommunityIcons name="gift-outline" size={36} color={Colors.primary} />
+            </View>
+            <Text style={{ marginTop: 18, color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1.5 }}>FIRST CALL OFFER</Text>
+            <Text style={{ marginTop: 8, color: Colors.textPrimary, fontSize: 23, lineHeight: 30, fontWeight: '900', textAlign: 'center' }}>Enjoy your free call</Text>
+            <Text style={{ marginTop: 10, color: Colors.textSecondary, fontSize: 15, lineHeight: 22, textAlign: 'center' }}>Your first call is free for up to {freeCallMinutes} minutes. The call will end when your free time is up.</Text>
+            <TouchableOpacity onPress={() => setShowFreeCallModal(false)} style={{ width: '100%', marginTop: 22, borderRadius: 16, overflow: 'hidden' }}>
+              <LinearGradient colors={[Colors.primary, Colors.primaryPressed]} style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: Colors.white, fontSize: 16, fontWeight: '800' }}>Continue call</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       {isCaller && (
         <View pointerEvents="none" style={styles.callerDecorations}>
           <View style={styles.callerGlowTop} />

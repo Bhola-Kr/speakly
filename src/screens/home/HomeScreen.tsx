@@ -90,6 +90,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
   const [offer, setOffer] = useState<SignupOfferConfig>({
     active: false,
     amount: 0,
+    freeMinutes: 2,
   });
   const [offerDismissed, setOfferDismissed] = useState(false);
   const [claimingOffer, setClaimingOffer] = useState(false);
@@ -116,13 +117,13 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
   );
 
   const offerClaimed = Boolean(user?.offers?.signupOffer?.claimedAt);
+  const signedIn = Boolean(auth().currentUser);
   const showProfileReminder =
     Boolean(user) &&
     user?.isExpert !== true &&
     isAnonymousProfileName(user?.profile?.name);
   const showOffer =
-    Boolean(auth().currentUser && user) &&
-    user?.isExpert !== true &&
+    (!signedIn || (Boolean(user) && user?.isExpert !== true)) &&
     offer.active &&
     offer.amount > 0 &&
     !offerClaimed &&
@@ -136,7 +137,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       await claimSignupOffer();
       Alert.alert(
         'Offer Claimed',
-        'Your first 2 free minutes are ready. Choose a host and start talking.',
+        `Your first ${offer.freeMinutes} free minutes are ready. Choose a host and start talking.`,
       );
     } catch (error: any) {
       Alert.alert(
@@ -147,7 +148,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       claimingOfferRef.current = false;
       setClaimingOffer(false);
     }
-  }, []);
+  }, [offer.freeMinutes]);
 
   const handleOfferClaim = useCallback(() => {
     if (!auth().currentUser) {
@@ -454,6 +455,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       <SignupOfferModal
         visible={showOffer}
         claiming={claimingOffer}
+        requiresLogin={!signedIn}
         onClaim={handleOfferClaim}
         onDismiss={() => setOfferDismissed(true)}
       />

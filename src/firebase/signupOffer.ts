@@ -5,23 +5,25 @@ import { CALL_RATE_PER_MINUTE } from '../constants/constants';
 export type SignupOfferConfig = {
   active: boolean;
   amount: number;
+  freeMinutes: number;
 };
 
-export const FIRST_CALL_FREE_MINUTES = 2;
-export const MINIMUM_FIRST_CALL_CREDIT =
-  FIRST_CALL_FREE_MINUTES * CALL_RATE_PER_MINUTE;
+export const DEFAULT_FIRST_CALL_FREE_MINUTES = 2;
 
 const parseConfig = (value: any): SignupOfferConfig => {
   const amount = Number(value?.offerdAmount);
+  const configuredMinutes = Number(value?.firstCallFreeMinutes);
+  const freeMinutes = Number.isFinite(configuredMinutes) && configuredMinutes > 0
+    ? Math.floor(configuredMinutes)
+    : DEFAULT_FIRST_CALL_FREE_MINUTES;
+  const minimumCredit = freeMinutes * CALL_RATE_PER_MINUTE;
   return {
     // The first-call promise is part of the permanent acquisition experience.
-    // Remote config may increase the reward, but cannot reduce it below the
-    // two-minute minimum advertised throughout the app.
+    // Keep the signup credit sufficient to cover the configured free duration.
     active: true,
     amount:
-      Number.isFinite(amount) && amount > 0
-        ? Math.max(amount, MINIMUM_FIRST_CALL_CREDIT)
-        : MINIMUM_FIRST_CALL_CREDIT,
+      Number.isFinite(amount) && amount > 0 ? Math.max(amount, minimumCredit) : minimumCredit,
+    freeMinutes,
   };
 };
 
@@ -36,7 +38,8 @@ export const listenSignupOffer = (
       console.warn('Unable to load signup offer:', error);
       callback({
         active: true,
-        amount: MINIMUM_FIRST_CALL_CREDIT,
+        amount: DEFAULT_FIRST_CALL_FREE_MINUTES * CALL_RATE_PER_MINUTE,
+        freeMinutes: DEFAULT_FIRST_CALL_FREE_MINUTES,
       });
     },
   );
