@@ -3,6 +3,7 @@ import {
   Alert,
   AppState,
   DeviceEventEmitter,
+  NativeModules,
   Platform,
   StatusBar,
   View,
@@ -320,6 +321,12 @@ Thank you.`);
       if (room?.status === 'ringing' && room.male && !activeCall) {
         setIncomingRoom(room);
         if (AppState.currentState === 'active') {
+          if (Platform.OS === 'android') {
+            NativeModules.CallNotification?.stopIncomingCallRingtone?.().catch(
+              (error: unknown) =>
+                console.warn('Unable to stop background call ringtone:', error),
+            );
+          }
           if (incomingNotificationRef.current === room.currentCallId) {
             incomingNotificationRef.current = '';
           }

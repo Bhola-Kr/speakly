@@ -1,9 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Image,
+  NativeModules,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -115,6 +117,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     DEFAULT_MIN_EXPERT_WITHDRAWAL_AMOUNT,
   );
   const bannerRef = useRef<FlatList>(null);
+  const fullScreenPermissionPrompted = useRef(false);
 
   const { user } = useUser();
   const { activeCall, showCall } = useActiveCall();
@@ -128,6 +131,47 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const totalEarnings = Number(user?.expertEarnings?.total || 0);
   const availableEarnings = Number(user?.expertEarnings?.available || 0);
   const pendingWithdrawal = user?.expertEarnings?.pendingWithdrawal;
+
+  const ensureFullScreenCallPermission = useCallback(async () => {
+    if (Platform.OS !== 'android') return true;
+    try {
+      const canUse = await NativeModules.CallNotification.canUseFullScreenIntent();
+      if (canUse) return true;
+    } catch (error) {
+      console.warn('Unable to check full-screen call permission:', error);
+    }
+
+    Alert.alert(
+      'Allow full-screen call alerts',
+      'Android is showing calls as notifications because full-screen call access is off. Enable it so incoming calls can open the call screen and ring.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Open settings',
+          onPress: () =>
+            NativeModules.CallNotification.openFullScreenIntentSettings().catch(
+              (error: unknown) =>
+                console.warn('Unable to open full-screen call settings:', error),
+            ),
+        },
+      ],
+    );
+    return false;
+  }, []);
+
+  useEffect(() => {
+    if (
+      !isOnline ||
+      Platform.OS !== 'android' ||
+      fullScreenPermissionPrompted.current
+    ) {
+      return;
+    }
+    fullScreenPermissionPrompted.current = true;
+    ensureFullScreenCallPermission().catch(error =>
+      console.warn('Unable to verify full-screen call access:', error),
+    );
+  }, [ensureFullScreenCallPermission, isOnline]);
 
   useEffect(
     () => listenMinimumWithdrawalAmount(setMinimumWithdrawalAmount),
@@ -161,6 +205,8 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     if (goingOnline) {
       return;
     }
+
+    if (!(await ensureFullScreenCallPermission())) return;
 
     try {
       setGoingOnline(true);

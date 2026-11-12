@@ -1,4 +1,4 @@
-import { AppState, DeviceEventEmitter, Platform } from 'react-native';
+import { AppState, DeviceEventEmitter, NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import { FirebaseDatabaseTypes } from '@react-native-firebase/database';
@@ -22,7 +22,7 @@ const CHANNEL_ID = 'voicetamil_general';
 // Android notification-channel sound settings are immutable after creation.
 // Keep this versioned whenever call sound/importance changes so existing
 // installs receive the corrected ringtone configuration.
-const INCOMING_CALL_CHANNEL_ID = 'speakly_incoming_calls_v3';
+const INCOMING_CALL_CHANNEL_ID = 'speakly_incoming_calls_v4';
 const PENDING_ACCEPTED_CALL_KEY = 'pendingAcceptedNotificationCall';
 const MISSED_CALL_DELAY_MS = 30_000;
 export const ACCEPTED_CALL_EVENT = 'SpeaklyAcceptedNotificationCall';
@@ -116,6 +116,18 @@ export async function displayIncomingCallNotification(
   callerName: string,
   femaleUid: string,
 ) {
+  const notificationId = `incoming-call-${callId}`;
+  const displayedNotifications = await notifee.getDisplayedNotifications();
+  if (displayedNotifications.some(item => item.id === notificationId)) return;
+
+  if (Platform.OS === 'android') {
+    try {
+      await NativeModules.CallNotification?.prepareIncomingCallChannel?.();
+      await NativeModules.CallNotification?.startIncomingCallRingtone?.();
+    } catch (error) {
+      console.warn('Unable to start the incoming call ringtone:', error);
+    }
+  }
   await configureIncomingCallActions();
   const channelId = await notifee.createChannel({
     id: INCOMING_CALL_CHANNEL_ID,
@@ -124,11 +136,10 @@ export async function displayIncomingCallNotification(
     importance: AndroidImportance.HIGH,
     vibration: true,
     vibrationPattern: [300, 500, 300, 500],
-    sound: 'default',
     visibility: AndroidVisibility.PUBLIC,
   });
   await notifee.displayNotification({
-    id: `incoming-call-${callId}`,
+    id: notificationId,
     title: 'Incoming Call',
     body: `${callerName || 'Someone'} is calling you`,
     data: { type: 'incoming_call', callId, femaleUid },
@@ -139,8 +150,11 @@ export async function displayIncomingCallNotification(
       importance: AndroidImportance.HIGH,
       category: AndroidCategory.CALL,
       visibility: AndroidVisibility.PUBLIC,
-      sound: 'default',
-      loopSound: true,
+      ongoing: true,
+      onlyAlertOnce: true,
+      fullScreenAction: {
+        id: 'default',
+      },
       actions: [
         {
           title: 'Reject',
@@ -172,7 +186,7 @@ export async function displayIncomingCallNotification(
   };
   await notifee.createTriggerNotification(
     {
-      id: `incoming-call-${callId}`,
+      id: notificationId,
       title: 'Missed Voice Call',
       body: `You missed a call from ${callerName || 'Someone'}`,
       data: { type: 'missed_call', callId, femaleUid },
@@ -192,6 +206,13 @@ export async function displayIncomingCallNotification(
 }
 
 export const cancelIncomingCallNotification = async (callId: string) => {
+  if (Platform.OS === 'android') {
+    try {
+      await NativeModules.CallNotification?.stopIncomingCallRingtone?.();
+    } catch (error) {
+      console.warn('Unable to stop call ringtone:', error);
+    }
+  }
   await Promise.all([
     notifee.cancelNotification(`incoming-call-${callId}`),
     notifee.cancelTriggerNotification(`incoming-call-${callId}`),

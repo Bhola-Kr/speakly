@@ -15,7 +15,8 @@ class VoiceDetectorPackage : ReactPackage {
 
         return listOf(
             VoiceDetectorModule(reactContext),
-            CallRuntimeModule(reactContext)
+            CallRuntimeModule(reactContext),
+            CallNotificationModule(reactContext)
         )
     }
 
