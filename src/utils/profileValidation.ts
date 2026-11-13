@@ -18,6 +18,13 @@ export const createAnonymousName = (uid: string): string => {
   return `Anonymous ${String(hash).padStart(4, '0')}`;
 };
 
+export const createAnonymousNameFromPhone = (phone: string): string => {
+  const lastFourDigits = String(phone || '')
+    .replace(/\D/g, '')
+    .slice(-4);
+  return `Anonymous ${lastFourDigits.padStart(4, '0')}`;
+};
+
 export const isAnonymousProfileName = (value: unknown): boolean => {
   const name = String(value || '').trim();
   return name === 'User' || /^Anonymous \d{4}$/.test(name);

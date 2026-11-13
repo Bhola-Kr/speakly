@@ -42,6 +42,10 @@ import auth from '@react-native-firebase/auth';
 import GuestLoginModal from './GuestLoginModal';
 import { isAnonymousProfileName } from '../../utils/profileValidation';
 import { trackFirstCallOfferApplied } from '../../firebase/analytics';
+import {
+  startOutgoingRingback,
+  stopOutgoingRingback,
+} from '../../utils/outgoingRingback';
 
 const HOME_COLORS = {
   background: Colors.background,
@@ -212,6 +216,8 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       }
 
       callInProgressRef.current = true;
+      let handedOffToOutgoingScreen = false;
+      startOutgoingRingback();
 
       try {
         setCallingUserId(item.uid);
@@ -219,6 +225,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
         const room = await RoomService.callFemale(item.uid);
 
         navigation.navigate('OutgoingCall', { user: item?.profile, room });
+        handedOffToOutgoingScreen = true;
       } catch (error: any) {
         console.log('Call Error:', error);
 
@@ -227,6 +234,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
           error?.message || 'Unable to connect the call. Please try again.',
         );
       } finally {
+        if (!handedOffToOutgoingScreen) stopOutgoingRingback();
         setCallingUserId(null);
         callInProgressRef.current = false;
       }
@@ -273,6 +281,8 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     if (callInProgressRef.current) return;
 
     callInProgressRef.current = true;
+    let handedOffToOutgoingScreen = false;
+    startOutgoingRingback();
 
     try {
       setRandomCalling(true);
@@ -291,9 +301,11 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
         },
         room: randomRoom,
       });
+      handedOffToOutgoingScreen = true;
     } catch (e: any) {
       Alert.alert('Info', e.message);
     } finally {
+      if (!handedOffToOutgoingScreen) stopOutgoingRingback();
       setRandomCalling(false);
       callInProgressRef.current = false;
     }

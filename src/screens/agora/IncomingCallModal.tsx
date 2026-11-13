@@ -184,7 +184,7 @@ const IncomingCallModal = ({
 
             <TouchableOpacity activeOpacity={0.9} onPress={handleAccept}>
               <LinearGradient
-                colors={Colors.gradient}
+                colors={['#2563EB', '#1D4ED8']}
                 style={styles.acceptButton}
               >
                 <MaterialCommunityIcons

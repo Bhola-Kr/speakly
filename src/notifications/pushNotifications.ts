@@ -1,4 +1,9 @@
-import { AppState, DeviceEventEmitter, NativeModules, Platform } from 'react-native';
+import {
+  AppState,
+  DeviceEventEmitter,
+  NativeModules,
+  Platform,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import { FirebaseDatabaseTypes } from '@react-native-firebase/database';
@@ -24,6 +29,8 @@ const CHANNEL_ID = 'voicetamil_general';
 // installs receive the corrected ringtone configuration.
 const INCOMING_CALL_CHANNEL_ID = 'speakly_incoming_calls_v4';
 const PENDING_ACCEPTED_CALL_KEY = 'pendingAcceptedNotificationCall';
+const HANDLED_CALL_KEY = 'handledNotificationCall';
+const ACTION_TTL_MS = 60_000;
 const MISSED_CALL_DELAY_MS = 30_000;
 export const ACCEPTED_CALL_EVENT = 'SpeaklyAcceptedNotificationCall';
 let tokenQueue = Promise.resolve();
@@ -227,6 +234,21 @@ export async function handleNotificationEvent(event: Event) {
 
   const femaleUid = String(notification?.data?.femaleUid || '');
   const callId = String(notification?.data?.callId || '');
+  if (!femaleUid || !callId) return;
+  if (action === 'accept-call' || auth().currentUser?.uid !== femaleUid) {
+    // Persist before Auth restoration or navigation: Android may launch the
+    // activity before either is ready on a cold start.
+    if ((await AsyncStorage.getItem(HANDLED_CALL_KEY)) === callId) return;
+    const existing = await consumePendingAcceptedCall();
+    if (existing?.callId === callId) return;
+    await AsyncStorage.setItem(
+      PENDING_ACCEPTED_CALL_KEY,
+      JSON.stringify({ femaleUid, callId, action, createdAt: Date.now() }),
+    );
+    DeviceEventEmitter.emit(ACCEPTED_CALL_EVENT);
+    await cancelIncomingCallNotification(callId);
+    return;
+  }
   const currentUid = auth().currentUser?.uid;
   if (!femaleUid || !callId || currentUid !== femaleUid) return;
 
@@ -237,20 +259,13 @@ export async function handleNotificationEvent(event: Event) {
     }
     return {
       ...room,
-      status: action === 'accept-call' ? 'accepted' : 'rejected',
+      status: 'rejected',
       updatedAt: Date.now(),
     };
   });
 
   if (transaction.committed) {
-    if (action === 'accept-call') {
-      await database().ref(`users/${femaleUid}/profile/status`).set('busy');
-      await AsyncStorage.setItem(
-        PENDING_ACCEPTED_CALL_KEY,
-        JSON.stringify({ femaleUid, callId }),
-      );
-      DeviceEventEmitter.emit(ACCEPTED_CALL_EVENT);
-    } else {
+    {
       await database().ref(`users/${femaleUid}/profile/status`).set('online');
       await new Promise<void>(resolve => setTimeout(resolve, 1000));
       await roomRef.transaction(room => {
@@ -278,14 +293,30 @@ export async function handleNotificationEvent(event: Event) {
 export async function consumePendingAcceptedCall() {
   const saved = await AsyncStorage.getItem(PENDING_ACCEPTED_CALL_KEY);
   if (!saved) return null;
-  await AsyncStorage.removeItem(PENDING_ACCEPTED_CALL_KEY);
   try {
     const value = JSON.parse(saved);
+    if (!value.createdAt || Date.now() - value.createdAt > ACTION_TTL_MS) {
+      await AsyncStorage.removeItem(PENDING_ACCEPTED_CALL_KEY);
+      return null;
+    }
     return value?.femaleUid && value?.callId
-      ? { femaleUid: String(value.femaleUid), callId: String(value.callId) }
+      ? {
+          femaleUid: String(value.femaleUid),
+          callId: String(value.callId),
+          action: value.action,
+        }
       : null;
   } catch {
+    await AsyncStorage.removeItem(PENDING_ACCEPTED_CALL_KEY);
     return null;
+  }
+}
+
+export async function clearPendingAcceptedCall(callId: string) {
+  const pending = await consumePendingAcceptedCall();
+  if (pending?.callId === callId) {
+    await AsyncStorage.setItem(HANDLED_CALL_KEY, callId);
+    await AsyncStorage.removeItem(PENDING_ACCEPTED_CALL_KEY);
   }
 }
 
@@ -356,6 +387,27 @@ export async function unregisterPushNotifications() {
 }
 
 export function startPushNotifications() {
+  if (Platform.OS === 'android') {
+    notifee
+      .getInitialNotification()
+      .then(initial => {
+        if (
+          initial &&
+          ['accept-call', 'reject-call'].includes(initial.pressAction.id)
+        ) {
+          return handleNotificationEvent({
+            type: EventType.ACTION_PRESS,
+            detail: {
+              notification: initial.notification,
+              pressAction: initial.pressAction,
+            },
+          });
+        }
+      })
+      .catch(error =>
+        console.warn('Unable to restore notification action:', error),
+      );
+  }
   let active = true;
   let accountReady = false;
   const unsubscribeMessage = messaging().onMessage(message =>

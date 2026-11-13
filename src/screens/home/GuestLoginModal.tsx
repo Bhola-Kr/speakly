@@ -12,9 +12,13 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Colors from '../../constants/colors';
+import { maleAvatars } from '../../constants/constants';
 import { sendOtp, verifyMSGOtp } from '../../api/calls';
 import authData from '../../firebase/authData';
-import { createAnonymousName } from '../../utils/profileValidation';
+import {
+  createAnonymousName,
+  createAnonymousNameFromPhone,
+} from '../../utils/profileValidation';
 import { copy } from '../../constants/strings';
 import { trackGuestAuthentication } from '../../firebase/analytics';
 
@@ -86,12 +90,14 @@ const GuestLoginModal = ({
       const existing = await authData.getUser(firebaseUser.uid);
       const isNewUser = !existing;
       if (!existing) {
+        const randomAvatarId =
+          maleAvatars[Math.floor(Math.random() * maleAvatars.length)].id;
         await authData.createUser(firebaseUser, 'male', 'learner', 'English');
         await authData.updateProfile({
-          name: createAnonymousName(firebaseUser.uid),
+          name: createAnonymousNameFromPhone(`91${phone}`),
           gender: 'male',
           role: 'learner',
-          avatarId: 1,
+          avatarId: randomAvatarId,
           avatarSelected: true,
           practiceLanguage: 'English',
           nativeLanguage: 'English',

@@ -54,6 +54,7 @@ import {
   ACCEPTED_CALL_EVENT,
   cancelIncomingCallNotification,
   consumePendingAcceptedCall,
+  clearPendingAcceptedCall,
   displayIncomingCallNotification,
   startPushNotifications,
 } from './notifications/pushNotifications';
@@ -317,9 +318,14 @@ Thank you.`);
       setIncomingRoom(null);
       return;
     }
-    return RoomService.listenCallStatus(femaleUid, room => {
+    let subscribed = true;
+    const unsubscribe = RoomService.listenCallStatus(femaleUid, async room => {
+      const pendingAction = await consumePendingAcceptedCall();
+      if (!subscribed) return;
       if (room?.status === 'ringing' && room.male && !activeCall) {
-        setIncomingRoom(room);
+        setIncomingRoom(
+          pendingAction?.callId === room.currentCallId ? null : room,
+        );
         if (AppState.currentState === 'active') {
           if (Platform.OS === 'android') {
             NativeModules.CallNotification?.stopIncomingCallRingtone?.().catch(
@@ -331,7 +337,10 @@ Thank you.`);
             incomingNotificationRef.current = '';
           }
           cancelIncomingCallNotification(room.currentCallId).catch(error =>
-            console.warn('Unable to clear foreground incoming notification:', error),
+            console.warn(
+              'Unable to clear foreground incoming notification:',
+              error,
+            ),
           );
         } else if (incomingNotificationRef.current !== room.currentCallId) {
           incomingNotificationRef.current = room.currentCallId;
@@ -359,6 +368,10 @@ Thank you.`);
         }
       }
     });
+    return () => {
+      subscribed = false;
+      unsubscribe();
+    };
   }, [activeCall, femaleUid]);
 
   const acceptIncomingCall = React.useCallback(async () => {
@@ -400,31 +413,91 @@ Thank you.`);
     }
   }, [femaleUid, incomingRoom?.currentCallId]);
 
+  const acceptingNotificationRef = React.useRef(false);
   const openAcceptedNotificationCall = React.useCallback(async () => {
     if (!femaleUid || activeCall || !navigationRef.isReady()) return;
-    const pending = await consumePendingAcceptedCall();
-    if (!pending || pending.femaleUid !== femaleUid) return;
-    const snapshot = await databaseRef(`rooms/${femaleUid}`).once('value');
-    const room = snapshot.val() as Room | null;
-    if (
-      !room ||
-      room.status !== 'accepted' ||
-      room.currentCallId !== pending.callId
-    ) {
-      return;
+    if (acceptingNotificationRef.current) return;
+    acceptingNotificationRef.current = true;
+    try {
+      const pending = await consumePendingAcceptedCall();
+      if (!pending || pending.femaleUid !== femaleUid) return;
+      const snapshot = await databaseRef(`rooms/${femaleUid}`).once('value');
+      let room = snapshot.val() as Room | null;
+      if (
+        !room ||
+        !['ringing', 'accepted'].includes(room.status) ||
+        room.currentCallId !== pending.callId
+      ) {
+        await clearPendingAcceptedCall(pending.callId);
+        return;
+      }
+      if (room.status === 'ringing') {
+        if (pending.action === 'reject-call') {
+          await databaseRef(`rooms/${femaleUid}`).transaction(current => {
+            if (
+              !current ||
+              current.currentCallId !== pending.callId ||
+              current.status !== 'ringing'
+            )
+              return;
+            return { ...current, status: 'rejected', updatedAt: Date.now() };
+          });
+          await clearPendingAcceptedCall(pending.callId);
+          setIncomingRoom(null);
+          return;
+        }
+        const initialRoom = room;
+        let firstInvocation = true;
+        const result = await databaseRef(`rooms/${femaleUid}`).transaction(
+          current => {
+            const value = current || (firstInvocation ? initialRoom : null);
+            firstInvocation = false;
+            if (!value) return;
+            if (
+              value.currentCallId !== pending.callId ||
+              !['ringing', 'accepted'].includes(value.status)
+            )
+              return;
+            return { ...value, status: 'accepted', updatedAt: Date.now() };
+          },
+        );
+        if (!result.committed) return;
+        room = result.snapshot.val() as Room;
+      }
+      databaseRef(`users/${femaleUid}/profile/status`)
+        .set('busy')
+        .catch(error =>
+          console.warn('Unable to update accepted-call presence:', error),
+        );
+      const latest = await databaseRef(`rooms/${femaleUid}`).once('value');
+      room = latest.val() as Room | null;
+      if (
+        !room ||
+        room.currentCallId !== pending.callId ||
+        room.status !== 'accepted'
+      ) {
+        await clearPendingAcceptedCall(pending.callId);
+        return;
+      }
+      setIncomingRoom(null);
+      navigationRef.navigate('Call', {
+        gender: 'female',
+        userName: room.male?.name,
+        avatarId: room.male?.avatarId,
+        maleUid: room.male?.uid,
+        maleGender: room.male?.gender,
+        femaleUid,
+        callRatePerMinute: room.callRatePerMinute,
+        callId: room.currentCallId,
+        uid: room.roomId,
+        agora: room.agora,
+      });
+      await clearPendingAcceptedCall(pending.callId);
+    } catch (error) {
+      console.warn('Unable to open accepted notification call:', error);
+    } finally {
+      acceptingNotificationRef.current = false;
     }
-    navigationRef.navigate('Call', {
-      gender: 'female',
-      userName: room.male?.name,
-      avatarId: room.male?.avatarId,
-      maleUid: room.male?.uid,
-      maleGender: room.male?.gender,
-      femaleUid,
-      callRatePerMinute: room.callRatePerMinute,
-      callId: room.currentCallId,
-      uid: room.roomId,
-      agora: room.agora,
-    });
   }, [activeCall, femaleUid]);
 
   React.useEffect(() => {
@@ -437,11 +510,18 @@ Thank you.`);
         setTimeout(() => openAcceptedNotificationCall(), 300);
       }
     });
-    const initialTimer = setTimeout(() => openAcceptedNotificationCall(), 500);
+    let attempts = 0;
+    const initialTimer = setInterval(() => {
+      if (++attempts > 60) {
+        clearInterval(initialTimer);
+        return;
+      }
+      openAcceptedNotificationCall();
+    }, 1000);
     return () => {
       eventSubscription.remove();
       appStateSubscription.remove();
-      clearTimeout(initialTimer);
+      clearInterval(initialTimer);
     };
   }, [openAcceptedNotificationCall]);
 
@@ -450,7 +530,10 @@ Thank you.`);
       theme={speaklyNavigationTheme}
       ref={navigationRef}
       initialState={retainedNavigationState}
-      onReady={syncActiveScreen}
+      onReady={() => {
+        syncActiveScreen();
+        openAcceptedNotificationCall();
+      }}
       onStateChange={state => {
         retainedNavigationState = state;
         syncActiveScreen();

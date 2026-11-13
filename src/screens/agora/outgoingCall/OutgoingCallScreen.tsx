@@ -20,6 +20,10 @@ import styles from './styles';
 import strings, { copy } from '../../../constants/strings';
 import RoomService from '../../../firebase/RoomService';
 import { getFemaleAvatar, getMaleAvatar } from '../../../constants/constants';
+import {
+  startOutgoingRingback,
+  stopOutgoingRingback,
+} from '../../../utils/outgoingRingback';
 
 interface Props {
   navigation: any;
@@ -46,6 +50,11 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const [cancelling, setCancelling] = useState(false);
   const [callPhase, setCallPhase] = useState<'calling' | 'ringing'>('calling');
 
+  useEffect(() => {
+    startOutgoingRingback();
+    return stopOutgoingRingback;
+  }, []);
+
   const cancelCall = async () => {
     if (cancelling) {
       return;
@@ -53,6 +62,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
     try {
       setCancelling(true);
+      stopOutgoingRingback();
       timedOut.current = false;
       await RoomService.menRejectCall(femaleUid);
     } catch (error) {
@@ -85,6 +95,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
           callResolved.current = true;
           clearTimeout(timeout);
+          stopOutgoingRingback();
 
           navigation.reset({
             index: 0,
@@ -94,9 +105,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           if (title && message) {
             setTimeout(
               () =>
-                Alert.alert(title, message, [
-                  { text: copy.call.failedAction },
-                ]),
+                Alert.alert(title, message, [{ text: copy.call.failedAction }]),
               200,
             );
           }
@@ -118,6 +127,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
             callResolved.current = true;
             clearTimeout(timeout);
+            stopOutgoingRingback();
             navigation.replace('Call', {
               gender: 'male',
               userName: englishName || displayName,
@@ -132,10 +142,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             break;
 
           case 'rejected':
-            closeCall(
-              copy.call.rejected,
-              copy.call.rejectedMessage,
-            );
+            closeCall(copy.call.rejected, copy.call.rejectedMessage);
             break;
 
           case 'men_rejected':
@@ -317,7 +324,9 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           </TouchableOpacity>
 
           <Text style={styles.callingText}>
-            {callPhase === 'ringing' ? 'Waiting for an answer' : 'Contacting host'}
+            {callPhase === 'ringing'
+              ? 'Waiting for an answer'
+              : 'Contacting host'}
           </Text>
         </View>
       </View>

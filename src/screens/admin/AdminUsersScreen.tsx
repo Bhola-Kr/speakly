@@ -287,6 +287,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(allowed);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [adminTab, setAdminTab] = useState<
+    'users' | 'activity' | 'withdrawals'
+  >('users');
   const [expertHistoryRefreshKey, setExpertHistoryRefreshKey] = useState(0);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -296,6 +299,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const [activities, setActivities] = useState<ExpertActivity[]>([]);
   const [selectedExpert, setSelectedExpert] =
     useState<ExpertActivityGroup | null>(null);
+  const [expertHistoryTab, setExpertHistoryTab] = useState<
+    'activity' | 'calls'
+  >('activity');
   const [expertCallHistory, setExpertCallHistory] = useState<
     ExpertCallHistory[]
   >([]);
@@ -1186,7 +1192,10 @@ export const AdminUsersScreen = ({ navigation }: any) => {
             key={expert.expertUid}
             accessibilityRole="button"
             style={styles.activityRow}
-            onPress={() => setSelectedExpert(expert)}
+            onPress={() => {
+              setExpertHistoryTab('activity');
+              setSelectedExpert(expert);
+            }}
           >
             <View
               style={[
@@ -1330,46 +1339,93 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           )}
         </TouchableOpacity>
       </View>
+      <View style={styles.adminTabs} accessibilityRole="tablist">
+        {(
+          [
+            { id: 'users', label: 'Users', count: applications.length },
+            { id: 'activity', label: 'Activity', count: 0 },
+            {
+              id: 'withdrawals',
+              label: 'Withdrawals',
+              count: withdrawals.length,
+            },
+          ] as const
+        ).map(tab => (
+          <TouchableOpacity
+            key={tab.id}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: adminTab === tab.id }}
+            accessibilityLabel={`${tab.label}${
+              tab.count ? `, ${tab.count} pending` : ''
+            }`}
+            activeOpacity={0.85}
+            onPress={() => setAdminTab(tab.id)}
+            style={[
+              styles.adminTab,
+              adminTab === tab.id && styles.adminTabSelected,
+            ]}
+          >
+            <Text
+              style={[
+                styles.adminTabText,
+                adminTab === tab.id && styles.adminTabTextSelected,
+              ]}
+            >
+              {tab.label}
+            </Text>
+            {tab.count > 0 && (
+              <View style={styles.tabBadge}>
+                <Text style={styles.tabBadgeText}>{tab.count}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
       <FlatList
-        data={displayedUsers}
+        key={adminTab}
+        data={adminTab === 'users' ? displayedUsers : []}
         keyExtractor={item => String(item.uid)}
         renderItem={renderUser}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
         onEndReached={() => {
-          if (!isSearching) loadUsers(true);
+          if (adminTab === 'users' && !isSearching) loadUsers(true);
         }}
         onEndReachedThreshold={0.35}
         ListHeaderComponent={
           <>
-            {renderWithdrawals()}
-            {renderExpertActivity()}
-            {renderApplications()}
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search all users..."
-              placeholderTextColor={Colors.placeholder}
-              style={styles.searchInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              clearButtonMode="while-editing"
-            />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            <View style={styles.resultInfo}>
-              <Text style={styles.resultText}>
-                {isSearching
-                  ? `${displayedUsers.length} matches`
-                  : `${users.length} users loaded`}
-              </Text>
-              {searching ? (
-                <ActivityIndicator size="small" color={Colors.secondary} />
-              ) : null}
-            </View>
+            {adminTab === 'withdrawals' && renderWithdrawals()}
+            {adminTab === 'activity' && renderExpertActivity()}
+            {adminTab === 'users' && (
+              <>
+                {renderApplications()}
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="Search all users..."
+                  placeholderTextColor={Colors.placeholder}
+                  style={styles.searchInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
+                />
+                {error ? <Text style={styles.error}>{error}</Text> : null}
+                <View style={styles.resultInfo}>
+                  <Text style={styles.resultText}>
+                    {isSearching
+                      ? `${displayedUsers.length} matches`
+                      : `${users.length} users loaded`}
+                  </Text>
+                  {searching ? (
+                    <ActivityIndicator size="small" color={Colors.secondary} />
+                  ) : null}
+                </View>
+              </>
+            )}
           </>
         }
         ListEmptyComponent={
-          loading || searching ? (
+          adminTab !== 'users' ? null : loading || searching ? (
             <ActivityIndicator color={Colors.secondary} style={styles.loader} />
           ) : (
             <Text style={styles.empty}>
@@ -1378,7 +1434,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           )
         }
         ListFooterComponent={
-          loadingMore ? (
+          adminTab !== 'users' ? null : loadingMore ? (
             <ActivityIndicator
               color={Colors.secondary}
               style={styles.footerLoader}
@@ -1685,115 +1741,202 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 </View>
               </View>
 
-              <Text style={styles.expertHistoryHeading}>Daily activity</Text>
-              {loadingExpertHistory ? (
-                <ActivityIndicator
-                  color={Colors.secondary}
-                  style={styles.expertHistoryLoader}
-                />
-              ) : dailyExpertSummaries.length === 0 ? (
-                <Text style={styles.noApplications}>
-                  No daily activity is available for this host.
-                </Text>
-              ) : (
-                dailyExpertSummaries.map(day => (
-                  <View key={day.dateKey} style={styles.dailyActivityCard}>
-                    <Text style={styles.dailyActivityDate}>
-                      {new Date(day.dayStartedAt).toLocaleDateString('en-IN', {
-                        weekday: 'short',
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </Text>
-                    <View style={styles.dailyStatsRow}>
-                      <View style={styles.dailyStat}>
-                        <Text style={styles.dailyStatValue}>
-                          {formatDuration(day.onlineDuration)}
-                        </Text>
-                        <Text style={styles.dailyStatLabel}>Active</Text>
-                      </View>
-                      <View style={styles.dailyStat}>
-                        <Text style={styles.dailyStatValue}>
-                          {day.callsReceived}
-                        </Text>
-                        <Text style={styles.dailyStatLabel}>Received</Text>
-                      </View>
-                      <View style={styles.dailyStat}>
-                        <Text style={styles.dailyStatValue}>
-                          {day.completedCalls}
-                        </Text>
-                        <Text style={styles.dailyStatLabel}>Completed</Text>
-                      </View>
-                      <View style={styles.dailyStat}>
-                        <Text style={styles.dailyStatValue}>
-                          {day.missedCalls}
-                        </Text>
-                        <Text style={styles.dailyStatLabel}>Missed</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.dailyCallTime}>
-                      Total call time: {formatDuration(day.callDuration)}
-                    </Text>
-                  </View>
-                ))
-              )}
+              <View
+                accessibilityRole="tablist"
+                style={styles.expertHistoryTabs}
+              >
+                <TouchableOpacity
+                  accessibilityRole="tab"
+                  accessibilityState={{
+                    selected: expertHistoryTab === 'activity',
+                  }}
+                  activeOpacity={0.82}
+                  onPress={() => setExpertHistoryTab('activity')}
+                  style={[
+                    styles.expertHistoryTab,
+                    expertHistoryTab === 'activity' &&
+                      styles.expertHistoryTabSelected,
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="calendar-clock-outline"
+                    size={18}
+                    color={
+                      expertHistoryTab === 'activity'
+                        ? Colors.white
+                        : Colors.subText
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.expertHistoryTabText,
+                      expertHistoryTab === 'activity' &&
+                        styles.expertHistoryTabTextSelected,
+                    ]}
+                  >
+                    Daily Activity
+                  </Text>
+                </TouchableOpacity>
 
-              <Text style={styles.expertHistoryHeading}>Call history</Text>
-              {loadingExpertHistory ? (
-                <ActivityIndicator
-                  color={Colors.secondary}
-                  style={styles.expertHistoryLoader}
-                />
-              ) : expertHistoryError ? (
-                <Text style={styles.error}>{expertHistoryError}</Text>
-              ) : expertCallHistory.length === 0 ? (
-                <Text style={styles.noApplications}>
-                  No call history is available for this host.
-                </Text>
-              ) : (
-                expertCallHistory.map(call => (
-                  <View key={call.id} style={styles.expertCallCard}>
-                    <View style={styles.expertCallCopy}>
-                      <Text style={styles.expertCallName} numberOfLines={1}>
-                        {call.maleInfo?.name || 'Caller'}
-                      </Text>
-                      <Text style={styles.expertCallMeta}>
-                        {call.startedAt
-                          ? new Date(call.startedAt).toLocaleString('en-IN', {
+                <TouchableOpacity
+                  accessibilityRole="tab"
+                  accessibilityState={{
+                    selected: expertHistoryTab === 'calls',
+                  }}
+                  activeOpacity={0.82}
+                  onPress={() => setExpertHistoryTab('calls')}
+                  style={[
+                    styles.expertHistoryTab,
+                    expertHistoryTab === 'calls' &&
+                      styles.expertHistoryTabSelected,
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="phone-clock-outline"
+                    size={18}
+                    color={
+                      expertHistoryTab === 'calls'
+                        ? Colors.white
+                        : Colors.subText
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.expertHistoryTabText,
+                      expertHistoryTab === 'calls' &&
+                        styles.expertHistoryTabTextSelected,
+                    ]}
+                  >
+                    Call History
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {expertHistoryTab === 'activity' ? (
+                <>
+                  <Text style={styles.expertHistoryHeading}>
+                    Daily activity
+                  </Text>
+                  {loadingExpertHistory ? (
+                    <ActivityIndicator
+                      color={Colors.secondary}
+                      style={styles.expertHistoryLoader}
+                    />
+                  ) : dailyExpertSummaries.length === 0 ? (
+                    <Text style={styles.noApplications}>
+                      No daily activity is available for this host.
+                    </Text>
+                  ) : (
+                    dailyExpertSummaries.map(day => (
+                      <View key={day.dateKey} style={styles.dailyActivityCard}>
+                        <Text style={styles.dailyActivityDate}>
+                          {new Date(day.dayStartedAt).toLocaleDateString(
+                            'en-IN',
+                            {
+                              weekday: 'short',
                               day: '2-digit',
                               month: 'short',
                               year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : 'Date unavailable'}
-                      </Text>
-                    </View>
-                    <View style={styles.expertCallDetails}>
-                      <Text style={styles.expertCallDuration}>
-                        {formatDuration(Number(call.duration || 0))}
-                      </Text>
-                      <Text style={styles.expertCallStatus}>
-                        {call.status || 'Unknown'}
-                      </Text>
-                    </View>
-                  </View>
-                ))
-              )}
-              {hasMoreExpertHistory ? (
-                <TouchableOpacity
-                  disabled={loadingMoreExpertHistory}
-                  style={styles.loadMoreButton}
-                  onPress={loadMoreExpertCalls}
-                >
-                  {loadingMoreExpertHistory ? (
-                    <ActivityIndicator color={Colors.secondary} />
-                  ) : (
-                    <Text style={styles.loadMoreText}>Load older calls</Text>
+                            },
+                          )}
+                        </Text>
+                        <View style={styles.dailyStatsRow}>
+                          <View style={styles.dailyStat}>
+                            <Text style={styles.dailyStatValue}>
+                              {formatDuration(day.onlineDuration)}
+                            </Text>
+                            <Text style={styles.dailyStatLabel}>Active</Text>
+                          </View>
+                          <View style={styles.dailyStat}>
+                            <Text style={styles.dailyStatValue}>
+                              {day.callsReceived}
+                            </Text>
+                            <Text style={styles.dailyStatLabel}>Received</Text>
+                          </View>
+                          <View style={styles.dailyStat}>
+                            <Text style={styles.dailyStatValue}>
+                              {day.completedCalls}
+                            </Text>
+                            <Text style={styles.dailyStatLabel}>Completed</Text>
+                          </View>
+                          <View style={styles.dailyStat}>
+                            <Text style={styles.dailyStatValue}>
+                              {day.missedCalls}
+                            </Text>
+                            <Text style={styles.dailyStatLabel}>Missed</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.dailyCallTime}>
+                          Total call time: {formatDuration(day.callDuration)}
+                        </Text>
+                      </View>
+                    ))
                   )}
-                </TouchableOpacity>
-              ) : null}
+                </>
+              ) : (
+                <>
+                  <Text style={styles.expertHistoryHeading}>Call history</Text>
+                  {loadingExpertHistory ? (
+                    <ActivityIndicator
+                      color={Colors.secondary}
+                      style={styles.expertHistoryLoader}
+                    />
+                  ) : expertHistoryError ? (
+                    <Text style={styles.error}>{expertHistoryError}</Text>
+                  ) : expertCallHistory.length === 0 ? (
+                    <Text style={styles.noApplications}>
+                      No call history is available for this host.
+                    </Text>
+                  ) : (
+                    expertCallHistory.map(call => (
+                      <View key={call.id} style={styles.expertCallCard}>
+                        <View style={styles.expertCallCopy}>
+                          <Text style={styles.expertCallName} numberOfLines={1}>
+                            {call.maleInfo?.name || 'Caller'}
+                          </Text>
+                          <Text style={styles.expertCallMeta}>
+                            {call.startedAt
+                              ? new Date(call.startedAt).toLocaleString(
+                                  'en-IN',
+                                  {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  },
+                                )
+                              : 'Date unavailable'}
+                          </Text>
+                        </View>
+                        <View style={styles.expertCallDetails}>
+                          <Text style={styles.expertCallDuration}>
+                            {formatDuration(Number(call.duration || 0))}
+                          </Text>
+                          <Text style={styles.expertCallStatus}>
+                            {call.status || 'Unknown'}
+                          </Text>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                  {hasMoreExpertHistory ? (
+                    <TouchableOpacity
+                      disabled={loadingMoreExpertHistory}
+                      style={styles.loadMoreButton}
+                      onPress={loadMoreExpertCalls}
+                    >
+                      {loadingMoreExpertHistory ? (
+                        <ActivityIndicator color={Colors.secondary} />
+                      ) : (
+                        <Text style={styles.loadMoreText}>
+                          Load older calls
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : null}
+                </>
+              )}
             </ScrollView>
           ) : null}
         </SafeAreaView>
@@ -1836,6 +1979,39 @@ const styles = StyleSheet.create({
     borderRadius: 21,
   },
   title: { fontSize: 20, fontWeight: '700', color: Colors.text },
+  adminTabs: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 14,
+    padding: 4,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  adminTab: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  adminTabSelected: { backgroundColor: Colors.primary },
+  adminTabText: { color: Colors.subText, fontSize: 12, fontWeight: '700' },
+  adminTabTextSelected: { color: Colors.white },
+  tabBadge: {
+    marginLeft: 4,
+    paddingHorizontal: 5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  tabBadgeText: { color: Colors.primary, fontSize: 10, fontWeight: '800' },
   content: { paddingHorizontal: 16, paddingBottom: 60, flexGrow: 1 },
   reviewSection: { marginTop: 8, marginBottom: 20 },
   reviewHeadingRow: {
@@ -1953,8 +2129,37 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
   },
+  expertHistoryTabs: {
+    flexDirection: 'row',
+    marginTop: 16,
+    padding: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  expertHistoryTab: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 12,
+  },
+  expertHistoryTabSelected: {
+    backgroundColor: Colors.secondary,
+  },
+  expertHistoryTabText: {
+    color: Colors.subText,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  expertHistoryTabTextSelected: {
+    color: Colors.white,
+  },
   expertHistoryHeading: {
-    marginTop: 22,
+    marginTop: 16,
     marginBottom: 10,
     color: Colors.text,
     fontSize: 17,

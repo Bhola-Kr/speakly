@@ -18,6 +18,10 @@ import RoomService, { CallHistory } from '../../firebase/RoomService';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import SurfaceCard from '../../components/SurfaceCard';
 import { copy } from '../../constants/strings';
+import {
+  startOutgoingRingback,
+  stopOutgoingRingback,
+} from '../../utils/outgoingRingback';
 
 interface Props {
   item: CallHistory;
@@ -70,6 +74,9 @@ const RecentCallCard = ({ item, navigation }: Props) => {
       return;
     }
 
+    let handedOffToOutgoingScreen = false;
+    startOutgoingRingback();
+
     try {
       setCalling(true);
 
@@ -84,6 +91,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
         },
         room,
       });
+      handedOffToOutgoingScreen = true;
     } catch (error: any) {
       console.log('Call Error:', error);
 
@@ -92,6 +100,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
         error?.message || 'Unable to connect the call. Please try again.',
       );
     } finally {
+      if (!handedOffToOutgoingScreen) stopOutgoingRingback();
       setCalling(false);
     }
   };
