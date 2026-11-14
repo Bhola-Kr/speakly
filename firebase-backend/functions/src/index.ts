@@ -27,6 +27,7 @@ import {
 } from './expertCompensation';
 import { notifyAdminsOnUserOnboarded } from './onboardingNotifications';
 import { cleanupStaleCalls } from './staleCalls';
+import { notifyAllUsersWhenExpertOnline } from './hostOnlineNotifications';
 
 const app = express();
 
@@ -761,6 +762,7 @@ export {
   notifyAdminsOnExpertApplicationCreated,
   notifyAdminsOnUserOnboarded,
   cleanupStaleCalls,
+  notifyAllUsersWhenExpertOnline,
 };
 export const api = onRequest(
   {
