@@ -5,6 +5,10 @@ import { onValueWritten } from 'firebase-functions/v2/database';
 const DATA_ROOT = 'speakly';
 const EXPERT_STATUS_PATH = '/speakly/users/{hostUid}/profile/status';
 const GENERAL_NOTIFICATION_CHANNEL_ID = 'voicetamil_general';
+const TEST_HOST_PHONE = '8826520718';
+
+const normalizePhone = (value: unknown) =>
+  String(value || '').replace(/\D/g, '').slice(-10);
 
 export const notifyAllUsersWhenExpertOnline = onValueWritten(
   EXPERT_STATUS_PATH,
@@ -23,6 +27,13 @@ export const notifyAllUsersWhenExpertOnline = onValueWritten(
     ]);
     const host = hostSnapshot.val();
     if (!host || (host.isExpert !== true && host.profile?.role !== 'expert')) {
+      return;
+    }
+    const hostPhones = [host.phone, host.profile?.phone].map(normalizePhone);
+    if (hostPhones.includes(TEST_HOST_PHONE)) {
+      logger.info('Skipping expert online notification for test host', {
+        hostUid,
+      });
       return;
     }
 

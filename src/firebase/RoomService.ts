@@ -72,6 +72,8 @@ export interface Room {
 }
 
 class RoomService {
+  private availabilityUpdateInProgress = false;
+
   private getCurrentUser() {
     const user = auth().currentUser;
 
@@ -156,6 +158,15 @@ class RoomService {
   }
 
   async goOnline() {
+    this.availabilityUpdateInProgress = true;
+    try {
+      await this.setOnline();
+    } finally {
+      this.availabilityUpdateInProgress = false;
+    }
+  }
+
+  private async setOnline() {
     const firebaseUser = this.getCurrentUser();
     const user = await this.getUser(firebaseUser?.uid);
     const agoraRes = await fetchAgoraToken();
@@ -212,6 +223,15 @@ class RoomService {
   }
 
   async goOffline() {
+    this.availabilityUpdateInProgress = true;
+    try {
+      await this.setOffline();
+    } finally {
+      this.availabilityUpdateInProgress = false;
+    }
+  }
+
+  private async setOffline() {
     const firebaseUser = this.getCurrentUser();
 
     await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'false');
@@ -233,6 +253,11 @@ class RoomService {
   }
 
   async restoreFemaleAvailability() {
+    // A connection event can arrive while an explicit Go Online/Offline update
+    // is still being written. Do not let its stale snapshot trigger a competing
+    // availability update.
+    if (this.availabilityUpdateInProgress) return false;
+
     const firebaseUser = this.getCurrentUser();
     const [userSnapshot, roomSnapshot] = await Promise.all([
       database().ref(`users/${firebaseUser.uid}`).once('value'),
