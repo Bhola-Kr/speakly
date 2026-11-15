@@ -398,7 +398,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       <>
         <Header walletPress={walletPress} userProfilePress={userProfilePress} />
 
-        {showProfileReminder && (
+        {!showProfileReminder && (
           <TouchableOpacity
             activeOpacity={0.84}
             style={styles.profileReminder}

@@ -140,8 +140,9 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
       // Get user information using the UID
       let userInfo = await authData.getUser(firebaseUser.uid);
+      const isNewUser = !userInfo;
 
-      if (!userInfo) {
+      if (isNewUser) {
         await authData.createUser(firebaseUser, 'male', 'learner', 'English');
         await authData.updateProfile({
           name: createAnonymousName(firebaseUser.uid),
@@ -158,7 +159,11 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
       await refreshUser();
 
-      trackLoginSuccess(firebaseUser.uid, userInfo?.isExpert === true);
+      trackLoginSuccess(
+        firebaseUser.uid,
+        userInfo?.isExpert === true,
+        isNewUser,
+      );
 
       navigation.reset({
         index: 0,

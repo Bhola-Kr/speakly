@@ -208,7 +208,7 @@ const WalletScreen = ({ navigation, route }: any) => {
     if (!selectedPack || paying) return;
     try {
       setPaying(true);
-      trackCheckoutStarted(selectedPack.amount, totalReceive);
+      trackCheckoutStarted(selectedPack.amount, totalReceive, paymentGateway);
       const currentGateways = await getActivePaymentGateways();
       setActivePaymentGateways(currentGateways);
       if (!currentGateways.includes(paymentGateway)) {

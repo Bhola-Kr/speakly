@@ -12,6 +12,14 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>FacebookAppID</key>
+	<string>1674665194000370</string>
+	<key>FacebookClientToken</key>
+	<string>f09e92fb305d81235d9389e4cae9655c</string>
+	<key>FacebookDisplayName</key>
+	<string>Speakly 121</string>
+	<key>FacebookAutoLogAppEventsEnabled</key>
+	<true/>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

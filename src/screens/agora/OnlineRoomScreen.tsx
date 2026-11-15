@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import InCallManager from 'react-native-incall-manager';
+import { trackCallLifecycle } from '../../firebase/analytics';
 
 import IncomingCallModal from './IncomingCallModal';
 import { getUserAvatar } from '../../constants/constants';
@@ -166,6 +167,9 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     }
 
     setShowIncoming(false);
+    trackCallLifecycle('IncomingCallAccepted', {
+      ...(incomingRoom?.roomId ? { call_id: incomingRoom.roomId } : {}),
+    });
     await RoomService.acceptCall(myUid);
     isJoiningCall.current = true;
     navigation.replace('Call', {
@@ -182,6 +186,9 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
   const declineCall = async () => {
     setShowIncoming(false);
+    trackCallLifecycle('IncomingCallDeclined', {
+      ...(incomingRoom?.roomId ? { call_id: incomingRoom.roomId } : {}),
+    });
 
     try {
       await RoomService.rejectCall(myUid);

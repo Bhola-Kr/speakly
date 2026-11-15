@@ -49,7 +49,12 @@ import {
   normalizeCallRate,
 } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
-import { trackCallStarted } from '../../firebase/analytics';
+import {
+  trackCallConnected,
+  trackCallEnded,
+  trackCallLifecycle,
+  trackCallStarted,
+} from '../../firebase/analytics';
 import type { CallFollowUpIntent } from '../../types/callFollowUp';
 import { CALL_RECHARGE_PROMPT_EVENT } from '../../utils/callRechargePrompt';
 import { DEFAULT_FIRST_CALL_FREE_MINUTES } from '../../firebase/signupOffer';
@@ -129,6 +134,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const countdownAlertedRef = useRef(false);
   const freeCallEndsAtRef = useRef(0);
   const connectedRef = useRef(false);
+  const callConnectedAtRef = useRef(0);
+  const callEndTrackedRef = useRef(false);
 
   const seconds = useRef(0);
 
@@ -332,6 +339,16 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       }
 
       callEndedRef.current = true;
+      if (!callEndTrackedRef.current) {
+        callEndTrackedRef.current = true;
+        trackCallEnded(
+          isCaller ? 'caller' : 'expert',
+          callConnectedAtRef.current
+            ? Math.max(0, (Date.now() - callConnectedAtRef.current) / 1000)
+            : 0,
+          endReason || (callConnectedAtRef.current ? 'normal' : 'not_connected'),
+        );
+      }
       peerRecoveryRef.current?.();
       peerRecoveryRef.current = null;
       pauseBilling();
@@ -397,6 +414,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       expertGender,
       femaleUid,
       gender,
+      isCaller,
       onFinished,
       pauseBilling,
       stopTimer,
@@ -566,6 +584,15 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         peerRecoveryRef.current = null;
         connectedRef.current = true;
         setConnected(true);
+        if (!callConnectedAtRef.current) {
+          callConnectedAtRef.current = Date.now();
+          trackCallConnected(isCaller ? 'caller' : 'expert', callRatePerMinute);
+        } else {
+          trackCallLifecycle('CallReconnected', {
+            role: isCaller ? 'caller' : 'expert',
+            ...(callId ? { call_id: callId } : {}),
+          });
+        }
 
         setStatus(copy.call.connected);
 
@@ -592,6 +619,10 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         } else {
           connectedRef.current = false;
           setConnected(false);
+          trackCallLifecycle('CallConnectionLost', {
+            role: isCaller ? 'caller' : 'expert',
+            ...(callId ? { call_id: callId } : {}),
+          });
           pauseBilling();
           setStatus(copy.call.reconnecting);
           if (!peerRecoveryRef.current) {

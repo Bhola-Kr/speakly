@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Speakly 121</string>
+    <string name="facebook_app_id">1674665194000370</string>
+    <string name="facebook_client_token">f09e92fb305d81235d9389e4cae9655c</string>
+    <string name="facebook_app_name">Speakly 121</string>
 </resources>

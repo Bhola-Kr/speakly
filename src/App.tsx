@@ -65,7 +65,11 @@ import database from '@react-native-firebase/database';
 import { databaseRef } from './firebase/firebase';
 import AppAlert from './components/AppAlert';
 import HomeScreen from './screens/home/HomeScreen';
-import { identifyAnalyticsUser, trackScreenView } from './firebase/analytics';
+import {
+  identifyAnalyticsUser,
+  initializeMetaAppEvents,
+  trackScreenView,
+} from './firebase/analytics';
 import { recordFirstInstall } from './firebase/installTracking';
 
 const Stack = createNativeStackNavigator();
@@ -630,6 +634,9 @@ Thank you.`);
 }
 
 export default function App({ isHeadless = false }: { isHeadless?: boolean }) {
+  React.useEffect(() => {
+    if (!isHeadless) initializeMetaAppEvents();
+  }, [isHeadless]);
   React.useEffect(() => {
     if (!isHeadless) return startPushNotifications();
   }, [isHeadless]);

@@ -24,6 +24,7 @@ import {
   startOutgoingRingback,
   stopOutgoingRingback,
 } from '../../../utils/outgoingRingback';
+import { trackCallLifecycle } from '../../../firebase/analytics';
 
 interface Props {
   navigation: any;
@@ -46,11 +47,16 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const glow = useRef(new Animated.Value(0)).current;
   const callResolved = useRef(false);
   const timedOut = useRef(false);
+  const ringingTracked = useRef(false);
+  const terminalTracked = useRef(false);
 
   const [cancelling, setCancelling] = useState(false);
   const [callPhase, setCallPhase] = useState<'calling' | 'ringing'>('calling');
 
   useEffect(() => {
+    trackCallLifecycle('OutgoingCallAttempted', {
+      ...(femaleUid ? { expert_id: femaleUid } : {}),
+    });
     startOutgoingRingback();
     return stopOutgoingRingback;
   }, []);
@@ -64,6 +70,9 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       setCancelling(true);
       stopOutgoingRingback();
       timedOut.current = false;
+      trackCallLifecycle('OutgoingCallCancelled', {
+        ...(femaleUid ? { expert_id: femaleUid } : {}),
+      });
       await RoomService.menRejectCall(femaleUid);
     } catch (error) {
       console.error('Unable to cancel call:', error);
@@ -117,6 +126,12 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             break;
 
           case 'ringing':
+            if (!ringingTracked.current) {
+              ringingTracked.current = true;
+              trackCallLifecycle('OutgoingCallRinging', {
+                ...(femaleUid ? { expert_id: femaleUid } : {}),
+              });
+            }
             setCallPhase('ringing');
             break;
 
@@ -142,10 +157,25 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             break;
 
           case 'rejected':
+            if (!terminalTracked.current) {
+              terminalTracked.current = true;
+              trackCallLifecycle('OutgoingCallRejected', {
+                ...(femaleUid ? { expert_id: femaleUid } : {}),
+              });
+            }
             closeCall(copy.call.rejected, copy.call.rejectedMessage);
             break;
 
           case 'men_rejected':
+            if (!terminalTracked.current) {
+              terminalTracked.current = true;
+              trackCallLifecycle(
+                timedOut.current
+                  ? 'OutgoingCallTimedOut'
+                  : 'OutgoingCallCancelled',
+                { ...(femaleUid ? { expert_id: femaleUid } : {}) },
+              );
+            }
             timedOut.current
               ? closeCall(
                   copy.call.timeout,

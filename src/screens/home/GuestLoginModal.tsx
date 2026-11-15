@@ -20,7 +20,10 @@ import {
   createAnonymousNameFromPhone,
 } from '../../utils/profileValidation';
 import { copy } from '../../constants/strings';
-import { trackGuestAuthentication } from '../../firebase/analytics';
+import {
+  trackGuestAuthentication,
+  trackLoginModalEvent,
+} from '../../firebase/analytics';
 
 type Props = {
   visible: boolean;
@@ -48,6 +51,7 @@ const GuestLoginModal = ({
   const otpRef = useRef<TextInput>(null);
 
   useEffect(() => {
+    if (visible) trackLoginModalEvent('LoginModalOpened');
     if (!visible) {
       setStep('phone');
       setOtp('');
@@ -59,6 +63,7 @@ const GuestLoginModal = ({
 
   const requestOtp = async () => {
     if (phone.length !== 10 || loading) return;
+    trackLoginModalEvent('LoginMethodSelected', { method: 'phone_otp' });
     try {
       setLoading(true);
       setAuthMethod('phone');
@@ -68,8 +73,10 @@ const GuestLoginModal = ({
       }
       setRequestId(response.reqId);
       setStep('otp');
+      trackLoginModalEvent('LoginOtpRequested', { method: 'phone_otp' });
       requestAnimationFrame(() => otpRef.current?.focus());
     } catch (error: any) {
+      trackLoginModalEvent('LoginOtpRequestFailed', { method: 'phone_otp' });
       Alert.alert('Unable to send OTP', error?.message || 'Please try again.');
     } finally {
       setLoading(false);
@@ -112,6 +119,9 @@ const GuestLoginModal = ({
       );
       await onAuthenticated(existing?.isExpert === true);
     } catch (error: any) {
+      trackLoginModalEvent('LoginOtpVerificationFailed', {
+        method: 'phone_otp',
+      });
       Alert.alert('Login failed', error?.message || 'Please try again.');
     } finally {
       setLoading(false);
@@ -121,6 +131,7 @@ const GuestLoginModal = ({
 
   const loginWithGoogle = async () => {
     if (loading) return;
+    trackLoginModalEvent('LoginMethodSelected', { method: 'google' });
     try {
       setLoading(true);
       setAuthMethod('google');
@@ -152,6 +163,7 @@ const GuestLoginModal = ({
       );
       await onAuthenticated(existing?.isExpert === true);
     } catch (error: any) {
+      trackLoginModalEvent('LoginGoogleFailed', { method: 'google' });
       Alert.alert('Google login failed', error?.message || 'Please try again.');
     } finally {
       setLoading(false);
@@ -171,7 +183,10 @@ const GuestLoginModal = ({
         <TouchableOpacity
           activeOpacity={1}
           style={StyleSheet.absoluteFill}
-          onPress={onClose}
+          onPress={() => {
+            trackLoginModalEvent('LoginModalDismissed', { method: 'backdrop' });
+            onClose();
+          }}
         />
         <View style={styles.card}>
           <View style={styles.topRow}>
