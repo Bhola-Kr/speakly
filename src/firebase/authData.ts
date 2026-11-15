@@ -35,6 +35,7 @@ export type VerificationData = {
 };
 
 const ACCOUNT_DELETION_DELAY_MS = 15 * 24 * 60 * 60 * 1000;
+const GOOGLE_DEFAULT_PAYMENT_PHONE = '8826520717';
 
 class AuthData {
   confirmation: any = null;
@@ -55,6 +56,34 @@ class AuthData {
     );
     const result = await auth().signInWithCredential(credential);
     await AsyncStorage.setItem('uid', result.user.uid);
+
+    const isGoogleAccount = result.user.providerData.some(
+      provider => provider.providerId === 'google.com',
+    );
+    if (isGoogleAccount && !result.user.phoneNumber) {
+      await databaseRef(`users/${result.user.uid}`)
+        .transaction(current => {
+          if (!current) return;
+          return {
+            ...current,
+            phone: current.phone || GOOGLE_DEFAULT_PAYMENT_PHONE,
+            email: current.email || result.user.email || '',
+            profile: {
+              ...(current.profile || {}),
+              phone:
+                current.profile?.phone || GOOGLE_DEFAULT_PAYMENT_PHONE,
+              email: current.profile?.email || result.user.email || '',
+            },
+            verification: {
+              ...(current.verification || {}),
+              phoneVerified: current.verification?.phoneVerified === true,
+            },
+          };
+        })
+        .catch(error =>
+          console.warn('Unable to save Google account payment contact:', error),
+        );
+    }
     return result.user;
   };
 
@@ -111,7 +140,13 @@ class AuthData {
     }
 
     const uid = user.uid;
-    const phone = user.phoneNumber || '';
+    const isGoogleAccount = user.providerData?.some(
+      (provider: any) => provider.providerId === 'google.com',
+    );
+    const verifiedPhone = user.phoneNumber || '';
+    const phone =
+      verifiedPhone ||
+      (isGoogleAccount ? GOOGLE_DEFAULT_PAYMENT_PHONE : '');
     const email = user.email || '';
     const now = Date.now();
 
@@ -152,7 +187,7 @@ class AuthData {
             existing.profile?.supportedLanguages || [language],
         },
         verification: {
-          phoneVerified: Boolean(phone),
+          phoneVerified: Boolean(verifiedPhone),
           voiceVerified: false,
           ...(existing.verification || {}),
         },

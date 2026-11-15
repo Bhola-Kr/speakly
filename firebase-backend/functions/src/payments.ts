@@ -22,6 +22,7 @@ const RAZORPAY_WEBHOOK_SECRET = 'dc48bc67e925117c28d68cd5a799e3f4180f4410e5caa69
 const DATA_ROOT = 'speakly';
 const PAYMENT_ROOT = `${DATA_ROOT}/payments`;
 const RECONCILE_LIMIT = 50;
+const GOOGLE_DEFAULT_PAYMENT_PHONE = '8826520717';
 
 type PaymentGateway = 'payu' | 'razorpay';
 
@@ -48,9 +49,18 @@ type PaymentStatus =
   | 'success'
   | 'failed';
 
+type PaymentCustomer = {
+  uid: string;
+  name: string;
+  email: string;
+  phone: string;
+  authProvider: string;
+};
+
 type PaymentRecord = {
   transactionId: string;
   uid: string;
+  customer: PaymentCustomer;
   packId: number;
   amount: number;
   bonus: number;
@@ -99,6 +109,7 @@ const getAuthenticatedUid = async (req: Request) => {
 const publicPayment = (payment: PaymentRecord) => ({
   id: payment.transactionId,
   transactionId: payment.transactionId,
+  customer: payment.customer,
   amount: payment.amount,
   bonus: payment.bonus,
   creditedAmount: payment.creditedAmount,
@@ -115,6 +126,86 @@ const publicPayment = (payment: PaymentRecord) => ({
   paymentMode: payment.paymentMode || null,
   failureReason: payment.failureReason || null,
 });
+
+const normalizePhone = (value: unknown) =>
+  String(value || '')
+    .replace(/\D/g, '')
+    .slice(-10);
+
+const paymentCustomer = (
+  uid: string,
+  user: any,
+  authUser: admin.auth.UserRecord,
+): PaymentCustomer => {
+  const providers = authUser.providerData.map(provider => provider.providerId);
+  const storedPhone = [user.phone, user.profile?.phone, authUser.phoneNumber]
+    .map(normalizePhone)
+    .find(candidate => candidate.length === 10);
+  const phone =
+    storedPhone
+      ? storedPhone
+      : providers.includes('google.com')
+        ? GOOGLE_DEFAULT_PAYMENT_PHONE
+        : '';
+  const name = String(
+    user.profile?.name ||
+      user.profile?.tamilName ||
+      authUser.displayName ||
+      'Speakly User',
+  )
+    .trim()
+    .slice(0, 100);
+  const email = String(user.profile?.email || user.email || authUser.email || '')
+    .trim()
+    .slice(0, 150);
+
+  return {
+    uid,
+    name,
+    email,
+    phone,
+    authProvider: providers.join(',') || 'unknown',
+  };
+};
+
+const persistGooglePaymentPhone = async (
+  uid: string,
+  user: any,
+  customer: PaymentCustomer,
+) => {
+  const isGoogleAccount = customer.authProvider
+    .split(',')
+    .includes('google.com');
+  const storedPhone = [user.phone, user.profile?.phone]
+    .map(normalizePhone)
+    .find(candidate => candidate.length === 10);
+  if (
+    !isGoogleAccount ||
+    storedPhone !== undefined ||
+    customer.phone !== GOOGLE_DEFAULT_PAYMENT_PHONE
+  ) {
+    return;
+  }
+
+  await admin
+    .database()
+    .ref(`${DATA_ROOT}/users/${uid}`)
+    .transaction((current: any) => {
+      if (!current) return;
+      const currentPhone = [current.phone, current.profile?.phone]
+        .map(normalizePhone)
+        .find(candidate => candidate.length === 10);
+      if (currentPhone) return;
+      return {
+        ...current,
+        phone: GOOGLE_DEFAULT_PAYMENT_PHONE,
+        profile: {
+          ...(current.profile || {}),
+          phone: GOOGLE_DEFAULT_PAYMENT_PHONE,
+        },
+      };
+    });
+};
 
 const createTransactionId = (uid: string) => {
   const uidTail = uid.replace(/[^a-zA-Z0-9]/g, '').slice(-6);
@@ -377,33 +468,25 @@ export const initiatePayment = async (req: Request, res: Response) => {
       admin.auth().getUser(uid),
     ]);
     const user = userSnapshot.val() || {};
-    const phone = String(
-      user.phone || user.profile?.phone || authUser.phoneNumber || '',
-    )
-      .replace(/\D/g, '')
-      .slice(-10);
+    const customer = paymentCustomer(uid, user, authUser);
+    const phone = customer.phone;
     if (phone.length !== 10) {
       return res.status(422).json({
         success: false,
         message: 'A valid 10-digit phone number is required for payment',
       });
     }
-    const firstName = String(
-      user.profile?.name ||
-        user.profile?.tamilName ||
-        authUser.displayName ||
-        'Speakly User',
-    ).slice(0, 60);
-    const email = String(
-      user.profile?.email ||
-        authUser.email ||
-        `payments+${sha512(uid).slice(0, 16)}@joinspeakly.com`,
-    ).slice(0, 100);
+    await persistGooglePaymentPhone(uid, user, customer);
+    const firstName = customer.name.slice(0, 60);
+    const email =
+      customer.email ||
+      `payments+${sha512(uid).slice(0, 16)}@joinspeakly.com`;
     const transactionId = createTransactionId(uid);
     const now = Date.now();
     const payment: PaymentRecord = {
       transactionId,
       uid,
+      customer,
       packId,
       amount: pack.amount,
       bonus: pack.bonus,
@@ -423,6 +506,14 @@ export const initiatePayment = async (req: Request, res: Response) => {
         [`users/${uid}/paymentHistory/${transactionId}`]:
           publicPayment(payment),
       });
+    logger.info('Wallet payment initiated', {
+      transactionId,
+      uid,
+      customer,
+      provider: 'payu',
+      packId,
+      amount: pack.amount,
+    });
     const callbackBase = `https://us-central1-${
       process.env.GCLOUD_PROJECT || 'recent-chat-7fd34'
     }.cloudfunctions.net/api/payu/callback`;
@@ -449,6 +540,8 @@ export const initiatePayment = async (req: Request, res: Response) => {
             udf1: uid,
             udf2: String(pack.id),
             udf3: transactionId,
+            udf4: customer.authProvider,
+            udf5: customer.email,
           },
         },
       },
@@ -486,27 +579,17 @@ export const initiateRazorpayPayment = async (req: Request, res: Response) => {
       admin.auth().getUser(uid),
     ]);
     const user = userSnapshot.val() || {};
-    const phone = String(
-      user.phone || user.profile?.phone || authUser.phoneNumber || '',
-    )
-      .replace(/\D/g, '')
-      .slice(-10);
+    const customer = paymentCustomer(uid, user, authUser);
+    const phone = customer.phone;
     if (phone.length !== 10) {
       return res.status(422).json({
         success: false,
         message: 'A valid 10-digit phone number is required for payment',
       });
     }
-    const name = String(
-      user.profile?.name ||
-        user.profile?.tamilName ||
-        authUser.displayName ||
-        'Speakly User',
-    ).slice(0, 60);
-    const email = String(user.profile?.email || authUser.email || '').slice(
-      0,
-      100,
-    );
+    await persistGooglePaymentPhone(uid, user, customer);
+    const name = customer.name.slice(0, 60);
+    const email = customer.email;
     const transactionId = createTransactionId(uid);
     const order = await razorpayRequest('/orders', {
       method: 'POST',
@@ -515,13 +598,22 @@ export const initiateRazorpayPayment = async (req: Request, res: Response) => {
         currency: 'INR',
         receipt: transactionId,
         payment_capture: 1,
-        notes: { uid, packId: String(pack.id), transactionId },
+        notes: {
+          uid,
+          packId: String(pack.id),
+          transactionId,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          authProvider: customer.authProvider,
+        },
       }),
     });
     const now = Date.now();
     const payment: PaymentRecord = {
       transactionId,
       uid,
+      customer,
       packId,
       amount: pack.amount,
       bonus: pack.bonus,
@@ -542,6 +634,14 @@ export const initiateRazorpayPayment = async (req: Request, res: Response) => {
         [`users/${uid}/paymentHistory/${transactionId}`]:
           publicPayment(payment),
       });
+    logger.info('Wallet payment initiated', {
+      transactionId,
+      uid,
+      customer,
+      provider: 'razorpay',
+      packId,
+      amount: pack.amount,
+    });
     return res.status(201).json({
       success: true,
       data: {
