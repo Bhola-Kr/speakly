@@ -28,13 +28,6 @@ import {
 import { notifyAdminsOnUserOnboarded } from './onboardingNotifications';
 import { cleanupStaleCalls } from './staleCalls';
 import { notifyAllUsersWhenExpertOnline } from './hostOnlineNotifications';
-import {
-  reconcileExpertPresenceOnAvailabilityChange,
-  reconcileExpertPresenceOnConnectionChange,
-  reconcileExpertPresenceOnRoomChange,
-  reconcileExpertPresenceOnStatusChange,
-} from './expertPresence';
-import { notifyExpertOfMissedCall } from './missedCallNotifications';
 
 const app = express();
 
@@ -199,13 +192,11 @@ app.post('/sendCallNotification', async (req: Request, res: Response) => {
         callId: callId.trim(),
         callerName: callerName.trim(),
       },
-      android: { priority: 'high', ttl: 30_000 },
+      android: { priority: 'high' },
       apns: {
         headers: {
           'apns-priority': '10',
           'apns-push-type': 'alert',
-          'apns-expiration': String(Math.floor(Date.now() / 1000) + 30),
-          'apns-collapse-id': `call-${callId.trim()}`,
         },
         payload: {
           aps: {
@@ -772,11 +763,6 @@ export {
   notifyAdminsOnUserOnboarded,
   cleanupStaleCalls,
   notifyAllUsersWhenExpertOnline,
-  reconcileExpertPresenceOnAvailabilityChange,
-  reconcileExpertPresenceOnConnectionChange,
-  reconcileExpertPresenceOnRoomChange,
-  reconcileExpertPresenceOnStatusChange,
-  notifyExpertOfMissedCall,
 };
 export const api = onRequest(
   {

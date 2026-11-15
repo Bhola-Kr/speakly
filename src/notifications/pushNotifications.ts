@@ -17,6 +17,8 @@ import notifee, {
   AuthorizationStatus,
   EventType,
   Event,
+  TriggerType,
+  TimestampTrigger,
 } from '@notifee/react-native';
 import { hasCompletedSignup } from '../utils/profileValidation';
 import { scopedDatabase as database } from '../firebase/firebase';
@@ -29,6 +31,7 @@ const INCOMING_CALL_CHANNEL_ID = 'speakly_incoming_calls_v4';
 const PENDING_ACCEPTED_CALL_KEY = 'pendingAcceptedNotificationCall';
 const HANDLED_CALL_KEY = 'handledNotificationCall';
 const ACTION_TTL_MS = 60_000;
+const MISSED_CALL_DELAY_MS = 30_000;
 export const ACCEPTED_CALL_EVENT = 'SpeaklyAcceptedNotificationCall';
 let tokenQueue = Promise.resolve();
 let signingOut = false;
@@ -72,10 +75,6 @@ async function configureIncomingCallActions() {
 export async function displayPushNotification(
   message: FirebaseMessagingTypes.RemoteMessage,
 ) {
-  if (message.data?.type === 'missed_call') {
-    const callId = String(message.data?.callId || '');
-    if (callId) await cancelIncomingCallNotification(callId);
-  }
   if (message.data?.type === 'incoming_call') {
     // While foregrounded, the room listener shows the in-app incoming call
     // screen and ringtone. A system notification here would duplicate it.
@@ -188,6 +187,29 @@ export async function displayIncomingCallNotification(
     },
   });
 
+  const missedCallTrigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: Date.now() + MISSED_CALL_DELAY_MS,
+  };
+  await notifee.createTriggerNotification(
+    {
+      id: notificationId,
+      title: 'Missed Voice Call',
+      body: `You missed a call from ${callerName || 'Someone'}`,
+      data: { type: 'missed_call', callId, femaleUid },
+      android: {
+        channelId,
+        smallIcon: 'ic_notification',
+        pressAction: { id: 'default' },
+        category: AndroidCategory.CALL,
+        sound: 'default',
+      },
+      ios: {
+        sound: 'default',
+      },
+    },
+    missedCallTrigger,
+  );
 }
 
 export const cancelIncomingCallNotification = async (callId: string) => {
