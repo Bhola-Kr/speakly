@@ -298,6 +298,20 @@ Thank you.`);
   }, [applyStatusBarAppearance]);
   React.useEffect(() => {
     if (!femaleUid) return;
+    const updateAppState = (state: string) => {
+      const presenceState =
+        state === 'background' || state === 'inactive'
+          ? 'background'
+          : 'foreground';
+      RoomService.updateExpertAppState(presenceState).catch(error =>
+        console.warn('Unable to update expert app presence:', error),
+      );
+    };
+    updateAppState(AppState.currentState || 'active');
+    const appStateSubscription = AppState.addEventListener(
+      'change',
+      updateAppState,
+    );
     const connectedRef = database().ref('.info/connected');
     const listener = connectedRef.on('value', snapshot => {
       if (snapshot.val() !== true || restoringPresenceRef.current) return;
@@ -310,7 +324,10 @@ Thank you.`);
           restoringPresenceRef.current = false;
         });
     });
-    return () => connectedRef.off('value', listener);
+    return () => {
+      connectedRef.off('value', listener);
+      appStateSubscription.remove();
+    };
   }, [femaleUid]);
 
   React.useEffect(() => {

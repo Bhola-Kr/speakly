@@ -5,6 +5,7 @@ import { creditExpertEarningsForCall } from './expertCompensation.js';
 
 const DATA_ROOT = 'speakly';
 const STALE_CALL_GRACE_MS = 75 * 1000;
+const UNANSWERED_CALL_TIMEOUT_MS = 45 * 1000;
 
 const normalizeRate = (value: unknown) => {
   const rate = Number(value);
@@ -27,7 +28,10 @@ export const cleanupStaleCalls = onSchedule(
     const roomsToProcess = Object.entries(roomsSnapshot.val() || {}).filter(
       ([, room]: [string, any]) =>
         room?.status === 'active' ||
-        (room?.status === 'ended' && room?.callSettled === false),
+        (room?.status === 'ended' && room?.callSettled === false) ||
+        ((room?.status === 'calling' || room?.status === 'ringing') &&
+          now - Number(room.callRequestedAt || room.updatedAt || 0) >
+            UNANSWERED_CALL_TIMEOUT_MS),
     );
 
     for (const [expertUid, value] of roomsToProcess) {
@@ -39,7 +43,36 @@ export const cleanupStaleCalls = onSchedule(
       let endedRoom: any = room;
       let endedAt = Number(room.updatedAt || now);
       const roomRef = admin.database().ref(`${DATA_ROOT}/rooms/${expertUid}`);
-      if (room.status === 'active') {
+      if (room.status === 'calling' || room.status === 'ringing') {
+        const requestedAt = Number(room.callRequestedAt || room.updatedAt || 0);
+        if (!requestedAt || now - requestedAt <= UNANSWERED_CALL_TIMEOUT_MS) {
+          continue;
+        }
+
+        endedAt = Date.now();
+        const missedTransaction = await roomRef.transaction((current: any) => {
+          const currentRequestedAt = Number(
+            current?.callRequestedAt || current?.updatedAt || 0,
+          );
+          if (
+            !current ||
+            !['calling', 'ringing'].includes(current.status) ||
+            current.currentCallId !== callId ||
+            !currentRequestedAt ||
+            Date.now() - currentRequestedAt <= UNANSWERED_CALL_TIMEOUT_MS
+          ) {
+            return;
+          }
+          return {
+            ...current,
+            status: 'ended',
+            callSettled: true,
+            updatedAt: endedAt,
+          };
+        });
+        if (!missedTransaction.committed) continue;
+        endedRoom = missedTransaction.snapshot.val();
+      } else if (room.status === 'active') {
         const startedAt = Number(room.callStartedAt || room.updatedAt || 0);
         if (!startedAt || now - startedAt <= STALE_CALL_GRACE_MS) {
           continue;

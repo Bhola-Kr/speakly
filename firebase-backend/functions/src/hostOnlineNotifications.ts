@@ -17,12 +17,34 @@ export const notifyAllUsersWhenExpertOnline = onValueWritten(
     }
 
     const database = admin.database();
-    const [hostSnapshot, usersSnapshot] = await Promise.all([
-      database.ref(`${DATA_ROOT}/users/${hostUid}`).once('value'),
-      database.ref(`${DATA_ROOT}/users`).once('value'),
-    ]);
+    const [hostSnapshot, roomSnapshot, presenceSnapshot, usersSnapshot] =
+      await Promise.all([
+        database.ref(`${DATA_ROOT}/users/${hostUid}`).once('value'),
+        database.ref(`${DATA_ROOT}/rooms/${hostUid}`).once('value'),
+        database.ref(`${DATA_ROOT}/expertPresence/${hostUid}`).once('value'),
+        database.ref(`${DATA_ROOT}/users`).once('value'),
+      ]);
     const host = hostSnapshot.val();
-    if (!host || (host.isExpert !== true && host.profile?.role !== 'expert')) {
+    const room = roomSnapshot.val();
+    const presence = presenceSnapshot.val() || {};
+    let hasLiveConnection = false;
+    for (const connection of Object.values(
+      presence.connections || {},
+    ) as any[]) {
+      if (Number(connection?.connectedAt) > 0) {
+        hasLiveConnection = true;
+        break;
+      }
+    }
+    const appInBackground = presence.appState === 'background';
+    if (
+      !host ||
+      (host.isExpert !== true && host.profile?.role !== 'expert') ||
+      host.settings?.voiceCallsEnabled !== true ||
+      room?.female?.uid !== hostUid ||
+      room?.status !== 'waiting' ||
+      (!hasLiveConnection && !appInBackground)
+    ) {
       return;
     }
 

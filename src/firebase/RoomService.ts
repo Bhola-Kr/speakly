@@ -6,9 +6,6 @@ import {
   sendIncomingCallPush,
   settleExpertCallEarnings,
 } from '../api/calls';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const FEMALE_AVAILABILITY_KEY = 'femaleAvailabilityEnabled';
 
 export type RoomStatus =
   | 'offline'
@@ -72,6 +69,8 @@ export interface Room {
 }
 
 class RoomService {
+  private presenceConnectionKey: string | null = null;
+
   private getCurrentUser() {
     const user = auth().currentUser;
 
@@ -119,8 +118,8 @@ class RoomService {
   }
 
   private async armOfflineOnDisconnect(uid: string) {
-    // Availability is an account preference, not a socket-presence signal.
-    // Cancel legacy handlers so locking/closing the app does not hide females.
+    // Keep availability separate from socket state; connection presence is
+    // tracked independently so experts can still receive background calls.
     await this.cancelOfflineOnDisconnect(uid);
   }
 
@@ -129,6 +128,45 @@ class RoomService {
       database().ref(`rooms/${uid}`).onDisconnect().cancel(),
       database().ref(`users/${uid}/profile/status`).onDisconnect().cancel(),
     ]);
+  }
+
+  private async registerExpertConnection(uid: string) {
+    const connectedSnapshot = await database()
+      .ref('.info/connected')
+      .once('value');
+    if (connectedSnapshot.val() !== true) {
+      throw new Error('Connect to the internet before going online.');
+    }
+
+    const connectionsRef = database().ref(`expertPresence/${uid}/connections`);
+    if (!this.presenceConnectionKey) {
+      this.presenceConnectionKey = connectionsRef.push().key;
+    }
+    if (!this.presenceConnectionKey) {
+      throw new Error('Unable to register online presence.');
+    }
+
+    const connectionRef = connectionsRef.child(this.presenceConnectionKey);
+    await connectionRef.onDisconnect().remove();
+    await connectionRef.set({ connectedAt: Date.now() });
+  }
+
+  async updateExpertAppState(state: 'foreground' | 'background') {
+    const firebaseUser = auth().currentUser;
+    if (!firebaseUser) return;
+    await database()
+      .ref(`expertPresence/${firebaseUser.uid}/appState`)
+      .set(state);
+  }
+
+  private async removeExpertConnection(uid: string) {
+    if (!this.presenceConnectionKey) return;
+    const connectionRef = database().ref(
+      `expertPresence/${uid}/connections/${this.presenceConnectionKey}`,
+    );
+    await connectionRef.onDisconnect().cancel();
+    await connectionRef.remove();
+    this.presenceConnectionKey = null;
   }
 
   private scheduleRoomReset(femaleUid: string, terminalStatus: RoomStatus) {
@@ -197,24 +235,24 @@ class RoomService {
       [`rooms/${firebaseUser.uid}`]: room,
       [`users/${firebaseUser.uid}/profile/status`]: 'online',
       [`users/${firebaseUser.uid}/settings/voiceCallsEnabled`]: true,
+      [`expertPresence/${firebaseUser.uid}/appState`]: 'foreground',
     };
 
     try {
+      await this.registerExpertConnection(firebaseUser.uid);
       await database().ref().update(updates);
-      await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'true');
       await this.logExpertActivity(firebaseUser.uid, 'online').catch(error =>
         console.warn('Unable to record expert activity:', error),
       );
     } catch (error) {
       await this.cancelOfflineOnDisconnect(firebaseUser.uid);
+      await this.removeExpertConnection(firebaseUser.uid).catch(() => undefined);
       throw error;
     }
   }
 
   async goOffline() {
     const firebaseUser = this.getCurrentUser();
-
-    await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'false');
 
     const updates: Record<string, any> = {
       [`rooms/${firebaseUser.uid}/status`]: 'offline',
@@ -223,9 +261,13 @@ class RoomService {
       [`rooms/${firebaseUser.uid}/updatedAt`]: Date.now(),
       [`users/${firebaseUser.uid}/profile/status`]: 'offline',
       [`users/${firebaseUser.uid}/settings/voiceCallsEnabled`]: false,
+      [`expertPresence/${firebaseUser.uid}/appState`]: 'offline',
     };
 
     await database().ref().update(updates);
+    await this.removeExpertConnection(firebaseUser.uid).catch(error =>
+      console.warn('Unable to remove expert connection presence:', error),
+    );
     await this.logExpertActivity(firebaseUser.uid, 'offline').catch(error =>
       console.warn('Unable to record expert activity:', error),
     );
@@ -234,25 +276,41 @@ class RoomService {
 
   async restoreFemaleAvailability() {
     const firebaseUser = this.getCurrentUser();
-    const [userSnapshot, roomSnapshot] = await Promise.all([
+    const userSnapshot = await database()
+      .ref(`users/${firebaseUser.uid}`)
+      .once('value');
+    const user = userSnapshot.val();
+    if (user?.isExpert !== true) return false;
+    // Availability remains enabled across app restarts only after the expert
+    // explicitly selected Go Online.
+    if (user?.settings?.voiceCallsEnabled !== true) return false;
+
+    await this.registerExpertConnection(firebaseUser.uid);
+    await this.updateExpertAppState('foreground');
+
+    const [refreshedUserSnapshot, roomSnapshot] = await Promise.all([
       database().ref(`users/${firebaseUser.uid}`).once('value'),
       database().ref(`rooms/${firebaseUser.uid}`).once('value'),
     ]);
-    const user = userSnapshot.val();
-    if (user?.isExpert !== true) return false;
-    // Only the explicit Go Online action enables persistent availability.
-    // Back navigation, app backgrounding and reconnects never disable it.
-    if (user?.settings?.voiceCallsEnabled !== true) return false;
+    const refreshedUser = refreshedUserSnapshot.val();
+    if (refreshedUser?.settings?.voiceCallsEnabled !== true) {
+      await this.removeExpertConnection(firebaseUser.uid);
+      return false;
+    }
 
     const room = roomSnapshot.val() as Room | null;
     if (
       room &&
+      room.female?.uid === firebaseUser.uid &&
       ['waiting', 'calling', 'ringing', 'accepted', 'active'].includes(
         room.status,
       )
     ) {
       await this.armOfflineOnDisconnect(firebaseUser.uid);
-      if (room.status === 'waiting' && user?.profile?.status !== 'online') {
+      if (
+        room.status === 'waiting' &&
+        refreshedUser?.profile?.status !== 'online'
+      ) {
         await database()
           .ref(`users/${firebaseUser.uid}/profile/status`)
           .set('online');
