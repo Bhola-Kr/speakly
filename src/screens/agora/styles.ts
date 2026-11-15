@@ -288,10 +288,18 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
 
-  callBalanceCoin: {
+  callBalanceRupee: {
     width: 18,
     height: 18,
-    resizeMode: 'contain',
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primaryLight,
+  },
+  callBalanceRupeeText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
   },
 
   callDurationLabel: {

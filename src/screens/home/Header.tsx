@@ -40,13 +40,12 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
       <View style={styles.actions}>
         <TouchableOpacity
           onPress={walletPress}
-          accessibilityLabel="Open My Coins"
+          accessibilityLabel="Open Speakly balance"
           style={styles.wallet}
         >
-          <Image
-            source={require('../../assets/coin.png')}
-            style={styles.coin}
-          />
+          <View style={styles.rupeeIcon}>
+            <Text style={styles.rupeeSymbol}>₹</Text>
+          </View>
 
           <Text style={styles.balance}>{user?.wallet?.balance || 0}</Text>
 
@@ -142,7 +141,22 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
-  coin: { width: 30, height: 30, resizeMode: 'contain' },
+  rupeeIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.mint,
+    borderWidth: 1,
+    borderColor: COLORS.teal,
+  },
+  rupeeSymbol: {
+    color: COLORS.tealDark,
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '900',
+  },
   balance: {
     color: COLORS.navy,
     fontSize: 16,

@@ -21,7 +21,13 @@ type Props = {
   onDismiss: () => void;
 };
 
-const SignupOfferModal = ({ visible, claiming, requiresLogin, onClaim, onDismiss }: Props) => (
+const SignupOfferModal = ({
+  visible,
+  claiming,
+  requiresLogin,
+  onClaim,
+  onDismiss,
+}: Props) => (
   <Modal
     transparent
     visible={visible}
@@ -37,29 +43,50 @@ const SignupOfferModal = ({ visible, claiming, requiresLogin, onClaim, onDismiss
           style={styles.closeButton}
           hitSlop={10}
         >
-          <MaterialCommunityIcons name="close" size={20} color={Colors.textSecondary} />
+          <MaterialCommunityIcons
+            name="close"
+            size={20}
+            color={Colors.textSecondary}
+          />
         </TouchableOpacity>
         <LinearGradient
           colors={[Colors.primaryLight, Colors.surfaceSecondary, Colors.white]}
           style={styles.hero}
         >
           <View style={[styles.sparkle, styles.sparkleLeft]}>
-            <MaterialCommunityIcons name="sparkle" size={17} color={Colors.secondary} />
+            <MaterialCommunityIcons
+              name="sparkle"
+              size={17}
+              color={Colors.secondary}
+            />
           </View>
           <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="phone-in-talk" size={39} color={Colors.primary} />
+            <MaterialCommunityIcons
+              name="phone-in-talk"
+              size={39}
+              color={Colors.primary}
+            />
             <View style={styles.giftBadge}>
-              <MaterialCommunityIcons name="gift" size={16} color={Colors.white} />
+              <MaterialCommunityIcons
+                name="gift"
+                size={16}
+                color={Colors.white}
+              />
             </View>
           </View>
           <View style={[styles.sparkle, styles.sparkleRight]}>
-            <MaterialCommunityIcons name="star-four-points" size={15} color={Colors.goldDark} />
+            <MaterialCommunityIcons
+              name="star-four-points"
+              size={15}
+              color={Colors.goldDark}
+            />
           </View>
         </LinearGradient>
         <Text style={styles.eyebrow}>A LITTLE GIFT FOR YOU</Text>
-        <Text style={styles.title}>Your first call free</Text>
+        <Text style={styles.title}>Your first 2 minutes are free</Text>
         <Text style={styles.message}>
-          Meet a friendly voice, share a story, and enjoy your first conversation with Speakly.
+          Claim ₹10 free call balance—enough for a 2-minute conversation with
+          any available host at up to ₹5/min.
         </Text>
         <TouchableOpacity
           disabled={claiming}
@@ -70,10 +97,20 @@ const SignupOfferModal = ({ visible, claiming, requiresLogin, onClaim, onDismiss
             colors={[Colors.primary, Colors.primaryPressed]}
             style={styles.claimGradient}
           >
-            {claiming ? <ActivityIndicator color={Colors.white} /> : (
+            {claiming ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
               <>
-                <Text style={styles.claimText}>{requiresLogin ? 'Sign in to get started' : 'Start my free call'}</Text>
-                <MaterialCommunityIcons name="arrow-right" size={20} color={Colors.white} />
+                <Text style={styles.claimText}>
+                  {requiresLogin
+                    ? 'Sign In & Claim 2 Free Minutes'
+                    : 'Claim 2 Free Minutes'}
+                </Text>
+                <MaterialCommunityIcons
+                  name="arrow-right"
+                  size={20}
+                  color={Colors.white}
+                />
               </>
             )}
           </LinearGradient>

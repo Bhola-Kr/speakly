@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   Text,
@@ -6,7 +12,6 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
-  Image,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -34,6 +39,7 @@ import {
   trackCheckoutStarted,
   trackPaymentSuccess,
 } from '../../firebase/analytics';
+import type { CallFollowUpIntent } from '../../types/callFollowUp';
 
 const WalletScreen = ({ navigation, route }: any) => {
   const insets = useSafeAreaInsets();
@@ -43,6 +49,7 @@ const WalletScreen = ({ navigation, route }: any) => {
   const [loadingPacks, setLoadingPacks] = useState(true);
   const [packsError, setPacksError] = useState('');
   const [paying, setPaying] = useState(false);
+  const [showMoreAmounts, setShowMoreAmounts] = useState(false);
   const [activePaymentGateways, setActivePaymentGateways] = useState<
     PaymentGateway[]
   >([]);
@@ -50,6 +57,10 @@ const WalletScreen = ({ navigation, route }: any) => {
   const [gatewayConfigError, setGatewayConfigError] = useState('');
   const [paymentGateway, setPaymentGateway] =
     useState<PaymentGateway>('razorpay');
+  const autoCheckoutStartedRef = useRef(false);
+  const followUpIntent = route?.params?.followUpIntent as
+    | CallFollowUpIntent
+    | undefined;
 
   useEffect(() => {
     const unsubscribe = listenActivePaymentGateways(
@@ -104,7 +115,7 @@ const WalletScreen = ({ navigation, route }: any) => {
           setPacksError(
             error instanceof Error
               ? error.message
-              : 'Unable to load coin packs.',
+              : 'Unable to load recharge amounts.',
           );
         }
       } finally {
@@ -125,7 +136,75 @@ const WalletScreen = ({ navigation, route }: any) => {
     return selectedPack ? selectedPack.amount + selectedPack.bonus : 0;
   }, [selectedPack]);
 
-  const onRecharge = async () => {
+  const visiblePacks = useMemo(
+    () =>
+      showMoreAmounts
+        ? packs
+        : packs.filter(pack => Number(pack.amount) <= 100),
+    [packs, showMoreAmounts],
+  );
+
+  const packLabel = (amount: number) => {
+    if (amount === 10) return 'QUICK RECHARGE';
+    if (amount === 20) return 'STARTER';
+    if (amount === 50) return 'MORE TIME';
+    if (amount === 100) return 'BEST VALUE';
+    return '';
+  };
+
+  const continueWithHost = useCallback(() => {
+    if (!followUpIntent?.hostUid) {
+      navigation.navigate('Main');
+      return;
+    }
+
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Main',
+          params: {
+            pendingCall: {
+              uid: followUpIntent.hostUid,
+              profile: followUpIntent.hostProfile,
+              originalCallId: followUpIntent.originalCallId,
+            },
+          },
+        },
+      ],
+    });
+  }, [followUpIntent, navigation]);
+
+  const returnHome = useCallback(() => {
+    navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+  }, [navigation]);
+
+  const showPaymentSuccess = useCallback(
+    (creditedAmount: number) => {
+      if (!followUpIntent?.hostUid) {
+        Alert.alert(
+          'Recharge successful',
+          `₹${creditedAmount} was recharged to your Speakly balance.`,
+        );
+        return;
+      }
+
+      Alert.alert(
+        'Recharge successful',
+        `${followUpIntent.hostName} is waiting for you. Continue talking now?`,
+        [
+          { text: 'Back to Home', style: 'cancel', onPress: returnHome },
+          {
+            text: `Call ${followUpIntent.hostName} Again`,
+            onPress: continueWithHost,
+          },
+        ],
+      );
+    },
+    [continueWithHost, followUpIntent, returnHome],
+  );
+
+  const onRecharge = useCallback(async () => {
     if (!selectedPack || paying) return;
     try {
       setPaying(true);
@@ -146,21 +225,18 @@ const WalletScreen = ({ navigation, route }: any) => {
           : await openPayUCheckout(selectedPack.id);
       if (payment.status === 'success') {
         trackPaymentSuccess(payment, paymentGateway);
-        Alert.alert(
-          'Coins Added',
-          `${payment.creditedAmount} coins were added to your balance.`,
-        );
+        showPaymentSuccess(payment.creditedAmount);
       } else if (payment.status === 'failed') {
         Alert.alert(
           'Payment Unsuccessful',
-          payment.failureReason || 'No coins were added to your balance.',
+          payment.failureReason || 'Your balance was not recharged.',
         );
       } else {
         Alert.alert(
           'Payment Verification Pending',
           `We are confirming this payment with ${
             paymentGateway === 'razorpay' ? 'Razorpay' : 'PayU'
-          }. Your coin balance will update automatically after verification.`,
+          }. Your Speakly balance will update automatically after verification.`,
         );
       }
     } catch (error) {
@@ -171,7 +247,34 @@ const WalletScreen = ({ navigation, route }: any) => {
     } finally {
       setPaying(false);
     }
-  };
+  }, [paying, paymentGateway, selectedPack, showPaymentSuccess, totalReceive]);
+
+  useEffect(() => {
+    if (
+      route?.params?.autoCheckout !== true ||
+      autoCheckoutStartedRef.current ||
+      loadingPacks ||
+      gatewayConfigLoading ||
+      gatewayConfigError ||
+      activePaymentGateways.length === 0 ||
+      !selectedPack ||
+      Number(selectedPack.amount) !== Number(route?.params?.preferredAmount)
+    ) {
+      return;
+    }
+
+    autoCheckoutStartedRef.current = true;
+    onRecharge();
+  }, [
+    gatewayConfigError,
+    gatewayConfigLoading,
+    activePaymentGateways.length,
+    loadingPacks,
+    onRecharge,
+    route?.params?.autoCheckout,
+    route?.params?.preferredAmount,
+    selectedPack,
+  ]);
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
@@ -208,33 +311,68 @@ const WalletScreen = ({ navigation, route }: any) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {!!followUpIntent?.hostUid && (
+          <View style={styles.continueCard}>
+            <View style={styles.continueIcon}>
+              <MaterialCommunityIcons
+                name="phone-in-talk"
+                size={22}
+                color={Colors.primary}
+              />
+            </View>
+            <View style={styles.continueCopy}>
+              <Text style={styles.continueTitle}>
+                Continue with {followUpIntent.hostName}
+              </Text>
+              <Text style={styles.continueText}>
+                ₹{selectedPack?.amount || route?.params?.preferredAmount || 10}{' '}
+                gives you about{' '}
+                {Math.max(
+                  1,
+                  Math.floor(
+                    Number(
+                      selectedPack?.amount ||
+                        route?.params?.preferredAmount ||
+                        10,
+                    ) / Math.max(1, followUpIntent.ratePerMinute),
+                  ),
+                )}{' '}
+                more minutes at ₹{followUpIntent.ratePerMinute}/min.
+              </Text>
+            </View>
+          </View>
+        )}
+
         <LinearGradient
           colors={Colors.goldGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.balanceCard}
         >
-          <Image
-            source={require('../../assets/coin.png')}
-            style={styles.coinImage}
-          />
+          <View style={styles.balanceIcon}>
+            <MaterialCommunityIcons
+              name="currency-inr"
+              size={31}
+              color={Colors.white}
+            />
+          </View>
 
           <View style={styles.balanceContent}>
             <Text style={styles.balanceLabel}>{copy.wallet.balanceLabel}</Text>
             <Text style={styles.balanceAmount}>
-              {user?.wallet?.balance || 0}
+              ₹{user?.wallet?.balance || 0}
             </Text>
             <Text style={styles.balanceDescription} numberOfLines={1}>
-              Add coins to continue voice calls
+              Recharge to continue voice calls
             </Text>
           </View>
         </LinearGradient>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose a Coin Pack</Text>
+          <Text style={styles.sectionTitle}>Choose a recharge amount</Text>
 
           <Text style={styles.sectionSubTitle}>
-            Bigger packs give you extra bonus balance.
+            Recharge in rupees. Any bonus is added directly to your balance.
           </Text>
 
           <View style={styles.grid}>
@@ -252,12 +390,13 @@ const WalletScreen = ({ navigation, route }: any) => {
 
             {!loadingPacks && !packsError && packs.length === 0 && (
               <Text style={styles.packsStatus}>
-                No coin packs are available right now.
+                No recharge amounts are available right now.
               </Text>
             )}
 
-            {packs.map(pack => {
+            {visiblePacks.map(pack => {
               const selected = selectedPack?.id === pack.id;
+              const label = packLabel(Number(pack.amount));
 
               return (
                 <TouchableOpacity
@@ -266,11 +405,9 @@ const WalletScreen = ({ navigation, route }: any) => {
                   onPress={() => setSelectedPack(pack)}
                   style={[styles.card, selected && styles.selectedCard]}
                 >
-                  {(Number(pack.amount) === 20 || !!pack.tag) && (
+                  {!!label && (
                     <View style={styles.badge}>
-                      <Text style={styles.badgeText}>
-                        {Number(pack.amount) === 20 ? 'STARTER' : pack.tag}
-                      </Text>
+                      <Text style={styles.badgeText}>{label}</Text>
                     </View>
                   )}
 
@@ -286,25 +423,37 @@ const WalletScreen = ({ navigation, route }: any) => {
 
                   <Text style={styles.amount}>₹{pack.amount}</Text>
 
-                  <Text style={styles.bonus}>{pack.bonus} bonus coins</Text>
+                  <Text style={styles.bonus}>
+                    {pack.bonus > 0 ? `₹${pack.bonus} bonus` : 'No extra fee'}
+                  </Text>
 
                   <View style={styles.divider} />
 
-                  <Text style={styles.receiveLabel}>You'll Receive</Text>
-
-                  <View style={styles.receiveContainer}>
-                    <Image
-                      source={require('../../assets/coin.png')}
-                      style={styles.receiveCoin}
-                    />
-                    <Text style={styles.receive}>
-                      {pack.amount + pack.bonus}
-                    </Text>
-                  </View>
+                  <Text style={styles.receiveLabel}>Speakly Balance</Text>
+                  <Text style={styles.receive}>
+                    ₹{pack.amount + pack.bonus}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
+
+          {packs.some(pack => Number(pack.amount) > 100) && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowMoreAmounts(current => !current)}
+              style={styles.moreAmountsButton}
+            >
+              <Text style={styles.moreAmountsText}>
+                {showMoreAmounts ? 'Show fewer amounts' : 'View more amounts'}
+              </Text>
+              <MaterialCommunityIcons
+                name={showMoreAmounts ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={Colors.primary}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
@@ -317,18 +466,13 @@ const WalletScreen = ({ navigation, route }: any) => {
         >
           <View style={styles.summaryRow}>
             <View>
-              <Text style={styles.summaryTitle}>You'll Receive</Text>
-
-              <View style={styles.receiveContainer}>
-                <Image
-                  source={require('../../assets/coin.png')}
-                  style={styles.receiveCoin}
-                />
-                <Text style={styles.receive}>{totalReceive}</Text>
-              </View>
+              <Text style={styles.summaryTitle}>Speakly Balance</Text>
+              <Text style={styles.receive}>₹{totalReceive}</Text>
 
               <Text style={styles.summaryBonus}>
-                Includes {selectedPack.bonus} bonus coins
+                {selectedPack.bonus > 0
+                  ? `Includes ₹${selectedPack.bonus} bonus`
+                  : 'No subscription or automatic renewal'}
               </Text>
             </View>
 
@@ -392,6 +536,21 @@ const WalletScreen = ({ navigation, route }: any) => {
               </View>
             )}
 
+          <View style={styles.trustCard}>
+            <MaterialCommunityIcons
+              name="shield-check-outline"
+              size={22}
+              color={Colors.success}
+            />
+            <View style={styles.trustCopy}>
+              <Text style={styles.trustTitle}>Secure payment</Text>
+              <Text style={styles.trustText}>
+                No subscription or automatic renewal. Your payment only
+                recharges your Speakly balance.
+              </Text>
+            </View>
+          </View>
+
           <GradientButton
             title={`Pay ₹${selectedPack.amount}`}
             onPress={onRecharge}
@@ -417,7 +576,42 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: 270,
+    paddingBottom: 340,
+  },
+
+  continueCard: {
+    marginHorizontal: 20,
+    marginTop: 14,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+    backgroundColor: Colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  continueIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primaryLight,
+  },
+  continueCopy: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  continueTitle: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  continueText: {
+    marginTop: 3,
+    color: Colors.subText,
+    fontSize: 13,
+    lineHeight: 18,
   },
 
   paymentButton: {
@@ -504,11 +698,14 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 
-  coinImage: {
-    width: 58,
-    height: 58,
-    resizeMode: 'contain',
-    marginRight: 6,
+  balanceIcon: {
+    width: 50,
+    height: 50,
+    marginRight: 12,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.overlayWhite18,
   },
 
   balanceContent: {
@@ -533,7 +730,7 @@ const styles = StyleSheet.create({
     color: Colors.overlayWhite90,
   },
   section: {
-    marginTop: 28,
+    marginTop: 20,
     paddingHorizontal: 20,
   },
 
@@ -544,8 +741,8 @@ const styles = StyleSheet.create({
   },
 
   sectionSubTitle: {
-    marginTop: 8,
-    fontSize: 14,
+    marginTop: 5,
+    fontSize: 13,
     color: Colors.subText,
   },
 
@@ -553,7 +750,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 10,
   },
 
   packsStatus: {
@@ -563,12 +760,29 @@ const styles = StyleSheet.create({
     color: Colors.subText,
   },
 
+  moreAmountsButton: {
+    alignSelf: 'center',
+    marginTop: 2,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryLight,
+  },
+  moreAmountsText: {
+    marginRight: 4,
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
   card: {
     width: '48%',
     backgroundColor: Colors.white,
-    borderRadius: 18,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: 15,
+    padding: 10,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: Colors.border,
 
@@ -591,10 +805,10 @@ const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: Colors.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 50,
-    marginBottom: 12,
+    marginBottom: 5,
   },
 
   badgeText: {
@@ -605,55 +819,43 @@ const styles = StyleSheet.create({
 
   tickCircle: {
     position: 'absolute',
-    right: 12,
-    top: 12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    right: 9,
+    top: 9,
+    width: 21,
+    height: 21,
+    borderRadius: 11,
     backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   amount: {
-    marginTop: 8,
-    fontSize: 24,
+    marginTop: 3,
+    fontSize: 21,
     fontWeight: '800',
     color: Colors.text,
   },
 
   bonus: {
-    marginTop: 6,
+    marginTop: 3,
     color: Colors.secondary,
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 12,
   },
 
   divider: {
     height: 1,
     backgroundColor: Colors.border,
-    marginVertical: 16,
+    marginVertical: 8,
   },
 
   receiveLabel: {
     color: Colors.subText,
-    fontSize: 12,
-  },
-
-  receiveContainer: {
-    flexDirection: 'row',
-  },
-
-  receiveCoin: {
-    width: 29,
-    height: 29,
-    marginEnd: 0,
-    alignSelf: 'center',
-    resizeMode: 'contain',
+    fontSize: 11,
   },
 
   receive: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: '700',
     color: Colors.text,
   },
@@ -703,6 +905,30 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: Colors.secondary,
     fontWeight: '500',
+  },
+
+  trustCard: {
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.successStrongSurface,
+  },
+  trustCopy: {
+    flex: 1,
+    marginLeft: 9,
+  },
+  trustTitle: {
+    color: Colors.success,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  trustText: {
+    marginTop: 2,
+    color: Colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   payAmount: {

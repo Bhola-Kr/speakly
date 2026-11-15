@@ -514,16 +514,13 @@ ${PLAY_STORE_URL}`,
             style={expertStyles.walletCard}
           >
             <View style={expertStyles.walletIcon}>
-              <Image
-                source={require('../../assets/coin.png')}
-                style={expertStyles.walletCoin}
-              />
+              <Text style={expertStyles.walletRupee}>₹</Text>
             </View>
             <View style={expertStyles.callTimeDivider} />
             <View style={expertStyles.callTimeContent}>
-              <Text style={expertStyles.callTimeLabel}>My Coins</Text>
+              <Text style={expertStyles.callTimeLabel}>My Balance</Text>
               <Text style={expertStyles.callTimeDescription}>
-                Tap to add more coins
+                Tap to recharge
               </Text>
             </View>
             <Text style={expertStyles.walletValue}>
@@ -785,10 +782,10 @@ const expertStyles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: EXPERT_COLORS.tealPale,
   },
-  walletCoin: {
-    width: 44,
-    height: 44,
-    resizeMode: 'contain',
+  walletRupee: {
+    color: EXPERT_COLORS.tealDark,
+    fontSize: 31,
+    fontWeight: '900',
   },
   walletValue: {
     marginLeft: 6,

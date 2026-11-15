@@ -120,7 +120,9 @@ export const cleanupStaleCalls = onSchedule(
       const duration = (amount / rate) * 60 * 1000;
       const history = {
         callId,
-        startedAt: Number(endedRoom.callStartedAt || endedRoom.callRequestedAt || endedAt),
+        startedAt: Number(
+          endedRoom.callStartedAt || endedRoom.callRequestedAt || endedAt,
+        ),
         endedAt,
         duration,
         amount,
@@ -131,10 +133,13 @@ export const cleanupStaleCalls = onSchedule(
       };
 
       try {
-        await admin.database().ref().update({
-          [`${DATA_ROOT}/callHistory/${callerUid}/${callId}`]: history,
-          [`${DATA_ROOT}/callHistory/${expertUid}/${callId}`]: history,
-        });
+        await admin
+          .database()
+          .ref()
+          .update({
+            [`${DATA_ROOT}/callHistory/${callerUid}/${callId}`]: history,
+            [`${DATA_ROOT}/callHistory/${expertUid}/${callId}`]: history,
+          });
         await creditExpertEarningsForCall(callId, history);
         await roomRef.transaction((current: any) => {
           if (
@@ -155,8 +160,14 @@ export const cleanupStaleCalls = onSchedule(
             updatedAt: Date.now(),
           };
         });
-        await admin.database().ref(`${DATA_ROOT}/users/${expertUid}/profile/status`).set('online');
-        await admin.database().ref(`${DATA_ROOT}/callPresence/${callId}`).remove();
+        await admin
+          .database()
+          .ref(`${DATA_ROOT}/users/${expertUid}/profile/status`)
+          .set('online');
+        await admin
+          .database()
+          .ref(`${DATA_ROOT}/callPresence/${callId}`)
+          .remove();
       } catch (error) {
         logger.error('Unable to finalize stale call', { callId, error });
       }

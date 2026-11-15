@@ -1,6 +1,5 @@
 import auth from '@react-native-firebase/auth';
 import { databaseRef } from './firebase';
-import { CALL_RATE_PER_MINUTE } from '../constants/constants';
 
 export type SignupOfferConfig = {
   active: boolean;
@@ -9,20 +8,14 @@ export type SignupOfferConfig = {
 };
 
 export const DEFAULT_FIRST_CALL_FREE_MINUTES = 2;
+export const SIGNUP_OFFER_AMOUNT = 10;
 
-const parseConfig = (value: any): SignupOfferConfig => {
-  const amount = Number(value?.offerdAmount);
-  const configuredMinutes = Number(value?.firstCallFreeMinutes);
-  const freeMinutes = Number.isFinite(configuredMinutes) && configuredMinutes > 0
-    ? Math.floor(configuredMinutes)
-    : DEFAULT_FIRST_CALL_FREE_MINUTES;
-  const minimumCredit = freeMinutes * CALL_RATE_PER_MINUTE;
+const parseConfig = (_value: any): SignupOfferConfig => {
+  const freeMinutes = DEFAULT_FIRST_CALL_FREE_MINUTES;
   return {
-    // The first-call promise is part of the permanent acquisition experience.
-    // Keep the signup credit sufficient to cover the configured free duration.
+    // ₹10 covers two started minutes because caller rates are capped at ₹5/min.
     active: true,
-    amount:
-      Number.isFinite(amount) && amount > 0 ? Math.max(amount, minimumCredit) : minimumCredit,
+    amount: SIGNUP_OFFER_AMOUNT,
     freeMinutes,
   };
 };
@@ -38,7 +31,7 @@ export const listenSignupOffer = (
       console.warn('Unable to load signup offer:', error);
       callback({
         active: true,
-        amount: DEFAULT_FIRST_CALL_FREE_MINUTES * CALL_RATE_PER_MINUTE,
+        amount: SIGNUP_OFFER_AMOUNT,
         freeMinutes: DEFAULT_FIRST_CALL_FREE_MINUTES,
       });
     },

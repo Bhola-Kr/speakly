@@ -14,6 +14,7 @@ import {
   View,
   ActivityIndicator,
   TouchableOpacity,
+  DeviceEventEmitter,
 } from 'react-native';
 import { scopedDatabase as database } from '../../firebase/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,7 +29,6 @@ import UI from '../../constants/ui';
 import { categories } from '../../constants/dummyData';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import RoomService from '../../firebase/RoomService';
-import { useFirstCallRechargePrompt } from '../../hooks/useFirstCallRechargePrompt';
 import { useUser } from '../../hooks/UserContext';
 import SignupOfferModal from './SignupOfferModal';
 import {
@@ -46,6 +46,8 @@ import {
   startOutgoingRingback,
   stopOutgoingRingback,
 } from '../../utils/outgoingRingback';
+import type { CallFollowUpIntent } from '../../types/callFollowUp';
+import { CALL_RECHARGE_PROMPT_EVENT } from '../../utils/callRechargePrompt';
 
 const HOME_COLORS = {
   background: Colors.background,
@@ -79,7 +81,6 @@ const hasCompleteFemaleProfile = (item: any) => {
 };
 
 const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
-  useFirstCallRechargePrompt(navigation);
   const { user } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
@@ -103,6 +104,45 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
   const pendingCallHandledRef = useRef(false);
 
   const canStartCall = useCallBalanceGuard(navigation);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener(
+      CALL_RECHARGE_PROMPT_EVENT,
+      (followUpIntent: CallFollowUpIntent) => {
+        const hostName = followUpIntent.hostName || 'your host';
+        const isFreeCall = followUpIntent.source === 'free_call_expired';
+
+        Alert.alert(
+          isFreeCall
+            ? 'Your free minutes have ended'
+            : 'Your balance has ended',
+          `${hostName} is waiting for you. Recharge and continue talking.`,
+          [
+            {
+              text: 'Recharge ₹10',
+              onPress: () =>
+                navigation.navigate('Wallet', {
+                  preferredAmount: 10,
+                  autoCheckout: true,
+                  followUpIntent,
+                }),
+            },
+            {
+              text: 'Choose another amount',
+              onPress: () =>
+                navigation.navigate('Wallet', {
+                  preferredAmount: 20,
+                  followUpIntent,
+                }),
+            },
+            { text: 'Maybe Later', style: 'cancel' },
+          ],
+        );
+      },
+    );
+
+    return () => subscription.remove();
+  }, [navigation]);
 
   useEffect(
     () =>
@@ -140,8 +180,8 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       setClaimingOffer(true);
       await claimSignupOffer();
       Alert.alert(
-        'Offer Claimed',
-        `Your first ${offer.freeMinutes} free minutes are ready. Choose a host and start talking.`,
+        '₹10 Free Balance Added',
+        `Choose an available host and enjoy your first ${offer.freeMinutes} minutes free.`,
       );
     } catch (error: any) {
       Alert.alert(
@@ -493,9 +533,11 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
           setGuestDestination(null);
         }}
         onAuthenticated={async isExpert => {
+          let creditedBonus = 0;
           if (!isExpert && !offerClaimed) {
             try {
               const creditedAmount = await claimSignupOffer();
+              creditedBonus = creditedAmount;
               trackFirstCallOfferApplied(creditedAmount);
             } catch (error) {
               // Existing users may already have claimed the offer. Authentication
@@ -523,6 +565,15 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
               ...(isExpert ? [{ name: 'FemaleBottomTabs' }] : learnerRoutes),
             ],
           });
+          if (creditedBonus > 0) {
+            setTimeout(() => {
+              Alert.alert(
+                `₹${creditedBonus} added successfully!`,
+                'Your free call balance is ready. Choose a host and start your first conversation.',
+                [{ text: 'Start Talking' }],
+              );
+            }, 350);
+          }
         }}
       />
     </SafeAreaView>

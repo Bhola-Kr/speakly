@@ -2,67 +2,75 @@
 // RECHARGE PACKS
 // ============================================
 
-export const SUPPORT_EMAIL = "support@joinspeakly.com";
+export const SUPPORT_EMAIL = 'support@joinspeakly.com';
 
 export const RECHARGE_PACKS = [
+  {
+    // Keep existing package IDs stable because they are stored in payment
+    // history. This low-friction pack is intentionally a new ID.
+    id: 11,
+    amount: 10,
+    bonus: 0,
+    tag: 'QUICK',
+  },
   {
     id: 1,
     amount: 20,
     bonus: 2,
-    tag: "NEW",
+    tag: 'NEW',
   },
   {
     id: 2,
     amount: 50,
     bonus: 5,
-    tag: "NEW",
+    tag: 'NEW',
   },
   {
     id: 3,
     amount: 100,
     bonus: 10,
-    tag: "",
+    tag: '',
   },
   {
     id: 4,
     amount: 200,
     bonus: 25,
-    tag: "",
+    tag: '',
   },
   {
     id: 5,
     amount: 300,
     bonus: 40,
-    tag: "",
+    tag: '',
   },
   {
     id: 6,
     amount: 500,
     bonus: 75,
-    tag: "POPULAR",
+    tag: 'POPULAR',
   },
   {
     id: 7,
     amount: 1000,
     bonus: 200,
-    tag: "",
+    tag: '',
   },
   {
     id: 8,
     amount: 2000,
     bonus: 500,
-    tag: "BEST",
+    tag: 'BEST',
   },
   {
     id: 9,
     amount: 5000,
     bonus: 1500,
-    tag: "",
+    tag: '',
   },
   {
     id: 10,
     amount: 10000,
     bonus: 3500,
-    tag: "",
+    tag: '',
   },
 ];

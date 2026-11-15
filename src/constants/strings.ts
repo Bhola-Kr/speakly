@@ -6,15 +6,15 @@ export const copy = {
     splash: 'Speakly 121',
     tagline: 'Baat Ho Jaaye?',
     valueProposition: 'Live one-to-one conversations.',
-    offer: 'First 2 minutes free · Then from ₹4/min · No subscription',
+    offer: 'Claim ₹10 free · Talk for 2 minutes · No subscription',
   },
   login: {
     heading: 'Baat Ho Jaaye?',
     subtitle:
-      'Live one-to-one conversations. First 2 minutes free, then from ₹4/min. No subscription.',
+      'Claim ₹10 free call balance—enough for your first 2 minutes. No subscription.',
     heroTitle: 'Live one-to-one conversations',
     supportingText:
-      'Choose an available host. First 2 minutes free, then from ₹4/min.',
+      'Choose an available host. ₹10 free balance covers your first 2 minutes.',
     cta: 'Continue',
     phonePlaceholder: 'Your Mobile Number',
     safetyNote:
@@ -23,7 +23,7 @@ export const copy = {
   home: {
     heading: 'Who Would You Like to Talk To?',
     supportingText: 'Live one-to-one conversations.',
-    offer: 'First 2 minutes free · Then from ₹4/min · No subscription',
+    offer: 'Claim ₹10 free · Your first 2 minutes are covered',
     sectionHint: 'Choose an available host.',
     availableHosts: 'Available Hosts',
     online: 'Online',
@@ -42,15 +42,15 @@ export const copy = {
     emptyText: 'Your conversations will appear here.',
   },
   wallet: {
-    title: 'My Coins',
-    addCoins: 'Add Coins',
-    balanceLabel: 'My Coins',
-    lowBalanceTitle: 'Not Enough Coins',
+    title: 'My Balance',
+    addCoins: 'Recharge',
+    balanceLabel: 'Speakly Balance',
+    lowBalanceTitle: 'Not Enough Balance',
     lowBalanceMessage:
-      'Calls start from ₹4/min. Add coins to continue your conversation.',
+      'Host rates are shown before calling. Recharge to continue your conversation.',
     starterTitle: 'Keep the conversation going',
-    starterMessage: 'Add ₹20 for about 4–5 more minutes.',
-    starterAction: 'Add ₹20',
+    starterMessage: 'Recharge ₹10 and continue talking.',
+    starterAction: 'Recharge ₹10',
   },
   call: {
     outgoing: 'Calling...',
@@ -85,8 +85,8 @@ export const copy = {
   },
   postCall: {
     title: 'Want to keep talking?',
-    message: 'Add ₹20 for about 4–5 more minutes.',
-    action: 'Add ₹20 & Talk Again',
+    message: 'Recharge ₹10 and continue talking.',
+    action: 'Recharge ₹10',
     later: 'Maybe later',
   },
 } as const;

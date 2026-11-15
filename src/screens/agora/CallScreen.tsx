@@ -10,6 +10,7 @@ import {
   Alert,
   StatusBar,
   BackHandler,
+  DeviceEventEmitter,
   Vibration,
   useWindowDimensions,
 } from 'react-native';
@@ -49,6 +50,9 @@ import {
 } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 import { trackCallStarted } from '../../firebase/analytics';
+import type { CallFollowUpIntent } from '../../types/callFollowUp';
+import { CALL_RECHARGE_PROMPT_EVENT } from '../../utils/callRechargePrompt';
+import { DEFAULT_FIRST_CALL_FREE_MINUTES } from '../../firebase/signupOffer';
 
 type Props = {
   route: { params: Record<string, any> };
@@ -123,6 +127,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const callEndedRef = useRef(false);
   const callStartedTrackedRef = useRef(false);
   const countdownAlertedRef = useRef(false);
+  const freeCallEndsAtRef = useRef(0);
   const connectedRef = useRef(false);
 
   const seconds = useRef(0);
@@ -145,6 +150,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const [freeCallEndsAt, setFreeCallEndsAt] = useState(0);
   const [showFreeCallModal, setShowFreeCallModal] = useState(false);
   const [freeCallMinutes, setFreeCallMinutes] = useState(2);
+  const [freeCallSecondsRemaining, setFreeCallSecondsRemaining] = useState(0);
 
   const walletBalance = Number(user?.wallet?.balance);
   const displayedBalance =
@@ -153,43 +159,65 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         ? Math.max(0, walletBalance)
         : null
       : callerBalance;
-  const freeCallSecondsRemaining = Math.max(
-    0,
-    Math.ceil((freeCallEndsAt - Date.now()) / 1000),
-  );
   const estimatedMinutesRemaining =
     freeCallSecondsRemaining > 0
       ? Math.ceil(freeCallSecondsRemaining / 60)
       : displayedBalance === null
-        ? null
-        : Math.floor(displayedBalance / callRatePerMinute) +
-          (billingStarted ? 1 : 0);
+      ? null
+      : Math.floor(displayedBalance / callRatePerMinute) +
+        (billingStarted ? 1 : 0);
   const countdownBalance = gender === 'male' ? walletBalance : callerBalance;
 
   useEffect(() => {
-    if (!connected || gender !== 'male' || !user?.uid || !user?.offers?.signupOffer?.claimedAt || !femaleUid) return;
+    if (
+      !connected ||
+      gender !== 'male' ||
+      !user?.uid ||
+      !user?.offers?.signupOffer?.claimedAt ||
+      !femaleUid
+    )
+      return;
     let cancelled = false;
     const configureFirstFreeCall = async () => {
-      const [historySnapshot, minutesSnapshot, roomSnapshot] = await Promise.all([
+      const [historySnapshot, roomSnapshot] = await Promise.all([
         database().ref(`callHistory/${user.uid}`).once('value'),
-        database().ref('configs/firstCallFreeMinutes').once('value'),
         database().ref(`rooms/${femaleUid}`).once('value'),
       ]);
       if (cancelled) return;
       const history = historySnapshot.val() || {};
-      const hasCompletedCall = Object.values(history).some((item: any) => item?.status === 'Completed');
+      const hasCompletedCall = Object.values(history).some(
+        (item: any) => item?.status === 'Completed',
+      );
       if (hasCompletedCall) return;
-      const configured = Number(minutesSnapshot.val());
-      const minutes = Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : 2;
+      const minutes = DEFAULT_FIRST_CALL_FREE_MINUTES;
       const room = roomSnapshot.val();
       const startedAt = Number(room?.callStartedAt || Date.now());
       setFreeCallMinutes(minutes);
+      freeCallEndsAtRef.current = startedAt + minutes * BILLING_INTERVAL_MS;
       setFreeCallEndsAt(startedAt + minutes * BILLING_INTERVAL_MS);
+      setFreeCallSecondsRemaining(
+        Math.max(
+          0,
+          Math.ceil(
+            (startedAt + minutes * BILLING_INTERVAL_MS - Date.now()) / 1000,
+          ),
+        ),
+      );
       setShowFreeCallModal(true);
     };
-    configureFirstFreeCall().catch(error => console.warn('Unable to load first-call free limit:', error));
-    return () => { cancelled = true; };
-  }, [connected, femaleUid, gender, user?.offers?.signupOffer?.claimedAt, user?.uid]);
+    configureFirstFreeCall().catch(error =>
+      console.warn('Unable to load first-call free limit:', error),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    connected,
+    femaleUid,
+    gender,
+    user?.offers?.signupOffer?.claimedAt,
+    user?.uid,
+  ]);
 
   useEffect(() => {
     if (
@@ -298,7 +326,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   }, [stopBilling]);
 
   const finishCall = useCallback(
-    async (updateRoom = true) => {
+    async (updateRoom = true, endReason?: CallFollowUpIntent['source']) => {
       if (callEndedRef.current) {
         return;
       }
@@ -327,6 +355,31 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
       onFinished();
 
+      if (endReason && gender === 'male' && femaleUid) {
+        const followUpIntent: CallFollowUpIntent = {
+          action: 'call_again',
+          hostUid: femaleUid,
+          hostName: displayName,
+          hostProfile: {
+            uid: femaleUid,
+            name: englishName || displayName,
+            ...(tamilName ? { tamilName } : {}),
+            gender: expertGender,
+            avatarId,
+            price: callRatePerMinute,
+          },
+          originalCallId: callId || '',
+          ratePerMinute: callRatePerMinute,
+          source: endReason,
+          createdAt: Date.now(),
+        };
+        setTimeout(
+          () =>
+            DeviceEventEmitter.emit(CALL_RECHARGE_PROMPT_EVENT, followUpIntent),
+          250,
+        );
+      }
+
       if (updateRoom && femaleUid) {
         try {
           await RoomService.endCall(femaleUid);
@@ -335,16 +388,48 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         }
       }
     },
-    [callId, femaleUid, gender, maleUid, onFinished, pauseBilling, stopTimer],
+    [
+      avatarId,
+      callId,
+      callRatePerMinute,
+      displayName,
+      englishName,
+      expertGender,
+      femaleUid,
+      gender,
+      onFinished,
+      pauseBilling,
+      stopTimer,
+      tamilName,
+    ],
   );
 
   useEffect(() => {
     if (!freeCallEndsAt || !connected) return;
-    const tick = setCallInterval(() => {
-      if (Date.now() >= freeCallEndsAt) finishCall();
-    }, 1000);
-    if (Date.now() >= freeCallEndsAt) finishCall();
-    return tick;
+    let endingTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const updateCountdown = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((freeCallEndsAt - Date.now()) / 1000),
+      );
+      setFreeCallSecondsRemaining(remaining);
+
+      if (remaining === 0 && !callEndedRef.current) {
+        setStatus('Free minutes ended');
+        endingTimer = setTimeout(
+          () => finishCall(true, 'free_call_expired'),
+          800,
+        );
+      }
+    };
+
+    updateCountdown();
+    const tick = setCallInterval(updateCountdown, 1000);
+    return () => {
+      tick();
+      if (endingTimer) clearTimeout(endingTimer);
+    };
   }, [connected, finishCall, freeCallEndsAt]);
 
   const finishCallFromRemote = useCallback(
@@ -366,12 +451,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       return;
     }
 
-    const ending = finishCall();
-    Alert.alert(
-      copy.wallet.lowBalanceTitle,
-      'Your coin balance is too low to continue this call.',
-      [{ text: 'OK' }],
-    );
+    const ending = finishCall(true, 'insufficient_balance');
     await ending;
   }, [finishCall]);
 
@@ -411,7 +491,14 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
       setBillingStarted(true);
       billingTimerRef.current = setCallInterval(async () => {
-        if (callEndedRef.current || !connectedRef.current || peerRecoveryRef.current) return;
+        if (
+          callEndedRef.current ||
+          !connectedRef.current ||
+          peerRecoveryRef.current ||
+          (freeCallEndsAtRef.current > 0 &&
+            Date.now() >= freeCallEndsAtRef.current)
+        )
+          return;
         const nextMinuteCharged = await chargeNextMinute();
 
         if (!nextMinuteCharged) {
@@ -485,8 +572,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         const participantUid =
           gender === 'male' ? auth().currentUser?.uid : femaleUid;
         if (callId && participantUid) {
-          await RoomService.startCallPresence(callId, participantUid).catch(error =>
-            console.warn('Unable to mark call presence:', error),
+          await RoomService.startCallPresence(callId, participantUid).catch(
+            error => console.warn('Unable to mark call presence:', error),
           );
         }
 
@@ -582,7 +669,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     finishCallFromRemote,
     isCaller,
     gender,
-    maleUid,
     requestPermission,
     pauseBilling,
     startTimer,
@@ -757,7 +843,15 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         engine.current = null;
       }
     };
-  }, [callId, femaleUid, gender, initializeAgora, maleUid, stopBilling, stopTimer]);
+  }, [
+    callId,
+    femaleUid,
+    finishCall,
+    gender,
+    initializeAgora,
+    stopBilling,
+    stopTimer,
+  ]);
 
   useEffect(() => {
     if (!femaleUid) {
@@ -798,18 +892,108 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           barStyle="dark-content"
         />
       )}
-      <Modal transparent visible={showFreeCallModal} animationType="fade" onRequestClose={() => setShowFreeCallModal(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(37,27,32,0.58)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <View style={{ width: '100%', maxWidth: 360, borderRadius: 28, padding: 26, alignItems: 'center', backgroundColor: Colors.surface }}>
-            <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.primaryLight }}>
-              <MaterialCommunityIcons name="gift-outline" size={36} color={Colors.primary} />
+      <Modal
+        transparent
+        visible={showFreeCallModal}
+        animationType="fade"
+        onRequestClose={() => setShowFreeCallModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(37,27,32,0.58)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 360,
+              borderRadius: 28,
+              padding: 26,
+              alignItems: 'center',
+              backgroundColor: Colors.surface,
+            }}
+          >
+            <View
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 36,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: Colors.primaryLight,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="gift-outline"
+                size={36}
+                color={Colors.primary}
+              />
             </View>
-            <Text style={{ marginTop: 18, color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1.5 }}>FIRST CALL OFFER</Text>
-            <Text style={{ marginTop: 8, color: Colors.textPrimary, fontSize: 23, lineHeight: 30, fontWeight: '900', textAlign: 'center' }}>Enjoy your free call</Text>
-            <Text style={{ marginTop: 10, color: Colors.textSecondary, fontSize: 15, lineHeight: 22, textAlign: 'center' }}>Your first call is free for up to {freeCallMinutes} minutes. The call will end when your free time is up.</Text>
-            <TouchableOpacity onPress={() => setShowFreeCallModal(false)} style={{ width: '100%', marginTop: 22, borderRadius: 16, overflow: 'hidden' }}>
-              <LinearGradient colors={[Colors.primary, Colors.primaryPressed]} style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: Colors.white, fontSize: 16, fontWeight: '800' }}>Continue call</Text>
+            <Text
+              style={{
+                marginTop: 18,
+                color: Colors.primary,
+                fontSize: 12,
+                fontWeight: '900',
+                letterSpacing: 1.5,
+              }}
+            >
+              FIRST CALL OFFER
+            </Text>
+            <Text
+              style={{
+                marginTop: 8,
+                color: Colors.textPrimary,
+                fontSize: 23,
+                lineHeight: 30,
+                fontWeight: '900',
+                textAlign: 'center',
+              }}
+            >
+              Your first 2 minutes are free
+            </Text>
+            <Text
+              style={{
+                marginTop: 10,
+                color: Colors.textSecondary,
+                fontSize: 15,
+                lineHeight: 22,
+                textAlign: 'center',
+              }}
+            >
+              We added ₹10 free call balance. It covers {freeCallMinutes}{' '}
+              minutes with any host at up to ₹5/min.
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowFreeCallModal(false)}
+              style={{
+                width: '100%',
+                marginTop: 22,
+                borderRadius: 16,
+                overflow: 'hidden',
+              }}
+            >
+              <LinearGradient
+                colors={[Colors.primary, Colors.primaryPressed]}
+                style={{
+                  height: 54,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: '800',
+                  }}
+                >
+                  Continue call
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -867,6 +1051,46 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
             <View style={styles.safetyPlaceholder} />
           )}
         </View>
+
+        {gender === 'male' && freeCallSecondsRemaining > 0 && (
+          <View
+            style={{
+              alignSelf: 'center',
+              marginTop: 8,
+              paddingHorizontal: 16,
+              paddingVertical: 9,
+              borderRadius: 18,
+              backgroundColor:
+                freeCallSecondsRemaining <= 15
+                  ? Colors.warningStrongSurface
+                  : Colors.primaryLight,
+              borderWidth: 1,
+              borderColor:
+                freeCallSecondsRemaining <= 15
+                  ? Colors.warning
+                  : Colors.primary,
+            }}
+          >
+            <Text
+              style={{
+                color:
+                  freeCallSecondsRemaining <= 15
+                    ? Colors.warning
+                    : Colors.primary,
+                fontSize: 14,
+                fontWeight: '800',
+              }}
+            >
+              {freeCallSecondsRemaining <= 5
+                ? `Free call ending in ${freeCallSecondsRemaining} seconds`
+                : freeCallSecondsRemaining <= 15
+                ? `${freeCallSecondsRemaining} seconds left\n${displayName} is waiting after the call.`
+                : freeCallSecondsRemaining <= 30
+                ? `${freeCallSecondsRemaining} seconds left with ${displayName}\nYou can recharge after the call to continue.`
+                : `Free call · ${freeCallSecondsRemaining}s`}
+            </Text>
+          </View>
+        )}
 
         <View
           style={[
@@ -952,9 +1176,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 ]}
               />
 
-              <Text style={[styles.status, styles.statusCaller]}>
-                {status}
-              </Text>
+              <Text style={[styles.status, styles.statusCaller]}>{status}</Text>
             </View>
 
             {displayedBalance !== null && (
@@ -964,15 +1186,14 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                   compactLayout && styles.callerBalanceCompact,
                 ]}
               >
-                <Image
-                  source={require('../../assets/coin.png')}
-                  style={styles.callBalanceCoin}
-                />
+                <View style={styles.callBalanceRupee}>
+                  <Text style={styles.callBalanceRupeeText}>₹</Text>
+                </View>
                 <Text style={styles.callerBalanceLabel}>
                   {gender === 'male' ? 'Your balance' : 'Caller balance'}
                 </Text>
                 <Text style={styles.callerBalanceValue}>
-                  {Math.floor(displayedBalance).toLocaleString()} coins
+                  ₹{Math.floor(displayedBalance).toLocaleString()}
                 </Text>
               </View>
             )}
@@ -1030,8 +1251,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                   styles.controlButton,
                   styles.controlButtonCaller,
                   compactLayout && styles.controlButtonCompact,
-                  speaker &&
-                    styles.controlButtonActiveCaller,
+                  speaker && styles.controlButtonActiveCaller,
                 ]}
                 activeOpacity={0.8}
                 onPress={toggleSpeaker}
@@ -1039,20 +1259,11 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 <MaterialCommunityIcons
                   name={speaker ? 'volume-high' : 'volume-off'}
                   size={compactLayout ? 22 : 24}
-                  color={
-                    speaker
-                      ? Colors.white
-                      : Colors.primary
-                  }
+                  color={speaker ? Colors.white : Colors.primary}
                 />
               </TouchableOpacity>
 
-              <Text
-                style={[
-                  styles.controlText,
-                  styles.controlTextCaller,
-                ]}
-              >
+              <Text style={[styles.controlText, styles.controlTextCaller]}>
                 Speaker
               </Text>
             </View>
@@ -1065,8 +1276,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                   styles.controlButton,
                   styles.controlButtonCaller,
                   compactLayout && styles.controlButtonCompact,
-                  muted &&
-                    styles.controlButtonActiveCaller,
+                  muted && styles.controlButtonActiveCaller,
                 ]}
                 activeOpacity={0.8}
                 onPress={toggleMute}
@@ -1074,20 +1284,11 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 <MaterialCommunityIcons
                   name={muted ? 'microphone-off' : 'microphone'}
                   size={compactLayout ? 22 : 24}
-                  color={
-                    muted
-                      ? Colors.white
-                      : Colors.primary
-                  }
+                  color={muted ? Colors.white : Colors.primary}
                 />
               </TouchableOpacity>
 
-              <Text
-                style={[
-                  styles.controlText,
-                  styles.controlTextCaller,
-                ]}
-              >
+              <Text style={[styles.controlText, styles.controlTextCaller]}>
                 {muted ? 'Unmute' : 'Mute'}
               </Text>
             </View>
