@@ -98,8 +98,8 @@ class Api {
   // AGORA
   // ============================================
 
-  generateAgoraToken() {
-    return this.post<AgoraTokenResponse>('/generateAgoraToken');
+  generateAgoraToken(channelName?: string) {
+    return this.post<AgoraTokenResponse>('/generateAgoraToken', { channelName });
   }
 
   // ============================================

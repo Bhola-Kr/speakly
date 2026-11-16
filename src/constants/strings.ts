@@ -6,15 +6,13 @@ export const copy = {
     splash: 'Speakly 121',
     tagline: 'Baat Ho Jaaye?',
     valueProposition: 'Live one-to-one conversations.',
-    offer: 'Claim ₹10 free · Talk for 2 minutes · No subscription',
+    offer: 'Live voice conversations · No subscription',
   },
   login: {
     heading: 'Baat Ho Jaaye?',
-    subtitle:
-      'Claim ₹10 free call balance—enough for your first 2 minutes. No subscription.',
+    subtitle: 'Sign in to choose an available host. No subscription.',
     heroTitle: 'Live one-to-one conversations',
-    supportingText:
-      'Choose an available host. ₹10 free balance covers your first 2 minutes.',
+    supportingText: 'Choose an available host and enjoy live voice conversations.',
     cta: 'Continue',
     phonePlaceholder: 'Your Mobile Number',
     safetyNote:
@@ -23,7 +21,7 @@ export const copy = {
   home: {
     heading: 'Who Would You Like to Talk To?',
     supportingText: 'Live one-to-one conversations.',
-    offer: 'Claim ₹10 free · Your first 2 minutes are covered',
+    offer: 'Explore hosts and start a conversation',
     sectionHint: 'Choose an available host.',
     availableHosts: 'Available Hosts',
     online: 'Online',

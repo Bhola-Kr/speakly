@@ -17,6 +17,8 @@ type Props = {
   visible: boolean;
   claiming: boolean;
   requiresLogin: boolean;
+  amount: number;
+  freeMinutes: number;
   onClaim: () => void;
   onDismiss: () => void;
 };
@@ -25,6 +27,8 @@ const SignupOfferModal = ({
   visible,
   claiming,
   requiresLogin,
+  amount,
+  freeMinutes,
   onClaim,
   onDismiss,
 }: Props) => (
@@ -83,10 +87,13 @@ const SignupOfferModal = ({
           </View>
         </LinearGradient>
         <Text style={styles.eyebrow}>A LITTLE GIFT FOR YOU</Text>
-        <Text style={styles.title}>Your first 2 minutes are free</Text>
+        <Text style={styles.title}>
+          Your first {freeMinutes} {freeMinutes === 1 ? 'minute' : 'minutes'} are
+          free
+        </Text>
         <Text style={styles.message}>
-          Claim ₹10 free call balance—enough for a 2-minute conversation with
-          any available host at up to ₹5/min.
+          Claim ₹{amount} free call balance for your first {freeMinutes}{' '}
+          {freeMinutes === 1 ? 'minute' : 'minutes'} with any available host.
         </Text>
         <TouchableOpacity
           disabled={claiming}
@@ -103,8 +110,12 @@ const SignupOfferModal = ({
               <>
                 <Text style={styles.claimText}>
                   {requiresLogin
-                    ? 'Sign In & Claim 2 Free Minutes'
-                    : 'Claim 2 Free Minutes'}
+                    ? `Sign In & Claim ${freeMinutes} Free ${
+                        freeMinutes === 1 ? 'Minute' : 'Minutes'
+                      }`
+                    : `Claim ${freeMinutes} Free ${
+                        freeMinutes === 1 ? 'Minute' : 'Minutes'
+                      }`}
                 </Text>
                 <MaterialCommunityIcons
                   name="arrow-right"

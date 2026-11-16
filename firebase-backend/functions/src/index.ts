@@ -641,7 +641,10 @@ app.post('/generateAgoraToken', (req: Request, res: Response) => {
     const appId = 'f6bec5b940ea4b11af21f3b931f73536';
     const appCertificate = 'a9aa916ebcc840ad920582398c5a9f64';
 
-    const channelName = 'voice_tamil';
+    const requestedChannel = String(req.body?.channelName || '').trim();
+    const channelName = /^[a-zA-Z0-9_-]{1,64}$/.test(requestedChannel)
+      ? requestedChannel
+      : 'voice_tamil';
 
     const maleUid = Math.floor(Math.random() * 100000);
     const femaleUid = Math.floor(Math.random() * 100000);

@@ -50,6 +50,7 @@ export interface Room {
   roomId: string;
   currentCallId: string;
   agora: {
+    channelName?: string;
     male: {
       uid: number;
       token: string;
@@ -312,7 +313,6 @@ class RoomService {
       this.getUser(femaleUid),
     ]);
     const callRatePerMinute = normalizeCallRate(female?.profile?.price);
-    const agoraRes = await fetchAgoraToken();
     const roomRef = database().ref(`rooms/${femaleUid}`);
 
     // Load the server room before starting the transaction. On a male user's
@@ -328,6 +328,7 @@ class RoomService {
     if (!callId) {
       throw new Error('Unable to create call.');
     }
+    const agoraRes = await fetchAgoraToken(`call_${callId}`);
 
     let transactionInvocationCount = 0;
 
@@ -376,6 +377,7 @@ class RoomService {
       };
       room.callRatePerMinute = callRatePerMinute;
       room.agora = {
+        channelName: agoraRes.channelName,
         male: agoraRes.male,
         female: agoraRes.female,
       };

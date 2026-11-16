@@ -179,7 +179,8 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
       maleUid: incomingRoom?.male?.uid,
       femaleUid: myUid,
       callRatePerMinute: incomingRoom?.callRatePerMinute,
-      uid: incomingRoom?.roomId,
+      callId: incomingRoom?.currentCallId,
+      channelName: incomingRoom?.agora?.channelName,
       agora: incomingRoom?.agora,
     });
   };

@@ -19,7 +19,6 @@ import {
   createAnonymousName,
   createAnonymousNameFromPhone,
 } from '../../utils/profileValidation';
-import { copy } from '../../constants/strings';
 import {
   trackGuestAuthentication,
   trackLoginModalEvent,
@@ -31,6 +30,9 @@ type Props = {
   onAuthenticated: (isExpert: boolean) => void | Promise<void>;
   onOpenTerms: () => void;
   onOpenPrivacy: () => void;
+  offerActive: boolean;
+  offerAmount: number;
+  offerFreeMinutes: number;
   hostName?: string;
 };
 
@@ -40,6 +42,9 @@ const GuestLoginModal = ({
   onAuthenticated,
   onOpenTerms,
   onOpenPrivacy,
+  offerActive,
+  offerAmount,
+  offerFreeMinutes,
   hostName,
 }: Props) => {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -215,7 +220,9 @@ const GuestLoginModal = ({
           </Text>
           <Text style={styles.subtitle}>
             {step === 'phone'
-              ? copy.brand.offer
+              ? offerActive && offerAmount > 0
+                ? `Claim ₹${offerAmount} free · Talk for ${offerFreeMinutes} minutes · No subscription`
+                : 'Sign in to start talking · No subscription'
               : `We sent a 4-digit code to +91 ${phone}.`}
           </Text>
           <View style={styles.privacyNote}>

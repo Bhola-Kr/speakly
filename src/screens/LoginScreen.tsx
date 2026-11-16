@@ -25,6 +25,10 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { sendOtp } from '../api/calls';
 import Colors from '../constants/colors';
 import { copy } from '../constants/strings';
+import {
+  DEFAULT_SIGNUP_OFFER_CONFIG,
+  listenSignupOffer,
+} from '../firebase/signupOffer';
 
 const COLORS = {
   background: Colors.background,
@@ -61,6 +65,15 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [acceptedPolicies, setAcceptedPolicies] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [signupOffer, setSignupOffer] = useState({
+    ...DEFAULT_SIGNUP_OFFER_CONFIG,
+    active: false,
+  });
+
+  useEffect(
+    () => listenSignupOffer(setSignupOffer),
+    [],
+  );
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => {
@@ -182,7 +195,9 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
               </View>
 
               <Text style={styles.heroSubtitle}>
-                {copy.login.supportingText}
+                {signupOffer.active && signupOffer.amount > 0
+                  ? `Choose an available host. ₹${signupOffer.amount} free balance covers your first ${signupOffer.freeMinutes} minutes.`
+                  : 'Choose an available host and enjoy live voice conversations.'}
               </Text>
 
               <View style={styles.benefitsRow}>
@@ -207,7 +222,11 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
           >
             <View style={styles.formHeader}>
               <Text style={styles.formTitle}>{copy.login.heading}</Text>
-              <Text style={styles.formSubtitle}>{copy.login.subtitle}</Text>
+              <Text style={styles.formSubtitle}>
+                {signupOffer.active && signupOffer.amount > 0
+                  ? `Claim ₹${signupOffer.amount} free call balance—enough for your first ${signupOffer.freeMinutes} minutes. No subscription.`
+                  : 'Sign in to choose an available host. No subscription.'}
+              </Text>
             </View>
 
             <View style={styles.inputBox}>

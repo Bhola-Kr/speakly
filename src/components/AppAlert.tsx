@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import LinearGradient from 'react-native-linear-gradient';
 
 import Colors from '../constants/colors';
 import UI from '../constants/ui';
@@ -83,52 +84,62 @@ const AppAlert = () => {
     >
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
-        <View style={styles.card} accessibilityRole="alert">
-          <View
-            style={[
-              styles.icon,
-              destructive ? styles.dangerIcon : styles.primaryIcon,
-            ]}
+        <View style={styles.card} accessibilityRole="alert" accessibilityViewIsModal>
+          <LinearGradient
+            colors={destructive ? [Colors.errorSurface, Colors.white] : [Colors.primaryLight, Colors.surfaceSecondary, Colors.white]}
+            style={styles.hero}
           >
-            <MaterialCommunityIcons
-              name={destructive ? 'alert-outline' : 'information-outline'}
-              size={UI.size.icon}
-              color={destructive ? Colors.danger : Colors.secondary}
-            />
-          </View>
+            <View style={[styles.icon, destructive && styles.dangerIcon]}>
+              <MaterialCommunityIcons
+                name={destructive ? 'alert-outline' : 'information-outline'}
+                size={32}
+                color={destructive ? Colors.danger : Colors.primary}
+              />
+            </View>
+          </LinearGradient>
           <Text style={styles.title}>{request?.title}</Text>
           {Boolean(request?.message) && (
             <Text style={styles.message}>{request?.message}</Text>
           )}
           <View style={styles.actions}>
             {request?.buttons.map((button, index) => {
+              const isDestructive = button.style === 'destructive';
               const primary =
-                button.style === 'destructive' ||
+                isDestructive ||
                 (request.buttons.length === 1 && button.style !== 'cancel');
+              const buttonLabel = button.text || 'OK';
               return (
                 <TouchableOpacity
-                  key={`${button.text || 'OK'}-${index}`}
-                  activeOpacity={0.82}
+                  key={`${buttonLabel}-${index}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={buttonLabel}
+                  activeOpacity={0.88}
                   style={[
                     styles.button,
                     primary ? styles.primaryButton : styles.secondaryButton,
-                    button.style === 'destructive' && styles.dangerButton,
+                    isDestructive && styles.dangerButton,
                   ]}
                   onPress={() => {
                     close();
                     button.onPress?.();
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.buttonText,
-                      primary
-                        ? styles.primaryButtonText
-                        : styles.secondaryButtonText,
-                    ]}
-                  >
-                    {button.text || 'OK'}
-                  </Text>
+                  {primary && (
+                    <LinearGradient
+                      colors={isDestructive ? [Colors.danger, '#B91C1C'] : Colors.buttonGradient}
+                      style={styles.primaryButtonContent}
+                    >
+                      <Text style={styles.primaryButtonText}>{buttonLabel}</Text>
+                      <MaterialCommunityIcons
+                        name={isDestructive ? 'alert-circle-outline' : 'arrow-right'}
+                        size={19}
+                        color={Colors.white}
+                      />
+                    </LinearGradient>
+                  )}
+                  {!primary && (
+                    <Text style={styles.secondaryButtonText}>{buttonLabel}</Text>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -150,28 +161,40 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     alignSelf: 'center',
-    borderRadius: UI.radius.alert,
+    borderRadius: 30,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     padding: UI.spacing.xl,
+    paddingTop: 14,
+    alignItems: 'center',
     ...UI.shadow.modal,
   },
   icon: {
-    width: 48,
-    height: 48,
-    borderRadius: UI.radius.card,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
+    ...UI.shadow.card,
   },
-  primaryIcon: { backgroundColor: Colors.screenTint },
-  dangerIcon: { backgroundColor: Colors.errorSurface },
+  hero: {
+    width: '100%',
+    height: 132,
+    marginBottom: UI.spacing.sm,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dangerIcon: { backgroundColor: Colors.white, borderColor: Colors.errorSurface },
   title: {
     marginTop: UI.spacing.lg,
     color: Colors.text,
     fontSize: UI.typography.screenTitle,
-    lineHeight: 34,
+    lineHeight: 33,
     fontWeight: '800',
     textAlign: 'center',
   },
@@ -182,20 +205,44 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: 'center',
   },
-  actions: { marginTop: UI.spacing.xl, gap: UI.spacing.sm },
+  actions: { width: '100%', marginTop: UI.spacing.xl, gap: UI.spacing.sm },
   button: {
-    minHeight: 48,
-    borderRadius: UI.radius.button,
+    minHeight: 54,
+    borderRadius: 18,
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  primaryButton: { ...UI.shadow.card },
+  dangerButton: {},
+  primaryButtonContent: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: 18,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: UI.spacing.sm,
     paddingHorizontal: UI.spacing.lg,
   },
-  primaryButton: { backgroundColor: Colors.primary },
-  dangerButton: { backgroundColor: Colors.danger },
-  secondaryButton: { backgroundColor: Colors.surface },
-  buttonText: { fontSize: UI.typography.body, fontWeight: '700' },
-  primaryButtonText: { color: Colors.white },
-  secondaryButtonText: { color: Colors.text },
+  secondaryButton: {
+    backgroundColor: Colors.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    paddingHorizontal: UI.spacing.lg,
+  },
+  primaryButtonText: {
+    color: Colors.white,
+    fontSize: UI.typography.body,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  secondaryButtonText: {
+    color: Colors.text,
+    fontSize: UI.typography.body,
+    fontWeight: '700',
+  },
 });
 
 export default AppAlert;

@@ -33,6 +33,7 @@ import { useUser } from '../../hooks/UserContext';
 import SignupOfferModal from './SignupOfferModal';
 import {
   claimSignupOffer,
+  DEFAULT_SIGNUP_OFFER_CONFIG,
   listenSignupOffer,
   SignupOfferConfig,
 } from '../../firebase/signupOffer';
@@ -93,9 +94,8 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     'Wallet' | 'ProfileSetting' | null
   >(null);
   const [offer, setOffer] = useState<SignupOfferConfig>({
+    ...DEFAULT_SIGNUP_OFFER_CONFIG,
     active: false,
-    amount: 0,
-    freeMinutes: 2,
   });
   const [offerDismissed, setOfferDismissed] = useState(false);
   const [claimingOffer, setClaimingOffer] = useState(false);
@@ -150,7 +150,8 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
         setOffer(current => {
           if (
             current.active !== nextOffer.active ||
-            current.amount !== nextOffer.amount
+            current.amount !== nextOffer.amount ||
+            current.freeMinutes !== nextOffer.freeMinutes
           ) {
             setOfferDismissed(false);
           }
@@ -178,10 +179,12 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     claimingOfferRef.current = true;
     try {
       setClaimingOffer(true);
-      await claimSignupOffer();
+      const creditedAmount = await claimSignupOffer();
       Alert.alert(
-        '₹10 Free Balance Added',
-        `Choose an available host and enjoy your first ${offer.freeMinutes} minutes free.`,
+        `₹${creditedAmount} Free Balance Added`,
+        `Choose an available host and enjoy your first ${offer.freeMinutes} ${
+          offer.freeMinutes === 1 ? 'minute' : 'minutes'
+        } free.`,
       );
     } catch (error: any) {
       Alert.alert(
@@ -423,7 +426,13 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
           </TouchableOpacity>
         )}
 
-        <Banner randomCall={onRandomCall} calling={randomCalling} />
+        <Banner
+          randomCall={onRandomCall}
+          calling={randomCalling}
+          offerActive={offer.active}
+          offerAmount={offer.amount}
+          offerFreeMinutes={offer.freeMinutes}
+        />
 
         <View style={styles.sectionHeader}>
           <Text style={styles.heading}>{copy.home.availableHosts}</Text>
@@ -439,6 +448,9 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     ),
     [
       navigation,
+      offer.active,
+      offer.amount,
+      offer.freeMinutes,
       onRandomCall,
       randomCalling,
       selected,
@@ -508,6 +520,8 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
         visible={showOffer}
         claiming={claimingOffer}
         requiresLogin={!signedIn}
+        amount={offer.amount}
+        freeMinutes={offer.freeMinutes}
         onClaim={handleOfferClaim}
         onDismiss={() => setOfferDismissed(true)}
       />
@@ -534,7 +548,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
         }}
         onAuthenticated={async isExpert => {
           let creditedBonus = 0;
-          if (!isExpert && !offerClaimed) {
+          if (!isExpert && !offerClaimed && offer.active && offer.amount > 0) {
             try {
               const creditedAmount = await claimSignupOffer();
               creditedBonus = creditedAmount;
@@ -575,6 +589,9 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
             }, 350);
           }
         }}
+        offerActive={offer.active}
+        offerAmount={offer.amount}
+        offerFreeMinutes={offer.freeMinutes}
       />
     </SafeAreaView>
   );

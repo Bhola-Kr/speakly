@@ -57,7 +57,10 @@ import {
 } from '../../firebase/analytics';
 import type { CallFollowUpIntent } from '../../types/callFollowUp';
 import { CALL_RECHARGE_PROMPT_EVENT } from '../../utils/callRechargePrompt';
-import { DEFAULT_FIRST_CALL_FREE_MINUTES } from '../../firebase/signupOffer';
+import {
+  listenSignupOffer,
+  SIGNUP_OFFER_AMOUNT,
+} from '../../firebase/signupOffer';
 
 type Props = {
   route: { params: Record<string, any> };
@@ -94,7 +97,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   }, [visible, onMinimize]);
 
   const {
-    channelName = 'voice_tamil',
+    channelName: routeChannelName,
     userName = 'N/A',
     tamilName: routeTamilName,
     avatarId = 1,
@@ -107,6 +110,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     callRatePerMinute: routeCallRate,
     agora,
   } = route?.params ?? {};
+  const channelName = String(routeChannelName || agora?.channelName || 'voice_tamil');
   const callRatePerMinute = normalizeCallRate(routeCallRate);
 
   const token = gender === 'male' ? agora?.male?.token : agora?.female?.token;
@@ -157,6 +161,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const [freeCallEndsAt, setFreeCallEndsAt] = useState(0);
   const [showFreeCallModal, setShowFreeCallModal] = useState(false);
   const [freeCallMinutes, setFreeCallMinutes] = useState(2);
+  const [freeCallAmount, setFreeCallAmount] = useState(SIGNUP_OFFER_AMOUNT);
   const [freeCallSecondsRemaining, setFreeCallSecondsRemaining] = useState(0);
 
   const walletBalance = Number(user?.wallet?.balance);
@@ -185,6 +190,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     )
       return;
     let cancelled = false;
+    let stopListeningForOffer: (() => void) | undefined;
     const configureFirstFreeCall = async () => {
       const [historySnapshot, roomSnapshot] = await Promise.all([
         database().ref(`callHistory/${user.uid}`).once('value'),
@@ -196,32 +202,50 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         (item: any) => item?.status === 'Completed',
       );
       if (hasCompletedCall) return;
-      const minutes = DEFAULT_FIRST_CALL_FREE_MINUTES;
       const room = roomSnapshot.val();
-      const startedAt = Number(room?.callStartedAt || Date.now());
-      setFreeCallMinutes(minutes);
-      freeCallEndsAtRef.current = startedAt + minutes * BILLING_INTERVAL_MS;
-      setFreeCallEndsAt(startedAt + minutes * BILLING_INTERVAL_MS);
-      setFreeCallSecondsRemaining(
-        Math.max(
-          0,
-          Math.ceil(
-            (startedAt + minutes * BILLING_INTERVAL_MS - Date.now()) / 1000,
-          ),
-        ),
-      );
-      setShowFreeCallModal(true);
+      const roomStartedAt = Number(room?.callStartedAt);
+      const startedAt =
+        Number.isFinite(roomStartedAt) && roomStartedAt > 0
+          ? roomStartedAt
+          : Date.now();
+      const creditedAmount = Number(user?.offers?.signupOffer?.amount);
+
+      stopListeningForOffer = listenSignupOffer(config => {
+        if (!config.active || config.amount <= 0) {
+          freeCallEndsAtRef.current = 0;
+          setFreeCallEndsAt(0);
+          setFreeCallSecondsRemaining(0);
+          setShowFreeCallModal(false);
+          return;
+        }
+
+        const endsAt = startedAt + config.freeMinutes * BILLING_INTERVAL_MS;
+        setFreeCallMinutes(config.freeMinutes);
+        setFreeCallAmount(
+          Number.isFinite(creditedAmount) && creditedAmount > 0
+            ? creditedAmount
+            : config.amount,
+        );
+        freeCallEndsAtRef.current = endsAt;
+        setFreeCallEndsAt(endsAt);
+        setFreeCallSecondsRemaining(
+          Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)),
+        );
+        setShowFreeCallModal(true);
+      });
     };
     configureFirstFreeCall().catch(error =>
       console.warn('Unable to load first-call free limit:', error),
     );
     return () => {
       cancelled = true;
+      stopListeningForOffer?.();
     };
   }, [
     connected,
     femaleUid,
     gender,
+    user?.offers?.signupOffer?.amount,
     user?.offers?.signupOffer?.claimedAt,
     user?.uid,
   ]);
@@ -985,7 +1009,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 textAlign: 'center',
               }}
             >
-              Your first 2 minutes are free
+              Your first {freeCallMinutes}{' '}
+              {freeCallMinutes === 1 ? 'minute' : 'minutes'} are free
             </Text>
             <Text
               style={{
@@ -996,8 +1021,9 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 textAlign: 'center',
               }}
             >
-              We added ₹10 free call balance. It covers {freeCallMinutes}{' '}
-              minutes with any host at up to ₹5/min.
+              We added ₹{freeCallAmount} free call balance. It covers{' '}
+              {freeCallMinutes}{' '}
+              {freeCallMinutes === 1 ? 'minute' : 'minutes'} with any host.
             </Text>
             <TouchableOpacity
               onPress={() => setShowFreeCallModal(false)}

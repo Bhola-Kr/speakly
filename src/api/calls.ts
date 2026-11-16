@@ -127,9 +127,11 @@ export const sendIncomingCallPush = (payload: {
 // AGORA TOKEN
 // ============================================
 
-export const fetchAgoraToken = async (): Promise<AgoraTokenResponse> => {
+export const fetchAgoraToken = async (
+  channelName?: string,
+): Promise<AgoraTokenResponse> => {
   try {
-    const response = await Api.generateAgoraToken();
+    const response = await Api.generateAgoraToken(channelName);
 
     return response as unknown as AgoraTokenResponse;
   } catch (error) {

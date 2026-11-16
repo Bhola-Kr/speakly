@@ -395,7 +395,7 @@ Thank you.`);
           femaleUid,
           callRatePerMinute: room.callRatePerMinute,
           callId: room.currentCallId,
-          uid: room.roomId,
+          channelName: room.agora.channelName,
           agora: room.agora,
         });
       }
@@ -493,7 +493,7 @@ Thank you.`);
         femaleUid,
         callRatePerMinute: room.callRatePerMinute,
         callId: room.currentCallId,
-        uid: room.roomId,
+        channelName: room.agora.channelName,
         agora: room.agora,
       });
       await clearPendingAcceptedCall(pending.callId);

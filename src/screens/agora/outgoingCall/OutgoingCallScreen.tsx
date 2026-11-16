@@ -152,6 +152,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
               femaleUid: data?.uid,
               callRatePerMinute: room?.callRatePerMinute,
               callId: room?.currentCallId,
+              channelName: room?.agora?.channelName,
               agora: room?.agora,
             });
             break;

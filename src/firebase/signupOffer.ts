@@ -9,31 +9,61 @@ export type SignupOfferConfig = {
 
 export const DEFAULT_FIRST_CALL_FREE_MINUTES = 2;
 export const SIGNUP_OFFER_AMOUNT = 10;
+export const SIGNUP_OFFER_CONFIG_PATH = 'configs/signupOffer';
 
-const parseConfig = (_value: any): SignupOfferConfig => {
-  const freeMinutes = DEFAULT_FIRST_CALL_FREE_MINUTES;
+export const DEFAULT_SIGNUP_OFFER_CONFIG: SignupOfferConfig = {
+  active: true,
+  amount: SIGNUP_OFFER_AMOUNT,
+  freeMinutes: DEFAULT_FIRST_CALL_FREE_MINUTES,
+};
+
+const isConfigRecord = (
+  value: unknown,
+): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const parseConfig = (value: unknown): SignupOfferConfig => {
+  if (value == null) return DEFAULT_SIGNUP_OFFER_CONFIG;
+
+  const config = isConfigRecord(value) ? value : {};
+  const amount =
+    typeof config.amount === 'number' &&
+    Number.isFinite(config.amount) &&
+    config.amount >= 0
+      ? config.amount
+      : DEFAULT_SIGNUP_OFFER_CONFIG.amount;
+  const freeMinutes =
+    typeof config.freeMinutes === 'number' &&
+    Number.isFinite(config.freeMinutes) &&
+    config.freeMinutes > 0
+      ? config.freeMinutes
+      : DEFAULT_SIGNUP_OFFER_CONFIG.freeMinutes;
+
   return {
-    // ₹10 covers two started minutes because caller rates are capped at ₹5/min.
-    active: true,
-    amount: SIGNUP_OFFER_AMOUNT,
+    active:
+      config.active === undefined
+        ? DEFAULT_SIGNUP_OFFER_CONFIG.active
+        : config.active === true,
+    amount,
     freeMinutes,
   };
+};
+
+export const getSignupOfferConfig = async (): Promise<SignupOfferConfig> => {
+  const snapshot = await databaseRef(SIGNUP_OFFER_CONFIG_PATH).once('value');
+  return parseConfig(snapshot.val());
 };
 
 export const listenSignupOffer = (
   callback: (config: SignupOfferConfig) => void,
 ) => {
-  const ref = databaseRef('configs');
+  const ref = databaseRef(SIGNUP_OFFER_CONFIG_PATH);
   const listener = ref.on(
     'value',
     snapshot => callback(parseConfig(snapshot.val())),
     error => {
       console.warn('Unable to load signup offer:', error);
-      callback({
-        active: true,
-        amount: SIGNUP_OFFER_AMOUNT,
-        freeMinutes: DEFAULT_FIRST_CALL_FREE_MINUTES,
-      });
+      callback({ ...DEFAULT_SIGNUP_OFFER_CONFIG, active: false });
     },
   );
   return () => ref.off('value', listener);
@@ -45,10 +75,10 @@ export const claimSignupOffer = async (): Promise<number> => {
 
   // Always read the latest config at claim time. A disabled or malformed offer
   // is never credited even if an older modal was already visible.
-  const configSnapshot = await databaseRef('configs').once('value');
-  const config = parseConfig(configSnapshot.val());
-  if (config.amount <= 0)
-    throw new Error('Unable to apply the free-call offer.');
+  const config = await getSignupOfferConfig();
+  if (!config.active || config.amount <= 0) {
+    throw new Error('This offer is no longer available.');
+  }
 
   const userRef = databaseRef(`users/${uid}`);
   const initialSnapshot = await userRef.once('value');

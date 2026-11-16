@@ -24,9 +24,18 @@ const COLORS = {
 interface Props {
   randomCall: () => void;
   calling: boolean;
+  offerActive: boolean;
+  offerAmount: number;
+  offerFreeMinutes: number;
 }
 
-const Banner = ({ randomCall, calling }: Props) => {
+const Banner = ({
+  randomCall,
+  calling,
+  offerActive,
+  offerAmount,
+  offerFreeMinutes,
+}: Props) => {
   return (
     <View style={styles.bannerShadow}>
       <LinearGradient
@@ -48,14 +57,17 @@ const Banner = ({ randomCall, calling }: Props) => {
 
           <Text style={styles.description}>{copy.home.supportingText}</Text>
 
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.82}
-            style={styles.offer}
-          >
-            {copy.home.offer}
-          </Text>
+          {offerActive && offerAmount > 0 ? (
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.82}
+              style={styles.offer}
+            >
+              Claim ₹{offerAmount} free · Talk for {offerFreeMinutes}{' '}
+              {offerFreeMinutes === 1 ? 'minute' : 'minutes'}
+            </Text>
+          ) : null}
 
           <TouchableOpacity
             onPress={randomCall}
