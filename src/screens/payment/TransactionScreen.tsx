@@ -1,10 +1,10 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   StatusBar,
   Alert,
   Clipboard,

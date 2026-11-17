@@ -1,3 +1,7 @@
+import { TouchableOpacity } from '../../localization/components';
+import { setAppLanguage, translate } from '../../localization/language';
+import { useAppLanguage } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, {
   useCallback,
   useEffect,
@@ -9,8 +13,6 @@ import React, {
 import {
   ScrollView,
   View,
-  Text,
-  TouchableOpacity,
   Image,
   Share,
   StyleSheet,
@@ -64,6 +66,7 @@ const EXPERT_COLORS = {
 
 const ProfileSettingScreen = ({ navigation }: Props) => {
   const { user } = useUser();
+  const appLanguage = useAppLanguage();
   const { activeCall, showCall } = useActiveCall();
   const profile = user?.profile;
   const gender = profile?.gender || 'male';
@@ -264,7 +267,27 @@ ${PLAY_STORE_URL}`,
   };
 
   const handleMenuItemPress = (item: any) => {
-    if (item.title === 'Humse Baat Karo') {
+    if (item.action === 'app-language') {
+      Alert.alert(translate('App Language'), '', [
+        {
+          text: 'English',
+          onPress: () => {
+            setAppLanguage('en').catch(() =>
+              Alert.alert('Error', 'Unable to save language preference.'),
+            );
+          },
+        },
+        {
+          text: 'Hinglish',
+          onPress: () => {
+            setAppLanguage('hinglish').catch(() =>
+              Alert.alert('Error', 'Unable to save language preference.'),
+            );
+          },
+        },
+        { text: translate('Cancel'), style: 'cancel' },
+      ]);
+    } else if (item.title === 'Humse Baat Karo') {
       handleContactUs();
     } else if (item.title === 'App Share Karo') {
       handleShareApp();
@@ -423,16 +446,19 @@ ${PLAY_STORE_URL}`,
             <Text style={expertStyles.detailText}>{displayPhoneNumber}</Text>
           </View>
 
-          <View style={expertStyles.detailRow}>
-            <MaterialCommunityIcons
-              name="calendar-month-outline"
-              size={21}
-              color={EXPERT_COLORS.tealDark}
-            />
-            <Text style={expertStyles.detailText}>
-              Kab Se Jude Hain {formatDate(user?.createdAt)}
-            </Text>
-          </View>
+          {Number.isFinite(Number(user?.createdAt)) &&
+            Number(user?.createdAt) > 0 && (
+              <View style={expertStyles.detailRow}>
+                <MaterialCommunityIcons
+                  name="calendar-month-outline"
+                  size={21}
+                  color={EXPERT_COLORS.tealDark}
+                />
+                <Text style={expertStyles.detailText}>
+                  Kab Se Jude Hain {formatDate(user.createdAt)}
+                </Text>
+              </View>
+            )}
 
           {isExpert && expertCallRate !== null && (
             <View style={expertStyles.detailRow}>
@@ -534,6 +560,16 @@ ${PLAY_STORE_URL}`,
               screen: 'AdminUsers',
             },
           ])}
+
+        {renderExpertSection('Language', [
+          {
+            id: 'app-language',
+            title: 'Language',
+            value: appLanguage === 'en' ? 'English' : 'Hinglish',
+            icon: 'translate',
+            action: 'app-language',
+          },
+        ])}
 
         {renderExpertSection('Support', supportMenus.slice(0, 3))}
         {renderExpertSection('Help & legal', supportMenus.slice(3))}

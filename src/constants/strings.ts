@@ -128,3 +128,10 @@ export default {
   phonePlaceholder: copy.login.phonePlaceholder,
   otp: copy.login.cta,
 };
+
+// App copy is translated at display time; notification producers retain Hinglish.
+export {
+  translate,
+  getAppLanguage,
+  setAppLanguage,
+} from '../localization/language';

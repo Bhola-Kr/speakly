@@ -1,3 +1,5 @@
+import { useAppLanguage } from '../localization/components';
+import { translate } from '../localization/language';
 import React, { useCallback } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -36,6 +38,7 @@ const HistoryTabIcon = ({ focused }: { focused: boolean }) => (
 );
 
 const FemaleBottomTabs = () => {
+  useAppLanguage();
   const insets = useSafeAreaInsets();
 
   useFocusEffect(
@@ -127,7 +130,7 @@ const FemaleBottomTabs = () => {
         name="History"
         component={FemaleHistoryScreen}
         options={{
-          tabBarLabel: 'Pichhli Calls',
+          tabBarLabel: translate('Pichhli Calls'),
           tabBarIcon: HistoryTabIcon,
         }}
       />

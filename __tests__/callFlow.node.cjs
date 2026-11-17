@@ -93,6 +93,13 @@ async function outgoing({ balance = true, nextPending = false } = {}) {
     setInterval: (fn, ms) => addTimer(fn, ms, ms),
     clearInterval: id => timers.delete(id),
     require: name => {
+      if (name.includes('localization/components'))
+        return {
+          Text: 'Text',
+          TextInput: 'TextInput',
+          TouchableOpacity: 'TouchableOpacity',
+          useAppLanguage: () => 'en',
+        };
       if (name === 'react') return React;
       if (name === 'react-native') return native;
       if (name.includes('safe-area')) return { SafeAreaView: 'SafeAreaView' };
@@ -341,7 +348,8 @@ test('online notification persists exact host until auth is ready and deduplicat
 });
 
 test('pending RTC initialization and old SDK callbacks cannot join or end a replacement session', async () => {
-  for (const rejectOld of [false, true]) {
+  for (const mode of ['resolve', 'reject', 'already-joined']) {
+    const rejectOld = mode === 'reject';
     const engines = [],
       joins = [],
       events = [];
@@ -353,6 +361,8 @@ test('pending RTC initialization and old SDK callbacks cannot join or end a repl
       rejectOldToken = reject;
     });
     const credentials = {
+      appId: 'local-test-app-id',
+      channelName: 'call_b',
       male: { uid: 1, token: 'own-token' },
       female: { uid: 2, token: '' },
     };
@@ -436,6 +446,20 @@ test('pending RTC initialization and old SDK callbacks cannot join or end a repl
       setInterval,
       clearInterval,
       require: name => {
+        if (name.includes('localization/components'))
+          return {
+            Text: 'Text',
+            TextInput: 'TextInput',
+            TouchableOpacity: 'TouchableOpacity',
+            useAppLanguage: () => 'en',
+          };
+        if (name.includes('localization/components'))
+          return {
+            Text: 'Text',
+            TextInput: 'TextInput',
+            TouchableOpacity: 'TouchableOpacity',
+            useAppLanguage: () => 'en',
+          };
         if (name === 'react') return React;
         if (name === 'react-native') return native;
         if (name === 'react-native-agora') return sdk;
@@ -457,11 +481,23 @@ test('pending RTC initialization and old SDK callbacks cannot join or end a repl
             getMaleAvatar: () => 1,
             getUserAvatar: () => 1,
           };
+        if (name.includes('callDisplayTime')) {
+          const clockModule = { exports: {} };
+          vm.runInNewContext(
+            compile('src/utils/callDisplayTime.ts'),
+            clockModule,
+          );
+          return clockModule.exports;
+        }
         if (name.includes('RoomService')) return asDefault(service);
         if (name.includes('api/calls'))
           return {
             fetchAgoraToken: channel =>
-              channel === 'call_a' ? pending : Promise.resolve(credentials),
+              channel === 'call_a'
+                ? mode === 'already-joined'
+                  ? Promise.resolve({ ...credentials, channelName: 'call_a' })
+                  : pending
+                : Promise.resolve(credentials),
           };
         if (name.includes('useUser') || name.includes('UserContext'))
           return { useUser: () => ({ user }) };
@@ -527,12 +563,20 @@ test('pending RTC initialization and old SDK callbacks cannot join or end a repl
         if (rejectOld) rejectOldToken(new Error('late failure'));
         else resolveOld(credentials);
       });
-      assert.deepEqual(joins, [['call_b', 1]]);
+      assert.deepEqual(
+        joins,
+        mode === 'already-joined'
+          ? [
+              ['call_a', 1],
+              ['call_b', 1],
+            ]
+          : [['call_b', 1]],
+      );
       assert.equal(engines[0].released, true);
       assert.equal(finished, 0);
       await Renderer.act(async () => {
-        await engines[0].events.onUserJoined({}, 2);
-        engines[0].events.onConnectionStateChanged({}, 1);
+        await engines[0].events?.onUserJoined({}, 2);
+        engines[0].events?.onConnectionStateChanged({}, 1);
         await engines[1].events.onUserJoined({}, 999);
       });
       assert.equal(events.length, 0);

@@ -1,3 +1,5 @@
+import { useAppLanguage } from '../localization/components';
+import { translate } from '../localization/language';
 import React, { useCallback } from 'react';
 import { BackHandler, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -53,6 +55,7 @@ const tabIconStyles = {
 };
 
 const BottomTabs = ({ route }: any) => {
+  useAppLanguage();
   const insets = useSafeAreaInsets();
 
   useFocusEffect(
@@ -147,6 +150,7 @@ const BottomTabs = ({ route }: any) => {
         component={ManHistoryScreen}
         options={{
           tabBarIcon: RecentsTabIcon,
+          tabBarLabel: translate('Pichhli Calls'),
         }}
       />
     </Tab.Navigator>

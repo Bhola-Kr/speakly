@@ -1,5 +1,7 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, { memo, useCallback } from 'react';
-import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../../constants/colors';
 import { topicLabel } from '../../constants/strings';

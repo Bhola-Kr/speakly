@@ -1,12 +1,7 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text } from '../localization/components';
 import React, { useState } from 'react';
-import {
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  FlatList,
-} from 'react-native';
+import { StatusBar, StyleSheet, View, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Colors from '../constants/colors';

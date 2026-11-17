@@ -4,6 +4,13 @@ import { creditExpertEarningsForCall } from './expertCompensation';
 import { runDataTransaction } from './databaseTransaction';
 
 export const LEASE_MS = 15000;
+export class CallError extends Error {
+  constructor(public code: string, message: string) {
+    super(message);
+  }
+}
+const reserved = ['calling', 'ringing', 'accepted', 'active'];
+
 export async function claimCallForUser(
   hostUid: string,
   uid: string,
@@ -14,7 +21,9 @@ export async function claimCallForUser(
   const root = admin.database().ref('speakly');
   const callId = root.child('callHistory').push().key!;
   const now = Date.now();
+  let failure: CallError | undefined;
   const result = await runDataTransaction(root, data => {
+    failure = undefined;
     const host = data?.users?.[hostUid],
       caller = data?.users?.[uid],
       room = data?.rooms?.[hostUid];
@@ -22,29 +31,77 @@ export async function claimCallForUser(
       !caller ||
       caller.isExpert === true ||
       uid === hostUid ||
-      host?.isExpert !== true ||
-      host.profile?.status !== 'online' ||
-      !room ||
-      !['waiting', 'ended', 'rejected', 'men_rejected'].includes(room.status)
-    )
+      host?.isExpert !== true
+    ) {
+      failure = new CallError('CALL_FORBIDDEN', 'Call access nahi mila.');
       return;
+    }
+    const blocked = (a: string, b: string) =>
+      data.blocks?.[a]?.[b] && data.blocks[a][b].isActive !== false;
+    if (blocked(uid, hostUid) || blocked(hostUid, uid)) {
+      failure = new CallError(
+        'CALL_FORBIDDEN',
+        'Is expert ko call nahi kar sakte.',
+      );
+      return;
+    }
+    const busy = reserved.includes(room?.status);
+    const offline =
+      host.settings?.voiceCallsEnabled === false ||
+      !['online', 'busy'].includes(host.profile?.status);
+    if (busy || offline) {
+      failure = new CallError(
+        busy ? 'HOST_BUSY' : 'HOST_OFFLINE',
+        busy
+          ? 'Ye expert abhi kisi aur se baat kar rahe hain. Available hote hi hum aapko notify karenge.'
+          : 'Ye expert abhi online nahi hain. Online aate hi hum aapko notify karenge.',
+      );
+      data.hostAvailabilityWatchers ||= {};
+      data.hostAvailabilityWatchers[hostUid] ||= {};
+      data.hostAvailabilityWatchers[hostUid][uid] = { createdAt: now };
+      return data;
+    }
     if (
-      Object.values(data.rooms).some(
+      Object.values(data.rooms || {}).some(
         (other: any) =>
           other.male?.uid === uid &&
           ['calling', 'ringing', 'accepted', 'active'].includes(other.status),
       )
-    )
+    ) {
+      failure = new CallError(
+        'CALLER_BUSY',
+        'Pehle apni chal rahi call khatam karo.',
+      );
       return;
-    const blocked = (a: string, b: string) =>
-      data.blocks?.[a]?.[b] && data.blocks[a][b].isActive !== false;
-    if (blocked(uid, hostUid) || blocked(hostUid, uid)) return;
+    }
     const rate =
-      Number(host.profile.price) > 0 ? Number(host.profile.price) : 5;
-    if (rate > maximumRate) return;
-    if (Number(caller.wallet?.balance || 0) < rate) return;
+      Number.isFinite(Number(host.profile.price)) &&
+      Number(host.profile.price) > 0
+        ? Number(host.profile.price)
+        : 5;
+    if (rate > maximumRate) {
+      failure = new CallError(
+        'RATE_CHANGED',
+        'Expert ka rate badal gaya. Dobara chuno.',
+      );
+      return;
+    }
+    if (
+      !Number.isFinite(Number(caller.wallet?.balance || 0)) ||
+      Number(caller.wallet?.balance || 0) < rate
+    ) {
+      failure = new CallError(
+        'INSUFFICIENT_BALANCE',
+        'Call ke liye wallet recharge karo.',
+      );
+      return;
+    }
+    data.rooms ||= {};
+    host.profile.status = 'busy';
     data.rooms[hostUid] = {
-      ...room,
+      ...(room || {}),
+      roomId: hostUid,
+      createdAt: room?.createdAt || now,
       status: 'calling',
       currentCallId: callId,
       callRequestedAt: now,
@@ -64,13 +121,13 @@ export async function claimCallForUser(
         avatarId: caller.profile?.avatarId || 1,
       },
       female: {
-        ...room.female,
+        ...room?.female,
         uid: hostUid,
         price: rate,
-        name: String(host.profile?.name || room.female?.name || 'Host'),
+        name: String(host.profile?.name || room?.female?.name || 'Host'),
         tamilName: String(host.profile?.tamilName || ''),
-        avatarId: host.profile?.avatarId || room.female?.avatarId || 1,
-        gender: String(host.profile?.gender || room.female?.gender || ''),
+        avatarId: host.profile?.avatarId || room?.female?.avatarId || 1,
+        gender: String(host.profile?.gender || room?.female?.gender || ''),
       },
       agora: {
         channelName: `call_${callId}`,
@@ -80,9 +137,11 @@ export async function claimCallForUser(
     };
     return data;
   });
+  if (failure) throw failure;
   if (!result.committed)
-    throw new Error(
-      'Expert available nahi hai, call chal rahi hai, ya balance kam hai.',
+    throw new CallError(
+      'CALL_CONFLICT',
+      'Call shuru nahi hui. Dobara try karo.',
     );
   return result.snapshot.child(`rooms/${hostUid}`).val();
 }
@@ -102,14 +161,13 @@ export async function claimCall(req: Request, res: Response) {
         Number(req.body?.maximumRate) || Infinity,
       ),
     });
-  } catch {
-    return res
-      .status(409)
-      .json({
-        success: false,
-        message:
-          'Expert available nahi hai, call chal rahi hai, ya balance kam hai.',
-      });
+  } catch (error) {
+    return res.status(error instanceof CallError ? 409 : 401).json({
+      success: false,
+      code: error instanceof CallError ? error.code : 'UNAUTHENTICATED',
+      message:
+        error instanceof CallError ? error.message : 'Sign in verify nahi hui.',
+    });
   }
 }
 // Pure transition, used inside one atomic RTDB transaction with the wallet.
@@ -120,7 +178,7 @@ export function advanceBilling(
   now: number,
 ) {
   const caller = room.male?.uid;
-  const host = room.female?.uid;
+  const host = room?.female?.uid;
   if (
     ![caller, host].includes(uid) ||
     !['accepted', 'active'].includes(room.status)
@@ -185,7 +243,7 @@ export async function applyCallEvent(
     if (
       !room ||
       room.currentCallId !== callId ||
-      ![room.male?.uid, room.female?.uid].includes(uid)
+      ![room.male?.uid, room?.female?.uid].includes(uid)
     )
       return;
     if (room.status === 'ended') return data; // Idempotent end/heartbeat.
@@ -291,5 +349,128 @@ export async function callSessionEvent(req: Request, res: Response) {
       success: false,
       message: 'Call verify nahi hui. Dobara try karo.',
     });
+  }
+}
+
+// Host answer/reject and caller cancellation use a warm server transaction.
+// Retried answers are idempotent; stale notifications cannot accept a new call.
+export async function transitionCall(req: Request, res: Response) {
+  try {
+    const actor = await admin
+      .auth()
+      .verifyIdToken(
+        String(req.headers.authorization || '').replace(/^Bearer /, ''),
+      );
+    const { hostUid, callId, action } = req.body || {};
+    if (
+      !hostUid ||
+      /[.#$\[\]\/]/.test(hostUid) ||
+      !callId ||
+      !['accept', 'reject', 'cancel', 'ring'].includes(action)
+    )
+      return res
+        .status(400)
+        .json({ success: false, message: 'Call action sahi nahi hai.' });
+    const result = await runDataTransaction(
+      admin.database().ref('speakly'),
+      data => {
+        const room = data?.rooms?.[hostUid];
+        if (!room || room.currentCallId !== callId) return;
+        const host = data.users?.[hostUid];
+        if (
+          action === 'cancel'
+            ? room.male?.uid !== actor.uid
+            : actor.uid !== hostUid || host?.isExpert !== true
+        )
+          return;
+        if (action === 'accept' && ['accepted', 'active'].includes(room.status))
+          return data;
+        if (!['calling', 'ringing'].includes(room.status)) return;
+        if (
+          action === 'accept' &&
+          Date.now() - Number(room.callRequestedAt || 0) > 30000
+        )
+          return;
+        room.status =
+          action === 'ring'
+            ? 'ringing'
+            : action === 'accept'
+            ? 'accepted'
+            : action === 'reject'
+            ? 'rejected'
+            : 'men_rejected';
+        room.updatedAt = Date.now();
+        if (['reject', 'cancel'].includes(action) && host?.profile)
+          host.profile.status =
+            host.settings?.voiceCallsEnabled === false ? 'offline' : 'online';
+        return data;
+      },
+    );
+    if (!result.committed)
+      return res
+        .status(409)
+        .json({ success: false, message: 'Call ab available nahi hai.' });
+    return res.json({ success: true });
+  } catch {
+    return res
+      .status(401)
+      .json({ success: false, message: 'Call access verify nahi hua.' });
+  }
+}
+
+export async function setHostAvailability(req: Request, res: Response) {
+  try {
+    const actor = await admin
+      .auth()
+      .verifyIdToken(
+        String(req.headers.authorization || '').replace(/^Bearer /, ''),
+      );
+    const online = req.body?.online;
+    if (typeof online !== 'boolean')
+      return res
+        .status(400)
+        .json({ success: false, message: 'Status sahi nahi hai.' });
+    const result = await runDataTransaction(
+      admin.database().ref('speakly'),
+      data => {
+        const host = data?.users?.[actor.uid];
+        if (host?.isExpert !== true) return;
+        host.settings ||= {};
+        host.settings.voiceCallsEnabled = online;
+        const current = data.rooms?.[actor.uid];
+        if (reserved.includes(current?.status)) {
+          host.profile.status = online ? 'busy' : 'offline';
+          return data;
+        }
+        host.profile.status = online ? 'online' : 'offline';
+        data.rooms ||= {};
+        data.rooms[actor.uid] = {
+          roomId: actor.uid,
+          currentCallId: '',
+          status: online ? 'waiting' : 'offline',
+          female: {
+            uid: actor.uid,
+            name: host.profile.name || 'Expert',
+            gender: host.profile.gender || '',
+            avatarId: host.profile.avatarId || 1,
+            price: Number(host.profile.price) || 5,
+          },
+          callRatePerMinute: Number(host.profile.price) || 5,
+          createdAt: current?.createdAt || Date.now(),
+          updatedAt: Date.now(),
+          agora: { male: { uid: 1, token: '' }, female: { uid: 2, token: '' } },
+        };
+        return data;
+      },
+    );
+    if (!result.committed)
+      return res
+        .status(403)
+        .json({ success: false, message: 'Expert access zaroori hai.' });
+    return res.json({ success: true });
+  } catch {
+    return res
+      .status(401)
+      .json({ success: false, message: 'Sign in verify nahi hui.' });
   }
 }

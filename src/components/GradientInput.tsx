@@ -1,5 +1,6 @@
+import { TextInput } from '../localization/components';
 import React from 'react';
-import { StyleSheet, TextInput, View, TextInputProps } from 'react-native';
+import { StyleSheet, View, TextInputProps } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 

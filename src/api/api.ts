@@ -1,8 +1,18 @@
 import auth from '@react-native-firebase/auth';
 import DeviceInfo from 'react-native-device-info';
+import { Platform } from 'react-native';
 
-export const API_BASE_URL =
-  'https://us-central1-recent-chat-7fd34.cloudfunctions.net/api';
+export const API_BASE_URL = __DEV__
+  ? `http://${
+      Platform.OS === 'android' ? '10.0.2.2' : 'localhost'
+    }:5001/recent-chat-7fd34/us-central1/api`
+  : 'https://us-central1-recent-chat-7fd34.cloudfunctions.net/api';
+
+export class ApiError extends Error {
+  constructor(message: string, public code?: string) {
+    super(message);
+  }
+}
 
 class Api {
   private async request<T>(
@@ -33,10 +43,11 @@ class Api {
         throw new Error('Server se sahi jawaab nahi mila.');
       }
       if (!response.ok || json.success === false) {
-        throw new Error(
+        throw new ApiError(
           json.message ||
             json.error ||
             `Request poori nahi hui (${response.status})`,
+          json.code,
         );
       }
       return json as T;

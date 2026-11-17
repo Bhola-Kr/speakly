@@ -1,3 +1,5 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, {
   useCallback,
   useEffect,
@@ -7,9 +9,7 @@ import React, {
 } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   StatusBar,
   ActivityIndicator,

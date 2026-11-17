@@ -1,9 +1,9 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
-  Text,
   Modal,
-  TouchableOpacity,
   PermissionsAndroid,
   Platform,
   Image,
@@ -42,6 +42,10 @@ import {
 import Colors from '../../constants/colors';
 import { copy } from '../../constants/strings';
 import RoomService from '../../firebase/RoomService';
+import {
+  callDisplayMilliseconds,
+  CallTimerSnapshot,
+} from '../../utils/callDisplayTime';
 import { fetchAgoraToken } from '../../api/calls';
 import {
   getFemaleAvatar,
@@ -114,7 +118,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const channelName = String(routeChannelName || agora?.channelName || '');
   const callRatePerMinute = normalizeCallRate(routeCallRate);
 
-  const token = gender === 'male' ? agora?.male?.token : agora?.female?.token;
   const uid = gender === 'male' ? agora?.male?.uid : agora?.female?.uid;
   const isCaller = gender === 'male';
   const tamilName = String(routeTamilName || '').trim();
@@ -143,7 +146,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const callConnectedAtRef = useRef(0);
   const callEndTrackedRef = useRef(false);
 
-  const seconds = useRef(0);
+  const timerSnapshot = useRef<CallTimerSnapshot | null>(null);
+  const serverClockOffset = useRef(0);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -304,14 +308,38 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     return granted === PermissionsAndroid.RESULTS.GRANTED;
   }, []);
 
-  const startTimer = useCallback((startedAt = Date.now()) => {
-    if (timerRef.current) {
-      return;
-    }
-
-    // Connected duration is supplied by backend-confirmed intervals.
-    void startedAt;
+  const renderCallTime = useCallback(() => {
+    if (callEndedRef.current) return;
+    setElapsedSeconds(
+      Math.floor(
+        callDisplayMilliseconds(
+          timerSnapshot.current,
+          Date.now() + serverClockOffset.current,
+          connectedRef.current,
+        ) / 1000,
+      ),
+    );
   }, []);
+
+  useEffect(() => {
+    const clock = database().ref('.info/serverTimeOffset');
+    const listener = clock.on('value', snapshot => {
+      serverClockOffset.current = Number(snapshot.val()) || 0;
+      renderCallTime();
+    });
+    return () => clock.off('value', listener);
+  }, [renderCallTime]);
+
+  const startTimer = useCallback(
+    (_startedAt?: number) => {
+      renderCallTime();
+      if (timerRef.current) return;
+      // Render near each second boundary; no request or billing write per tick.
+      const timer = setInterval(renderCallTime, 200);
+      timerRef.current = () => clearInterval(timer);
+    },
+    [renderCallTime],
+  );
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
@@ -587,9 +615,22 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         !callEndedRef.current &&
         engine.current === rtcEngine;
 
-      rtcEngine.initialize({
-        appId: 'f6bec5b940ea4b11af21f3b931f73536', // Replace with your Agora App ID
-      });
+      let credentials;
+      try {
+        credentials = await fetchAgoraToken(channelName);
+        if (!credentials.appId || credentials.channelName !== channelName)
+          throw new Error('RTC authorization failed');
+      } catch {
+        rtcEngine.release();
+        if (generation === rtcGeneration.current && !callEndedRef.current)
+          await finishCall();
+        return;
+      }
+      if (generation !== rtcGeneration.current || callEndedRef.current) {
+        rtcEngine.release();
+        return;
+      }
+      rtcEngine.initialize({ appId: credentials.appId });
 
       rtcEngine.enableAudio();
 
@@ -602,6 +643,11 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       rtcEngine.setEnableSpeakerphone(false);
 
       rtcEngine.registerEventHandler({
+        onError: (code, message) => {
+          if (!isCurrentSession()) return;
+          console.warn('[RTC] error', code, message);
+          if ([101, 110, 109].includes(Number(code))) finishCall();
+        },
         onJoinChannelSuccess: () => {
           if (!isCurrentSession()) return;
           setStatus(copy.call.connecting);
@@ -697,7 +743,9 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
             state === LocalAudioStreamState.LocalAudioStreamStateRecording ||
             state === LocalAudioStreamState.LocalAudioStreamStateEncoding
           ) {
-            setStatus(copy.call.connected);
+            setStatus(
+              connectedRef.current ? copy.call.connected : copy.call.connecting,
+            );
           }
         },
 
@@ -709,7 +757,11 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               break;
 
             case ConnectionStateType.ConnectionStateConnected:
-              setStatus(copy.call.connected);
+              setStatus(
+                connectedRef.current
+                  ? copy.call.connected
+                  : copy.call.connecting,
+              );
               if (
                 callConnectedAtRef.current &&
                 !peerRecoveryRef.current &&
@@ -761,7 +813,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
       let ownToken: string;
       try {
-        const credentials = await fetchAgoraToken(channelName);
         ownToken = isCaller ? credentials.male.token : credentials.female.token;
         if (!ownToken) throw new Error('Call access nahi mila.');
       } catch {
@@ -769,11 +820,14 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         return;
       }
       if (!isCurrentSession()) return;
-      rtcEngine.joinChannel(ownToken, channelName, uid, {
+      const joinResult = rtcEngine.joinChannel(ownToken, channelName, uid, {
         clientRoleType: ClientRoleType.ClientRoleBroadcaster,
       });
+      if (joinResult < 0) await finishCall();
     },
     [
+      agora?.female?.uid,
+      agora?.male?.uid,
       callRatePerMinute,
       callId,
       channelName,
@@ -787,7 +841,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       startTimer,
       stopTimer,
       startBilling,
-      token,
       uid,
     ],
   );
@@ -807,8 +860,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         );
         if (!active) return;
         setBillingStarted(result.active);
-        seconds.current = Math.floor(result.duration / 1000);
-        setElapsedSeconds(seconds.current);
         if (freeCallEndsAtRef.current > 0) {
           const endsAt =
             Date.now() +
@@ -835,19 +886,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   }, [connected, femaleUid, callId, finishCall, freeCallMinutes]);
 
   const leaveCall = () => {
-    Alert.alert('Call Khatam Karo', 'Kya aap call khatam karna chahte ho?', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'End',
-        style: 'destructive',
-        onPress: async () => {
-          await finishCall();
-        },
-      },
-    ]);
+    void finishCall();
   };
 
   const toggleMute = () => {
@@ -1024,6 +1063,9 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         finishCall(false);
         return;
       }
+      timerSnapshot.current = room;
+      renderCallTime();
+      if (connectedRef.current && room.status === 'active') startTimer();
       if (
         gender === 'female' &&
         room?.status === 'active' &&
@@ -1044,7 +1086,15 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         finishCall(false);
       }
     });
-  }, [callId, femaleUid, finishCall, finishCallFromRemote, gender]);
+  }, [
+    callId,
+    femaleUid,
+    finishCall,
+    finishCallFromRemote,
+    gender,
+    renderCallTime,
+    startTimer,
+  ]);
 
   return (
     <LinearGradient

@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 
+import { AppState } from 'react-native';
 import { scopedDatabase as database } from '../firebase/firebase';
 import auth from '@react-native-firebase/auth';
 import authData, { UpdateProfileData } from '../firebase/authData';
@@ -54,6 +55,7 @@ export const UserProvider = ({ children }: any) => {
 
     const data = await authData.getUser(userToRefresh.uid);
 
+    if (auth().currentUser?.uid !== userToRefresh.uid) return;
     setUser(data);
 
     setLoading(false);
@@ -68,13 +70,22 @@ export const UserProvider = ({ children }: any) => {
 
     const ref = database().ref(`users/${currentUser.uid}`);
 
-    const listener = ref.on('value', snapshot => {
+    const onValue = (snapshot: any) => {
+      if (auth().currentUser?.uid !== currentUser.uid) return;
       setUser(snapshot.val());
       setLoading(false);
+    };
+    ref.on('value', onValue);
+    // Reattach after Android resumes the bridge so availability and settled
+    // earnings also catch up after answering a background notification.
+    const state = AppState.addEventListener('change', next => {
+      if (next !== 'active') return;
+      ref.off('value', onValue);
+      ref.on('value', onValue);
     });
-
     return () => {
-      ref.off('value', listener);
+      state.remove();
+      ref.off('value', onValue);
     };
   }, [currentUser]);
 

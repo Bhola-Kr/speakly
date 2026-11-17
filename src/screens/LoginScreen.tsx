@@ -1,11 +1,10 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text, TextInput } from '../localization/components';
 import React, { useEffect, useRef, useState } from 'react';
 
 import {
   View,
-  Text,
   Image,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -104,7 +103,6 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
       const phone = `${callingCode}${mobile}`;
       const response = await sendOtp(phone);
 
-      console.log('onGetOTP -> response', response);
       if (!response?.success) {
         throw new Error(response?.message || 'OTP nahi gaya. Dobara try karo.');
       }

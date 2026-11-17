@@ -1,3 +1,5 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text } from '../localization/components';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -6,8 +8,6 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';

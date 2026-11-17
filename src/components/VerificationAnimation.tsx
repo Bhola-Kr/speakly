@@ -1,15 +1,9 @@
+import { Text } from '../localization/components';
 import Colors from '../constants/colors';
 // VerificationAnimation.tsx
 
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  SafeAreaView,
-  Animated,
-  Easing,
-  Image,
-} from 'react-native';
+import { View, SafeAreaView, Animated, Easing, Image } from 'react-native';
 import styles from '../screens/styles';
 
 const Bar = ({ delay }: { delay: number }) => {

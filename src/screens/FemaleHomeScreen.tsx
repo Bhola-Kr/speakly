@@ -1,19 +1,24 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text } from '../localization/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Alert,
+  Easing,
   Image,
   NativeModules,
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { getUserAvatar } from '../constants/constants';
 import RoomService from '../firebase/RoomService';
@@ -40,6 +45,16 @@ const COLORS = {
   purplePale: Colors.accentLight,
   online: Colors.online,
   offline: Colors.offline,
+  busy: Colors.busy,
+};
+
+const formatOnlineTime = (totalSeconds: number) => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds]
+    .map(value => String(value).padStart(2, '0'))
+    .join(':');
 };
 
 interface Props {
@@ -48,21 +63,38 @@ interface Props {
 
 const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [goingOnline, setGoingOnline] = useState(false);
+  const [onlineStartedAt, setOnlineStartedAt] = useState<number | null>(null);
+  const [onlineSeconds, setOnlineSeconds] = useState(0);
   const [requestingWithdrawal, setRequestingWithdrawal] = useState(false);
   const [minimumWithdrawalAmount, setMinimumWithdrawalAmount] = useState(
     DEFAULT_MIN_EXPERT_WITHDRAWAL_AMOUNT,
   );
   const fullScreenPermissionPrompted = useRef(false);
+  const profilePulse = useRef(new Animated.Value(0)).current;
 
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
   const { activeCall, showCall } = useActiveCall();
+  const { width: windowWidth } = useWindowDimensions();
+  const availabilityButtonSize = Math.min(
+    184,
+    Math.max(150, Math.round(windowWidth * 0.42)),
+  );
   const tamilName = String(user?.profile?.tamilName || '').trim();
   const englishName = String(user?.profile?.name || '').trim();
   const displayName = tamilName || englishName || 'Host';
   const showEnglishName = Boolean(
     tamilName && englishName && tamilName !== englishName,
   );
-  const isOnline = user?.profile?.status === 'online';
+  const isBusy = user?.profile?.status === 'busy';
+  const isOnline = user?.profile?.status === 'online' || isBusy;
+  const onlineTimerStorageKey = user?.uid
+    ? `hostOnlineStartedAt:${user.uid}`
+    : null;
+  const statusColor = isBusy
+    ? COLORS.busy
+    : isOnline
+    ? COLORS.online
+    : COLORS.offline;
   const totalEarnings = Number(user?.expertEarnings?.total || 0);
   const availableEarnings = Number(user?.expertEarnings?.available || 0);
   const pendingWithdrawal = user?.expertEarnings?.pendingWithdrawal;
@@ -136,6 +168,88 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     [],
   );
 
+  useEffect(() => {
+    if (!onlineTimerStorageKey) return undefined;
+    let cancelled = false;
+
+    if (!isOnline) {
+      setOnlineStartedAt(null);
+      setOnlineSeconds(0);
+      AsyncStorage.removeItem(onlineTimerStorageKey).catch(error =>
+        console.warn('Unable to clear host online timer:', error),
+      );
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    AsyncStorage.getItem(onlineTimerStorageKey)
+      .then(savedTimestamp => {
+        if (cancelled) return;
+        const parsedTimestamp = Number(savedTimestamp);
+        const startedAt =
+          Number.isFinite(parsedTimestamp) && parsedTimestamp > 0
+            ? parsedTimestamp
+            : Date.now();
+        if (startedAt !== parsedTimestamp) {
+          AsyncStorage.setItem(onlineTimerStorageKey, String(startedAt)).catch(
+            error => console.warn('Unable to save host online timer:', error),
+          );
+        }
+        setOnlineStartedAt(startedAt);
+      })
+      .catch(error => {
+        console.warn('Unable to restore host online timer:', error);
+        if (!cancelled) setOnlineStartedAt(Date.now());
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOnline, onlineTimerStorageKey]);
+
+  useEffect(() => {
+    if (!isOnline || onlineStartedAt === null) {
+      setOnlineSeconds(0);
+      return undefined;
+    }
+
+    const updateElapsedTime = () => {
+      setOnlineSeconds(
+        Math.max(0, Math.floor((Date.now() - onlineStartedAt) / 1000)),
+      );
+    };
+    updateElapsedTime();
+    const interval = setInterval(updateElapsedTime, 1000);
+    return () => clearInterval(interval);
+  }, [isOnline, onlineStartedAt]);
+
+  useEffect(() => {
+    if (!isOnline) {
+      profilePulse.stopAnimation();
+      profilePulse.setValue(0);
+      return undefined;
+    }
+
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(profilePulse, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(profilePulse, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    pulseAnimation.start();
+    return () => pulseAnimation.stop();
+  }, [isOnline, profilePulse]);
+
   const requestWithdrawal = async () => {
     if (requestingWithdrawal) return;
     try {
@@ -171,7 +285,15 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     try {
       setGoingOnline(true);
       await RoomService.goOnline();
-      navigation.navigate('OnlineRoom');
+      const startedAt = Date.now();
+      setOnlineStartedAt(startedAt);
+      setOnlineSeconds(0);
+      if (onlineTimerStorageKey) {
+        AsyncStorage.setItem(onlineTimerStorageKey, String(startedAt)).catch(
+          error => console.warn('Unable to save host online timer:', error),
+        );
+      }
+      await refreshUser();
     } catch (error) {
       console.log('Unable to go online:', error);
       Alert.alert('Online Nahi Aa Paaye', 'Thodi der baad dobara try karo.');
@@ -199,6 +321,14 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             try {
               setGoingOnline(true);
               await RoomService.goOffline();
+              setOnlineStartedAt(null);
+              setOnlineSeconds(0);
+              if (onlineTimerStorageKey) {
+                AsyncStorage.removeItem(onlineTimerStorageKey).catch(error =>
+                  console.warn('Unable to clear host online timer:', error),
+                );
+              }
+              await refreshUser();
             } catch (error) {
               console.log('Unable to go offline:', error);
               Alert.alert(
@@ -220,6 +350,17 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
+        <View style={styles.brandHeader}>
+          <View style={styles.brandMark}>
+            <MaterialCommunityIcons
+              name="waveform"
+              size={26}
+              color={COLORS.white}
+            />
+          </View>
+          <Text style={styles.brandName}>{copy.brand.appName}</Text>
+        </View>
+
         <View style={styles.header}>
           <View style={styles.headerCopy}>
             <Text style={styles.greeting}>
@@ -242,13 +383,58 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             }
             style={styles.avatarButton}
           >
-            <Image source={getUserAvatar(user)} style={styles.avatar} />
-            <View
-              style={[
-                styles.avatarStatus,
-                !isOnline && styles.avatarStatusOffline,
-              ]}
-            />
+            <View style={styles.avatarShell}>
+              {isOnline && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.avatarPulse,
+                    {
+                      borderColor: statusColor,
+                      opacity: profilePulse.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.55, 0],
+                      }),
+                      transform: [
+                        {
+                          scale: profilePulse.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.82, 1.58],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              )}
+              <Image source={getUserAvatar(user)} style={styles.avatar} />
+              <View
+                style={[
+                  styles.avatarStatus,
+                  { backgroundColor: statusColor },
+                ]}
+              />
+            </View>
+            {isOnline && (
+              <View
+                style={[
+                  styles.listeningBadge,
+                  isBusy && styles.listeningBadgeBusy,
+                ]}
+              >
+                <Ionicons
+                  name={isBusy ? 'call' : 'radio-outline'}
+                  size={10}
+                  color={statusColor}
+                />
+                <Text
+                  numberOfLines={1}
+                  style={[styles.listeningText, { color: statusColor }]}
+                >
+                  {isBusy ? 'Call Par Hoon' : 'Calls Sun Rahi Hoon'}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -258,16 +444,16 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               <View
                 style={[
                   styles.statusIndicator,
-                  !isOnline && styles.statusIndicatorOffline,
+                  { backgroundColor: statusColor },
                 ]}
               />
               <Text style={styles.statusTitle}>Account Ka Status</Text>
             </View>
 
             <Text
-              style={[styles.statusValue, isOnline && styles.statusValueOnline]}
+              style={[styles.statusValue, { color: statusColor }]}
             >
-              {isOnline ? 'Online' : 'Offline'}
+              {isBusy ? 'Busy' : isOnline ? 'Online' : 'Offline'}
             </Text>
 
             <Text style={styles.statusDescription}>
@@ -275,7 +461,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.statusEmphasis}>
                 {isOnline ? 'visible' : 'hidden'}
               </Text>
-              {'customers ko.'}
+              {' customers ko.'}
             </Text>
           </View>
 
@@ -283,7 +469,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             <Ionicons
               name={isOnline ? 'eye-outline' : 'eye-off-outline'}
               size={34}
-              color={isOnline ? COLORS.teal : COLORS.purple}
+              color={statusColor}
             />
           </View>
         </View>
@@ -300,6 +486,11 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             disabled={goingOnline}
             style={[
               styles.onlineButtonTouch,
+              {
+                width: availabilityButtonSize,
+                height: availabilityButtonSize,
+                borderRadius: availabilityButtonSize / 2,
+              },
               isOnline ? styles.offlineButtonShadow : styles.onlineButtonShadow,
             ]}
           >
@@ -309,7 +500,15 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               }
               start={{ x: 0.15, y: 0 }}
               end={{ x: 0.85, y: 1 }}
-              style={[styles.onlineButton, goingOnline && styles.loadingButton]}
+              style={[
+                styles.onlineButton,
+                {
+                  width: availabilityButtonSize,
+                  height: availabilityButtonSize,
+                  borderRadius: availabilityButtonSize / 2,
+                },
+                goingOnline && styles.loadingButton,
+              ]}
             >
               {goingOnline ? (
                 <ActivityIndicator size="large" color={COLORS.white} />
@@ -318,7 +517,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
                   <View style={styles.onlineIconCircle}>
                     <Ionicons
                       name={isOnline ? 'power-outline' : 'radio-outline'}
-                      size={38}
+                      size={Math.round(availabilityButtonSize * 0.2)}
                       color={COLORS.white}
                     />
                   </View>
@@ -331,6 +530,19 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               )}
             </LinearGradient>
           </TouchableOpacity>
+          {isOnline && (
+            <View
+              accessibilityLiveRegion="polite"
+              style={styles.onlineTimer}
+            >
+              <Text style={styles.onlineTimerLabel}>
+                Online Rehne Ka Samay
+              </Text>
+              <Text style={styles.onlineTimerValue}>
+                {formatOnlineTime(onlineSeconds)}
+              </Text>
+            </View>
+          )}
           <Text style={styles.primaryActionHint}>
             {goingOnline
               ? isOnline
@@ -349,9 +561,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
                 {copy.host.earnings.toUpperCase()}
               </Text>
               <Text style={styles.earningsTotal}>₹{totalEarnings}</Text>
-              <Text style={styles.earningsAvailable}>
-                ₹{availableEarnings} available
-              </Text>
+              <Text style={styles.earningsAvailable}>{`₹${availableEarnings} available hain`}</Text>
             </View>
             <View style={styles.earningsIcon}>
               <Ionicons
@@ -394,7 +604,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             availableEarnings > 0 &&
             availableEarnings < minimumWithdrawalAmount && (
               <Text style={styles.withdrawalMinimum}>
-                Minimum withdrawal ₹{minimumWithdrawalAmount}.
+                {`Kam se kam ₹${minimumWithdrawalAmount} par withdrawal kar sakte ho.`}
               </Text>
             )}
         </View>
@@ -409,15 +619,37 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   content: {
-    paddingBottom: 120,
+    paddingBottom: 128,
+  },
+  brandHeader: {
+    minHeight: 54,
+    marginHorizontal: 20,
+    paddingTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandMark: {
+    width: 40,
+    height: 40,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.tealDark,
+  },
+  brandName: {
+    marginLeft: 10,
+    color: COLORS.navy,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.7,
   },
   header: {
-    minHeight: 102,
+    minHeight: 112,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 14,
   },
   headerCopy: {
     flex: 1,
@@ -444,6 +676,22 @@ const styles = StyleSheet.create({
   },
   avatarButton: {
     marginTop: -5,
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  avatarShell: {
+    width: 66,
+    height: 66,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  avatarPulse: {
+    position: 'absolute',
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    borderWidth: 2,
   },
   avatar: {
     width: 66,
@@ -467,10 +715,26 @@ const styles = StyleSheet.create({
   avatarStatusOffline: {
     backgroundColor: COLORS.offline,
   },
+  listeningBadge: {
+    minHeight: 20,
+    marginTop: 7,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    columnGap: 4,
+    backgroundColor: '#E6F8ED',
+  },
+  listeningBadgeBusy: {
+    backgroundColor: '#FFE7EE',
+  },
+  listeningText: {
+    maxWidth: 108,
+    fontSize: 9,
+    fontWeight: '800',
+  },
   onlineButtonTouch: {
-    width: 196,
-    height: 196,
-    borderRadius: 98,
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.32,
     shadowRadius: 22,
@@ -483,9 +747,6 @@ const styles = StyleSheet.create({
     shadowColor: '#4B5563',
   },
   onlineButton: {
-    width: 196,
-    height: 196,
-    borderRadius: 98,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 6,
@@ -496,7 +757,7 @@ const styles = StyleSheet.create({
   },
   primaryActionSection: {
     alignItems: 'center',
-    marginBottom: 22,
+    marginBottom: 20,
     paddingTop: 2,
   },
   primaryActionLabel: {
@@ -512,6 +773,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  onlineTimer: {
+    minWidth: 180,
+    marginTop: 15,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 16,
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  onlineTimerLabel: {
+    color: COLORS.body,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  onlineTimerValue: {
+    marginTop: 2,
+    color: COLORS.navy,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1,
   },
   earningsCard: {
     marginHorizontal: 20,
@@ -629,9 +917,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '900',
     letterSpacing: -0.8,
-  },
-  statusValueOnline: {
-    color: Colors.successStrong,
   },
   statusDescription: {
     width: '94%',

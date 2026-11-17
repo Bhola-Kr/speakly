@@ -1,8 +1,14 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 // This test cannot select a production project or host.
-process.env.FIREBASE_DATABASE_EMULATOR_HOST = '127.0.0.1:9000';
-process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
+const databaseHost = `127.0.0.1:${Number(
+  process.env.SPEAKLY_TEST_DATABASE_PORT || 9000,
+)}`;
+const authHost = `127.0.0.1:${Number(
+  process.env.SPEAKLY_TEST_AUTH_PORT || 9099,
+)}`;
+process.env.FIREBASE_DATABASE_EMULATOR_HOST = databaseHost;
+process.env.FIREBASE_AUTH_EMULATOR_HOST = authHost;
 process.env.GCLOUD_PROJECT = 'demo-speakly-local';
 const admin = require('../firebase-backend/functions/node_modules/firebase-admin');
 admin.initializeApp({
@@ -22,7 +28,7 @@ const {
 const root = admin.database().ref('speakly');
 async function account(label) {
   const response = await fetch(
-    'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=local-test',
+    `http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=local-test`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -39,7 +45,7 @@ async function account(label) {
 }
 async function request(path, method, value, actor) {
   const response = await fetch(
-    `http://127.0.0.1:9000/speakly/${path}.json?ns=demo-speakly-local-default-rtdb&auth=${actor.token}`,
+    `http://${databaseHost}/speakly/${path}.json?ns=demo-speakly-local-default-rtdb&auth=${actor.token}`,
     {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -625,7 +631,7 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
         },
         async transaction(update) {
           for (let attempt = 0; attempt < 10; attempt++) {
-            const url = `http://127.0.0.1:9000/speakly/${path}.json?ns=demo-speakly-local-default-rtdb&auth=${administrator.token}`;
+            const url = `http://${databaseHost}/speakly/${path}.json?ns=demo-speakly-local-default-rtdb&auth=${administrator.token}`;
             const read = await fetch(url, {
               headers: { 'X-Firebase-ETag': 'true' },
             });
@@ -730,7 +736,7 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
           },
           body: JSON.stringify({ hostUid: host.uid }),
         });
-        assert.equal(unsigned.status, 409);
+        assert.equal(unsigned.status, 401);
         await root.set(fixture());
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -993,7 +999,7 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
       const controller = new AbortController(),
         deadline = setTimeout(() => controller.abort(), 4000);
       const response = await fetch(
-        `http://127.0.0.1:9000/speakly/rooms.json?ns=demo-speakly-local-default-rtdb&auth=${administrator.token}`,
+        `http://${databaseHost}/speakly/rooms.json?ns=demo-speakly-local-default-rtdb&auth=${administrator.token}`,
         { headers: { Accept: 'text/event-stream' }, signal: controller.signal },
       );
       assert.equal(response.status, 200);
@@ -1058,6 +1064,97 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
         await reader.cancel().catch(() => {});
         controller.abort();
       }
+    },
+  );
+
+  await t.test(
+    'availability recovery, answer retries, busy subscriptions and offline preference are atomic',
+    async () => {
+      const {
+        transitionCall,
+        setHostAvailability,
+      } = require('../firebase-backend/functions/lib/callBilling');
+      const {
+        notifyInterestedCustomers,
+      } = require('../firebase-backend/functions/lib/availabilityNotifications');
+      await root.set(fixture());
+      await root.child(`rooms/${host.uid}`).remove();
+      const call = await claimCallForUser(host.uid, customer.uid);
+      assert.equal(call.status, 'calling'); // Missing idle room repairs on claim.
+      assert.equal(
+        (await root.child(`users/${host.uid}/profile/status`).get()).val(),
+        'busy',
+      );
+      await assert.rejects(
+        claimCallForUser(host.uid, customer2.uid),
+        error => error.code === 'HOST_BUSY',
+      );
+      assert.ok(
+        (
+          await root
+            .child(`hostAvailabilityWatchers/${host.uid}/${customer2.uid}`)
+            .get()
+        ).exists(),
+      );
+      const action = (actor, action, callId = call.currentCallId) =>
+        invoke(transitionCall, actor, { hostUid: host.uid, callId, action });
+      assert.equal((await action(customer, 'accept')).status, 409);
+      assert.equal((await action(host, 'accept', 'old-call')).status, 409);
+      assert.equal((await action(host, 'accept')).status, 200);
+      assert.equal((await action(host, 'accept')).status, 200);
+      assert.equal(
+        (await root.child(`users/${customer.uid}/wallet/balance`).get()).val(),
+        50,
+      );
+      await invoke(setHostAvailability, host, { online: false });
+      await applyCallEvent(host.uid, call.currentCallId, customer.uid, 'end');
+      assert.equal(
+        (await root.child(`users/${host.uid}/profile/status`).get()).val(),
+        'offline',
+      );
+      await notifyInterestedCustomers(host.uid);
+      assert.equal(
+        (
+          await root.child(`availabilityAlerts/${customer2.uid}`).get()
+        ).exists(),
+        false,
+      );
+      await invoke(setHostAvailability, host, { online: true });
+      await notifyInterestedCustomers(host.uid);
+      const alert = (
+        await root
+          .child(`availabilityAlerts/${customer2.uid}/${host.uid}`)
+          .get()
+      ).val();
+      assert.equal(alert.hostUid, host.uid);
+      await notifyInterestedCustomers(host.uid);
+      assert.equal(
+        (
+          await root
+            .child(`availabilityAlerts/${customer2.uid}/${host.uid}/sentAt`)
+            .get()
+        ).val(),
+        alert.sentAt,
+      );
+      assert.equal(
+        (
+          await root.child(`hostAvailabilityWatchers/${host.uid}`).get()
+        ).exists(),
+        false,
+      );
+      const second = await claimCallForUser(host.uid, customer.uid);
+      assert.equal(
+        (await action(host, 'reject', second.currentCallId)).status,
+        200,
+      );
+      assert.equal(
+        (await root.child(`users/${host.uid}/profile/status`).get()).val(),
+        'online',
+      );
+      assert.equal(
+        (await root.child(`users/${customer.uid}/wallet/balance`).get()).val(),
+        50,
+      );
     },
   );
   await admin.app().delete();

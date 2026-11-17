@@ -1,3 +1,5 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text } from '../localization/components';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -7,8 +9,6 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

@@ -17,7 +17,7 @@ const hasNotificationProfile = (user: any) => {
 export function notificationAudience(
   users: any,
   registrations: any,
-  role: 'customer' | 'host',
+  role: 'customer' | 'host' | 'user',
 ) {
   const tokens = new Set<string>();
   for (const entry of Object.values(registrations || {}) as any[]) {
@@ -25,13 +25,19 @@ export function notificationAudience(
     if (
       !user ||
       !hasNotificationProfile(user) ||
-      user.isAdmin === true ||
+      (user.isAdmin === true && role !== 'user') ||
       user.settings?.notificationsEnabled === false ||
       user.settings?.notification === false
     )
       continue;
     const expert = user.isExpert === true;
-    if (role === 'host' ? !expert : expert || user.profile?.role !== 'learner')
+    if (
+      role === 'host'
+        ? !expert
+        : role === 'customer'
+        ? expert || user.profile?.role !== 'learner'
+        : expert || user.profile?.role === 'expert'
+    )
       continue;
     if (typeof entry.token === 'string' && entry.token.trim())
       tokens.add(entry.token.trim());

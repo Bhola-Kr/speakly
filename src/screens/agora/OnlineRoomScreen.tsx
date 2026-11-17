@@ -1,10 +1,10 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   StatusBar,
   View,
-  Text,
   Image,
-  TouchableOpacity,
   Animated,
   Easing,
   StyleSheet,

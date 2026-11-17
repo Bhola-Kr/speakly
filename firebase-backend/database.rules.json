@@ -9,7 +9,12 @@
       },
       "users": {
         ".read": "auth != null || (query.orderByChild === 'isExpert' && query.equalTo === true)",
-        ".indexOn": ["isExpert", "createdAt", "phone", "profile/name"],
+        ".indexOn": [
+          "isExpert",
+          "createdAt",
+          "phone",
+          "profile/name"
+        ],
         "$uid": {
           ".write": "auth != null && (root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || (auth.uid === $uid && newData.exists()))",
           "isAdmin": {
@@ -42,7 +47,11 @@
       },
       "rooms": {
         ".read": "auth != null",
-        ".indexOn": ["status", "currentCallId", "male/uid"],
+        ".indexOn": [
+          "status",
+          "currentCallId",
+          "male/uid"
+        ],
         "$host": {
           ".write": "auth != null && ((auth.uid === $host && root.child('speakly/users').child($host).child('isExpert').val() === true && ((!data.exists() && newData.child('status').val() === 'waiting') || ((data.child('status').val() === 'waiting' || data.child('status').val() === 'offline' || data.child('status').val() === 'ended' || data.child('status').val() === 'rejected' || data.child('status').val() === 'men_rejected') && (newData.child('status').val() === 'waiting' || newData.child('status').val() === 'offline')) || ((data.child('status').val() === 'calling' || data.child('status').val() === 'ringing') && (newData.child('status').val() === 'accepted' || newData.child('status').val() === 'rejected')))) || (data.child('male/uid').val() === auth.uid && ((data.child('status').val() === 'calling' || data.child('status').val() === 'ringing') && (newData.child('status').val() === 'ringing' || newData.child('status').val() === 'men_rejected') || ((data.child('status').val() === 'ended' || data.child('status').val() === 'men_rejected' || data.child('status').val() === 'rejected') && newData.child('status').val() === 'waiting'))))",
           ".validate": "newData.child('female/uid').val() === $host && (newData.child('status').val() === 'waiting' || newData.child('status').val() === 'offline' || newData.child('callRatePerMinute').val() === data.child('callRatePerMinute').val()) && ((newData.child('status').val() === 'waiting' || newData.child('status').val() === 'offline') || (newData.child('currentCallId').val() === data.child('currentCallId').val() && newData.child('male/uid').val() === data.child('male/uid').val() && newData.child('callRequestedAt').val() === data.child('callRequestedAt').val()))",
@@ -93,7 +102,9 @@
       "callHistory": {
         "$uid": {
           ".read": "auth != null && (auth.uid === $uid || root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true)",
-          ".indexOn": ["startedAt"],
+          ".indexOn": [
+            "startedAt"
+          ],
           "$call": {
             "archivedAt": {
               ".write": "auth != null && auth.uid === $uid && newData.isNumber() && data.parent().child('callId').exists()"
@@ -102,7 +113,9 @@
         }
       },
       "pushTokenOwners": {
-        ".indexOn": ["uid"]
+        ".indexOn": [
+          "uid"
+        ]
       },
       "callPresence": {
         "$call": {
@@ -144,7 +157,9 @@
         ".read": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true",
         "$uid": {
           ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || (auth != null && auth.uid === $uid && root.child('speakly/users').child($uid).child('isExpert').val() === true)",
-          ".indexOn": ["createdAt"]
+          ".indexOn": [
+            "createdAt"
+          ]
         }
       },
       "expertActivityLatest": {
@@ -158,13 +173,23 @@
         "$id": {
           ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true"
         },
-        ".indexOn": ["requestedAt"]
+        ".indexOn": [
+          "requestedAt"
+        ]
       },
       "userFirstInstall": {
         ".read": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true",
         "$device": {
           ".read": true,
           ".write": "!data.exists() && newData.child('deviceId').val() === $device && newData.child('date').isNumber() && newData.child('date').val() <= now && newData.child('date').val() >= now - 60000"
+        }
+      },
+      "availabilityAlerts": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          "$host": {
+            ".write": "auth != null && auth.uid === $uid && !newData.exists()"
+          }
         }
       }
     }

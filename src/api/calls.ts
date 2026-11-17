@@ -68,7 +68,6 @@ export interface FirebaseTokenResponse {
 export const sendOtp = async (phone: string): Promise<SendOtpResponse> => {
   try {
     const response = await Api.sendOtp(phone);
-    console.log('response', response);
 
     return response;
   } catch (error) {
@@ -87,7 +86,6 @@ export const resendMSGOtp = async (
 ): Promise<ResendOtpResponse> => {
   try {
     const response = await Api.resendOtp(phone, reqId);
-    console.log('response', response);
 
     return response;
   } catch (error) {
@@ -107,7 +105,6 @@ export const verifyMSGOtp = async (
 ): Promise<VerifyOtpResponse> => {
   try {
     const response = await Api.verifyOtp(phone, otp, reqId);
-    console.log('response', response);
 
     return response;
   } catch (error) {

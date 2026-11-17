@@ -1,3 +1,4 @@
+import { translate } from '../localization/language';
 import {
   AppState,
   DeviceEventEmitter,
@@ -67,8 +68,8 @@ async function configureIncomingCallActions() {
     {
       id: 'incoming-call',
       actions: [
-        { id: 'reject-call', title: 'Reject', destructive: true },
-        { id: 'accept-call', title: 'Accept', foreground: true },
+        { id: 'reject-call', title: 'Mana Karo', destructive: true },
+        { id: 'accept-call', title: 'Call Uthao', foreground: true },
       ],
     },
   ]);
@@ -86,7 +87,7 @@ export async function displayPushNotification(
     if (callId && femaleUid) {
       await displayIncomingCallNotification(
         callId,
-        String(message.data?.callerName || 'Someone'),
+        String(message.data?.callerName || 'Koi'),
         femaleUid,
       );
     }
@@ -99,8 +100,9 @@ export async function displayPushNotification(
   const channelId = await createNotificationChannel();
   await notifee.displayNotification({
     id: message.messageId,
-    title: typeof title === 'string' ? title : 'Speakly 121',
-    body: typeof body === 'string' ? body : undefined,
+    title:
+      typeof title === 'string' ? translate(title, 'hinglish') : 'Speakly 121',
+    body: typeof body === 'string' ? translate(body, 'hinglish') : undefined,
     data: message.data,
     android: {
       channelId,
@@ -150,7 +152,7 @@ export async function displayIncomingCallNotification(
   await notifee.displayNotification({
     id: notificationId,
     title: 'Nayi Call Aa Rahi Hai',
-    body: `${callerName || 'Someone'} aapko call kar rahe hain`,
+    body: `${callerName || 'Koi'} aapko call kar rahe hain`,
     data: { type: 'incoming_call', callId, femaleUid },
     android: {
       channelId,
@@ -166,12 +168,12 @@ export async function displayIncomingCallNotification(
       },
       actions: [
         {
-          title: 'Reject',
+          title: 'Mana Karo',
           icon: 'ic_call_reject',
           pressAction: { id: 'reject-call' },
         },
         {
-          title: 'Accept',
+          title: 'Call Uthao',
           icon: 'ic_call_accept',
           pressAction: { id: 'accept-call', launchActivity: 'default' },
         },
@@ -196,8 +198,8 @@ export async function displayIncomingCallNotification(
   await notifee.createTriggerNotification(
     {
       id: notificationId,
-      title: 'Missed Call',
-      body: `Inki call miss ho gayi: ${callerName || 'Someone'}`,
+      title: 'Call Miss Ho Gayi',
+      body: `Inki call miss ho gayi: ${callerName || 'Koi'}`,
       data: { type: 'missed_call', callId, femaleUid },
       android: {
         channelId,
@@ -298,43 +300,11 @@ export async function handleNotificationEvent(event: Event) {
   const currentUid = auth().currentUser?.uid;
   if (!femaleUid || !callId || currentUid !== femaleUid) return;
 
-  const roomRef = database().ref(`rooms/${femaleUid}`);
-  const transaction = await roomRef.transaction(room => {
-    if (
-      !room ||
-      !['calling', 'ringing'].includes(room.status) ||
-      room.currentCallId !== callId
-    ) {
-      return;
-    }
-    return {
-      ...room,
-      status: 'rejected',
-      updatedAt: Date.now(),
-    };
+  await Api.post('/transitionCall', {
+    hostUid: femaleUid,
+    callId,
+    action: 'reject',
   });
-
-  if (transaction.committed) {
-    {
-      await new Promise<void>(resolve => setTimeout(resolve, 1000));
-      await roomRef.transaction(room => {
-        if (
-          !room ||
-          room.status !== 'rejected' ||
-          room.currentCallId !== callId
-        ) {
-          return;
-        }
-        return {
-          ...room,
-          status: 'waiting',
-          currentCallId: '',
-          male: null,
-          updatedAt: Date.now(),
-        };
-      });
-    }
-  }
 
   await cancelIncomingCallNotification(callId);
 }
@@ -492,7 +462,10 @@ export function startPushNotifications() {
   let profileListener:
     | ((snapshot: FirebaseDatabaseTypes.DataSnapshot) => void)
     | undefined;
+  let stopAvailabilityAlerts: (() => void) | undefined;
   const stopProfileListener = () => {
+    stopAvailabilityAlerts?.();
+    stopAvailabilityAlerts = undefined;
     if (profileRef && profileListener) {
       profileRef.off('value', profileListener);
     }
@@ -504,6 +477,33 @@ export function startPushNotifications() {
     accountReady = false;
     if (!user) return;
 
+    const alertRef = database().ref(`availabilityAlerts/${user.uid}`);
+    const alertListener = alertRef.on('child_added', snapshot => {
+      const alert = snapshot.val();
+      if (!alert || Date.now() - Number(alert.sentAt) > 300000) {
+        snapshot.ref.remove().catch(console.warn);
+        return;
+      }
+      if (__DEV__ || AppState.currentState === 'active') {
+        displayPushNotification({
+          fcmOptions: {},
+          messageId: `available_${alert.hostUid}_${alert.sentAt}`,
+          notification: {
+            title: `${alert.hostName} Phir Se Available Hai! 🎉`,
+            body: `${alert.hostName} ab free hain. Connect Now!`,
+          },
+          data: {
+            type: 'expert_online',
+            hostUid: alert.hostUid,
+            sentAt: String(alert.sentAt),
+            eventId: `available_${alert.hostUid}_${alert.sentAt}`,
+          },
+        })
+          .then(() => snapshot.ref.remove())
+          .catch(console.warn);
+      }
+    });
+    stopAvailabilityAlerts = () => alertRef.off('child_added', alertListener);
     profileRef = database().ref(`users/${user.uid}`);
     profileListener = snapshot => {
       const nextAccountReady = hasCompletedSignup(snapshot.val());

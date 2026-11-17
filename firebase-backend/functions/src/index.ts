@@ -32,7 +32,12 @@ import { cleanupStaleCalls } from './staleCalls';
 import { notifyAllUsersWhenExpertOnline } from './hostOnlineNotifications';
 
 const app = express();
-import { callSessionEvent, claimCall } from './callBilling';
+import {
+  callSessionEvent,
+  claimCall,
+  transitionCall,
+  setHostAvailability,
+} from './callBilling';
 import { registerPushToken, tokensForUser } from './pushTokenOwnership';
 export { recordUnansweredCall, settleRecordedCall } from './callHistoryEvents';
 
@@ -53,6 +58,8 @@ app.use(
 );
 app.post('/callSessionEvent', callSessionEvent);
 app.post('/claimCall', claimCall);
+app.post('/transitionCall', transitionCall);
+app.post('/hostAvailability', setHostAvailability);
 app.post('/registerPushToken', registerPushToken);
 app.post('/claimSignupOffer', claimSignupOffer);
 app.post('/requestExpertWithdrawal', requestExpertWithdrawal);
@@ -62,14 +69,12 @@ const FIREBASE_DATA_ROOT = 'speakly';
 
 if (!admin.apps.length) {
   const localProject = process.env.GCLOUD_PROJECT || '';
-  if (
-    process.env.FUNCTIONS_EMULATOR === 'true' &&
-    localProject.startsWith('demo-') &&
-    process.env.FIREBASE_DATABASE_EMULATOR_HOST
-  ) {
+  if (process.env.FUNCTIONS_EMULATOR === 'true') {
     admin.initializeApp({
-      projectId: localProject,
-      databaseURL: `https://${localProject}-default-rtdb.firebaseio.com`,
+      projectId: localProject || FIREBASE_PROJECT_ID,
+      databaseURL: `https://${
+        localProject || FIREBASE_PROJECT_ID
+      }-default-rtdb.firebaseio.com`,
     });
   } else {
     const serviceAccount = require('../adminsdk.json');
@@ -158,7 +163,7 @@ app.post('/sendChatNotification', async (req: Request, res: Response) => {
       token: fcmToken,
       notification: {
         title: senderName.trim().slice(0, 100),
-        body: preview.slice(0, 200),
+        body: 'Aapke liye naya message aaya hai.',
       },
       data: {
         type: 'chat_message',
@@ -336,6 +341,21 @@ app.post('/sendOtp', async (req: Request, res: Response) => {
 
     const mobile = normalizePhone(phone);
 
+    if (process.env.FUNCTIONS_EMULATOR === 'true') {
+      const localTestPhones = new Set(['911111111111', '912222222222']);
+      if (!localTestPhones.has(mobile)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Local test account number nahi hai.',
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        message: 'Local test OTP: 1234',
+        reqId: 'local-test-otp',
+      });
+    }
+
     if (mobile.length !== 12 || !mobile.startsWith('91')) {
       return res.status(400).json({
         success: false,
@@ -441,6 +461,35 @@ app.post('/verifyOtp', async (req: Request, res: Response) => {
     }
 
     const mobile = normalizePhone(phone);
+
+    if (process.env.FUNCTIONS_EMULATOR === 'true') {
+      const localTestPhones = new Set(['911111111111', '912222222222']);
+      if (
+        !localTestPhones.has(mobile) ||
+        reqId !== 'local-test-otp' ||
+        String(otp) !== '1234'
+      ) {
+        return res.status(401).json({
+          success: false,
+          message: 'Local test OTP galat hai. 1234 use karo.',
+        });
+      }
+      try {
+        await admin.auth().getUser(mobile);
+      } catch (error: any) {
+        if (error.code !== 'auth/user-not-found') throw error;
+        await admin
+          .auth()
+          .createUser({ uid: mobile, phoneNumber: `+${mobile}` });
+      }
+      const token = await admin.auth().createCustomToken(mobile);
+      return res.status(200).json({
+        success: true,
+        message: 'Local test OTP verify ho gaya.',
+        uid: mobile,
+        token,
+      });
+    }
 
     if (mobile.length !== 12 || !mobile.startsWith('91')) {
       return res.status(400).json({
@@ -762,3 +811,8 @@ export const api = onRequest(
   },
   app,
 );
+
+export {
+  notifyInterestedWhenRoomAvailable,
+  notifyInterestedWhenHostOnline,
+} from './availabilityNotifications';

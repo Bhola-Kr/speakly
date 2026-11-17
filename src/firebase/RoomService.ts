@@ -135,38 +135,6 @@ class RoomService {
     ]);
   }
 
-  private scheduleRoomReset(
-    femaleUid: string,
-    terminalStatus: RoomStatus,
-    callId?: string,
-  ) {
-    setTimeout(() => {
-      database()
-        .ref(`rooms/${femaleUid}`)
-        .transaction(room => {
-          if (
-            !room ||
-            (callId && room.currentCallId !== callId) ||
-            room.status !== terminalStatus
-          ) {
-            return;
-          }
-
-          return {
-            ...room,
-            status: 'waiting',
-            currentCallId: '',
-            male: null,
-            callStartedAt: null,
-            chargedAmount: null,
-            callSettled: null,
-            updatedAt: Date.now(),
-          };
-        })
-        .catch(error => console.error('Unable to reset room:', error));
-    }, 1000);
-  }
-
   async goOnline() {
     this.availabilityUpdateInProgress = true;
     try {
@@ -177,88 +145,24 @@ class RoomService {
   }
 
   private async setOnline() {
-    const firebaseUser = this.getCurrentUser();
-    const user = await this.getUser(firebaseUser?.uid);
-    const tamilName = String(user?.profile?.tamilName || '').trim();
-
-    const room: Room = {
-      roomId: firebaseUser.uid,
-      currentCallId: '',
-      status: 'waiting',
-      female: {
-        uid: firebaseUser.uid,
-        name: user.profile.name,
-        ...(tamilName ? { tamilName } : {}),
-        gender: user.profile.gender,
-        avatarId: user.profile.avatarId,
-        price: normalizeCallRate(user.profile.price),
-        practiceLanguage: String(
-          user.profile.practiceLanguage ||
-            user.profile.supportedLanguages?.[0] ||
-            'English',
-        ),
-        supportedLanguages: Array.isArray(user.profile.supportedLanguages)
-          ? user.profile.supportedLanguages
-          : [],
-      },
-      callRatePerMinute: normalizeCallRate(user.profile.price),
-      male: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      agora: {
-        male: { uid: 1, token: '' },
-        female: { uid: 2, token: '' },
-      },
-    };
-
-    await this.armOfflineOnDisconnect(firebaseUser.uid);
-
-    const updates: Record<string, any> = {
-      [`rooms/${firebaseUser.uid}`]: room,
-      [`users/${firebaseUser.uid}/profile/status`]: 'online',
-      [`users/${firebaseUser.uid}/settings/voiceCallsEnabled`]: true,
-    };
-
-    try {
-      await database().ref().update(updates);
-      await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'true');
-      await this.logExpertActivity(firebaseUser.uid, 'online').catch(error =>
-        console.warn('Unable to record expert activity:', error),
-      );
-    } catch (error) {
-      await this.cancelOfflineOnDisconnect(firebaseUser.uid);
-      throw error;
-    }
+    await Api.post('/hostAvailability', { online: true });
+    await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'true');
+    this.logExpertActivity(this.getCurrentUser().uid, 'online').catch(
+      console.warn,
+    );
   }
 
   async goOffline() {
     this.availabilityUpdateInProgress = true;
     try {
-      await this.setOffline();
+      await Api.post('/hostAvailability', { online: false });
+      await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'false');
+      this.logExpertActivity(this.getCurrentUser().uid, 'offline').catch(
+        console.warn,
+      );
     } finally {
       this.availabilityUpdateInProgress = false;
     }
-  }
-
-  private async setOffline() {
-    const firebaseUser = this.getCurrentUser();
-
-    await AsyncStorage.setItem(FEMALE_AVAILABILITY_KEY, 'false');
-
-    const updates: Record<string, any> = {
-      [`rooms/${firebaseUser.uid}/status`]: 'offline',
-      [`rooms/${firebaseUser.uid}/male`]: null,
-      [`rooms/${firebaseUser.uid}/currentCallId`]: '',
-      [`rooms/${firebaseUser.uid}/updatedAt`]: Date.now(),
-      [`users/${firebaseUser.uid}/profile/status`]: 'offline',
-      [`users/${firebaseUser.uid}/settings/voiceCallsEnabled`]: false,
-    };
-
-    await database().ref().update(updates);
-    await this.logExpertActivity(firebaseUser.uid, 'offline').catch(error =>
-      console.warn('Unable to record expert activity:', error),
-    );
-    await this.cancelOfflineOnDisconnect(firebaseUser.uid);
   }
 
   async restoreFemaleAvailability() {
@@ -369,68 +273,30 @@ class RoomService {
   async acceptCall(femaleUid: string, callId?: string) {
     if (this.getCurrentUser().uid !== femaleUid)
       throw new Error('Call access nahi mila.');
-    const result = await database()
-      .ref(`rooms/${femaleUid}`)
-      .transaction(room => {
-        if (
-          !room ||
-          (callId && room.currentCallId !== callId) ||
-          !['calling', 'ringing'].includes(room.status)
-        )
-          return;
-        return { ...room, status: 'accepted', updatedAt: Date.now() };
-      });
-    if (!result.committed) throw new Error('Call ab available nahi hai.');
+    await Api.post('/transitionCall', {
+      hostUid: femaleUid,
+      callId,
+      action: 'accept',
+    });
   }
 
   async rejectCall(femaleUid: string, callId?: string) {
     if (this.getCurrentUser().uid !== femaleUid)
       throw new Error('Call access nahi mila.');
-    const result = await database()
-      .ref(`rooms/${femaleUid}`)
-      .transaction(room => {
-        if (
-          !room ||
-          (callId && room.currentCallId !== callId) ||
-          !['calling', 'ringing'].includes(room.status)
-        )
-          return;
-        return { ...room, status: 'rejected', updatedAt: Date.now() };
-      });
-    if (!result.committed) return;
-    this.scheduleRoomReset(
-      femaleUid,
-      'rejected',
-      result.snapshot.val().currentCallId,
-    );
+    await Api.post('/transitionCall', {
+      hostUid: femaleUid,
+      callId,
+      action: 'reject',
+    });
   }
 
   async menRejectCall(femaleUid: string, callId?: string) {
-    const roomRef = database().ref(`rooms/${femaleUid}`);
-
-    const transaction = await roomRef.transaction(room => {
-      if (
-        !room ||
-        (callId && room.currentCallId !== callId) ||
-        !['calling', 'ringing'].includes(room.status)
-      ) {
-        return;
-      }
-
-      return {
-        ...room,
-        status: 'men_rejected',
-        updatedAt: Date.now(),
-      };
+    if (!callId) return;
+    await Api.post('/transitionCall', {
+      hostUid: femaleUid,
+      callId,
+      action: 'cancel',
     });
-
-    if (transaction.committed) {
-      this.scheduleRoomReset(
-        femaleUid,
-        'men_rejected',
-        transaction.snapshot.val().currentCallId,
-      );
-    }
   }
 
   async callConnected(femaleUid: string, callId: string): Promise<number> {
@@ -469,7 +335,6 @@ class RoomService {
   async endCall(femaleUid: string, callId?: string) {
     if (!callId) throw new Error('Call ID zaroori hai.');
     await this.callSessionEvent(femaleUid, callId, 'end');
-    this.scheduleRoomReset(femaleUid, 'ended', callId);
   }
 
   async getCallHistory() {
@@ -653,16 +518,16 @@ class RoomService {
     excludedUids: string[] = [],
     maximumRate = Infinity,
   ): Promise<Room> {
-    const snapshot = await database()
-      .ref('rooms')
-      .orderByChild('status')
-      .equalTo('waiting')
-      .once('value');
+    const snapshot = await database().ref('rooms').once('value');
 
     const rooms: Room[] = [];
 
     snapshot.forEach(child => {
-      rooms.push(child.val() as Room);
+      const room = child.val() as Room;
+      if (
+        ['waiting', 'ended', 'rejected', 'men_rejected'].includes(room.status)
+      )
+        rooms.push(room);
       return false;
     });
 

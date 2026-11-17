@@ -1,11 +1,12 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, { memo } from 'react';
 import {
   View,
-  Text,
   Image,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Text as NativeText,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -30,6 +31,7 @@ const HOME_COLORS = {
 
 interface Props {
   item: any;
+  bio: string;
   onCall: (item: any) => void;
   calling?: boolean;
 }
@@ -52,7 +54,7 @@ const statusConfig = {
   },
 };
 
-const UserCard = ({ item, onCall, calling = false }: Props) => {
+const UserCard = ({ item, bio, onCall, calling = false }: Props) => {
   const tamilName = String(item?.profile?.tamilName || '').trim();
   const englishName = String(item?.profile?.name || '').trim();
   const supportedLanguages: string[] = Array.isArray(
@@ -65,9 +67,8 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
   const primaryLanguage =
     supportedLanguages[0] ||
     String(item?.profile?.practiceLanguage || '').trim() ||
-    'Jaankari Nahi Hai';
+    'Bhasha nahi di';
   const displayName = tamilName || englishName || 'N/A';
-  const subtitle = copy.host.roleName;
   const avatar =
     String(item?.profile?.gender).toLowerCase() === 'female'
       ? getFemaleAvatar(item?.profile?.avatarId)
@@ -102,14 +103,16 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
             </View>
           </View>
 
+          <View style={styles.divider} />
+
           <View style={styles.info}>
             <Text numberOfLines={1} style={styles.name}>
               {displayName}
             </Text>
 
-            <Text numberOfLines={1} style={styles.subTitle}>
-              {subtitle}
-            </Text>
+            <NativeText numberOfLines={2} style={styles.bio}>
+              {bio}
+            </NativeText>
 
             <View style={styles.chipRow}>
               <View style={styles.languageChip}>
@@ -192,17 +195,17 @@ export default memo(UserCard);
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 14,
-    marginBottom: 9,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 22,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+    borderRadius: 24,
     borderColor: Colors.primaryLight,
     shadowColor: HOME_COLORS.tealDark,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
-    elevation: 3,
+    elevation: 4,
   },
   cardDisabled: {
     opacity: 0.72,
@@ -215,9 +218,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     backgroundColor: HOME_COLORS.mint,
   },
   onlineDotOuter: {
@@ -239,21 +242,26 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
     minWidth: 0,
   },
+  divider: {
+    width: 1,
+    alignSelf: 'stretch',
+    marginLeft: 10,
+    backgroundColor: Colors.border,
+  },
   name: {
-    fontSize: 18,
-    lineHeight: 23,
+    fontSize: 17,
+    lineHeight: 22,
     paddingTop: 2,
     fontWeight: '800',
     color: HOME_COLORS.navy,
   },
-  subTitle: {
+  bio: {
     marginTop: 1,
-    fontSize: 13,
-    lineHeight: 17,
-    paddingTop: 1,
+    fontSize: 12,
+    lineHeight: 16,
     color: HOME_COLORS.body,
   },
   chipRow: {
@@ -266,7 +274,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: 104,
+    maxWidth: 108,
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 15,
@@ -303,7 +311,8 @@ const styles = StyleSheet.create({
     color: Colors.onlineStatus,
   },
   actions: {
-    marginLeft: 7,
+    width: 66,
+    marginLeft: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -311,20 +320,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 7,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    marginBottom: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 6,
     borderRadius: 15,
     backgroundColor: Colors.coinSurface,
   },
   price: {
     marginLeft: 0,
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '900',
     color: HOME_COLORS.amber,
   },
   perMinute: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: HOME_COLORS.amber,
   },
@@ -337,9 +346,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   callButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

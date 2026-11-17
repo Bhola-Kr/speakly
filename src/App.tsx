@@ -1,4 +1,10 @@
+import { TouchableOpacity } from './localization/components';
+import { useAppLanguage } from './localization/components';
+import { translate } from './localization/language';
+import { Text } from './localization/components';
+import Api from './api/api';
 import * as React from 'react';
+import './firebase/firebase';
 import {
   Alert,
   AppState,
@@ -7,8 +13,6 @@ import {
   Platform,
   StatusBar,
   View,
-  Text,
-  TouchableOpacity,
   StyleSheet,
   Linking,
   Modal,
@@ -114,6 +118,7 @@ const getStatusBarAppearance = (screen: string) => {
 };
 
 function RootStack() {
+  useAppLanguage();
   return (
     <Stack.Navigator
       initialRouteName="Splash"
@@ -169,7 +174,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Speakly 121 Ke Baare Mein',
+          title: translate('Speakly 121 Ke Baare Mein'),
         }}
         name="About"
         component={AboutScreen}
@@ -194,7 +199,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: false,
-          title: 'Pichhli Calls',
+          title: translate('Pichhli Calls'),
           headerStyle: { backgroundColor: Colors.background },
         }}
         name="ManHistory"
@@ -204,7 +209,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Terms & Conditions',
+          title: translate('Terms & Conditions'),
         }}
         name="TermsAndConditions"
         component={TermsAndConditionsScreen}
@@ -212,7 +217,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Privacy Policy',
+          title: translate('Privacy Policy'),
         }}
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}
@@ -220,7 +225,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Help & FAQ',
+          title: translate('Help & FAQ'),
         }}
         name="FAQ"
         component={FAQScreen}
@@ -234,7 +239,7 @@ function AppNavigator() {
   const [incomingRoom, setIncomingRoom] = React.useState<Room | null>(null);
   const incomingNotificationRef = React.useRef('');
   const restoringPresenceRef = React.useRef(false);
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
   const [deletionNoticeDismissed, setDeletionNoticeDismissed] =
     React.useState(false);
   const { activeCall, visible, showCall, minimizeCall, clearCall } =
@@ -323,10 +328,26 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
     }
     let subscribed = true;
     const unsubscribe = RoomService.listenCallStatus(femaleUid, async room => {
+      if (['ended', 'rejected', 'men_rejected'].includes(room?.status))
+        refreshUser().catch(console.warn);
       const pendingAction = await consumePendingAcceptedCall();
       if (!subscribed) return;
       if (
+        room?.status === 'calling' &&
+        room.male &&
+        !activeCall &&
+        Date.now() - Number(room.callRequestedAt) < 30000
+      ) {
+        if (__DEV__) console.info('[CallTiming] host alerted at', Date.now());
+        Api.post('/transitionCall', {
+          hostUid: femaleUid,
+          callId: room.currentCallId,
+          action: 'ring',
+        }).catch(console.warn);
+      }
+      if (
         ['calling', 'ringing'].includes(room?.status) &&
+        Date.now() - Number(room.callRequestedAt || 0) <= 30000 &&
         room.male &&
         !activeCall
       ) {
@@ -379,10 +400,12 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
       subscribed = false;
       unsubscribe();
     };
-  }, [activeCall, femaleUid]);
+  }, [activeCall, femaleUid, refreshUser]);
 
+  const acceptingIncomingRef = React.useRef(false);
   const acceptIncomingCall = React.useCallback(async () => {
-    if (!incomingRoom || !femaleUid) return;
+    if (!incomingRoom || !femaleUid || acceptingIncomingRef.current) return;
+    acceptingIncomingRef.current = true;
     try {
       await RoomService.acceptCall(femaleUid, incomingRoom.currentCallId);
       const room = incomingRoom;
@@ -402,8 +425,10 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
           agora: room.agora,
         });
       }
-    } catch {
-      Alert.alert('Call Join Nahi Hui', 'Dobara try karo.');
+    } catch (error: any) {
+      Alert.alert('Call Join Nahi Hui', error?.message || 'Dobara try karo.');
+    } finally {
+      acceptingIncomingRef.current = false;
     }
   }, [femaleUid, incomingRoom]);
 
@@ -440,36 +465,12 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
       }
       if (['calling', 'ringing'].includes(room.status)) {
         if (pending.action === 'reject-call') {
-          await databaseRef(`rooms/${femaleUid}`).transaction(current => {
-            if (
-              !current ||
-              current.currentCallId !== pending.callId ||
-              !['calling', 'ringing'].includes(current.status)
-            )
-              return;
-            return { ...current, status: 'rejected', updatedAt: Date.now() };
-          });
+          await RoomService.rejectCall(femaleUid, pending.callId);
           await clearPendingAcceptedCall(pending.callId);
           setIncomingRoom(null);
           return;
         }
-        const initialRoom = room;
-        let firstInvocation = true;
-        const result = await databaseRef(`rooms/${femaleUid}`).transaction(
-          current => {
-            const value = current || (firstInvocation ? initialRoom : null);
-            firstInvocation = false;
-            if (!value) return;
-            if (
-              value.currentCallId !== pending.callId ||
-              !['calling', 'ringing', 'accepted'].includes(value.status)
-            )
-              return;
-            return { ...value, status: 'accepted', updatedAt: Date.now() };
-          },
-        );
-        if (!result.committed) return;
-        room = result.snapshot.val() as Room;
+        await RoomService.acceptCall(femaleUid, pending.callId);
       }
       const latest = await databaseRef(`rooms/${femaleUid}`).once('value');
       room = latest.val() as Room | null;

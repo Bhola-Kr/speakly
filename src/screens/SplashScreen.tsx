@@ -1,11 +1,6 @@
+import { Text } from '../localization/components';
 import React, { useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  StyleSheet,
-  StatusBar,
-} from 'react-native';
+import { View, ActivityIndicator, StyleSheet, StatusBar } from 'react-native';
 
 import auth from '@react-native-firebase/auth';
 import DeviceInfo from 'react-native-device-info';

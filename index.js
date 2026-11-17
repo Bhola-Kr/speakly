@@ -1,4 +1,7 @@
+import auth from '@react-native-firebase/auth';
+import { initializeLanguage } from './src/localization/language';
 import 'react-native-gesture-handler';
+import './src/firebase/firebase';
 /**
  * @format
  */
@@ -15,6 +18,9 @@ import {
 } from './src/notifications/pushNotifications';
 
 global.Buffer = Buffer;
+auth().onAuthStateChanged(user => {
+  initializeLanguage(user?.uid);
+});
 
 messaging().setBackgroundMessageHandler(handleBackgroundMessage);
 notifee.onBackgroundEvent(handleNotificationEvent);

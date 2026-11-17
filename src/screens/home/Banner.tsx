@@ -1,10 +1,12 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, { memo } from 'react';
 import {
   View,
-  Text,
-  TouchableOpacity,
+  Image,
   ActivityIndicator,
   StyleSheet,
+  Text as NativeText,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -15,8 +17,6 @@ const COLORS = {
   navy: Colors.textPrimary,
   teal: Colors.primary,
   tealDark: Colors.primaryPressed,
-  mint: Colors.accentLight,
-  mintSoft: Colors.surfaceSecondary,
   body: Colors.textSecondary,
   white: Colors.textOnPrimary,
 };
@@ -24,18 +24,11 @@ const COLORS = {
 interface Props {
   randomCall: () => void;
   calling: boolean;
-  offerActive: boolean;
-  offerAmount: number;
-  offerFreeMinutes: number;
+  title: string;
+  subtitle: string;
 }
 
-const Banner = ({
-  randomCall,
-  calling,
-  offerActive,
-  offerAmount,
-  offerFreeMinutes,
-}: Props) => {
+const Banner = ({ randomCall, calling, title, subtitle }: Props) => {
   return (
     <View style={styles.bannerShadow}>
       <LinearGradient
@@ -44,30 +37,33 @@ const Banner = ({
         end={{ x: 1, y: 1 }}
         style={styles.banner}
       >
-        <View pointerEvents="none" style={styles.iconBubble}>
-          <MaterialCommunityIcons
-            name="account-voice"
-            size={35}
-            color={COLORS.tealDark}
+        <View pointerEvents="none" style={styles.illustrationWrap}>
+          <View style={styles.illustrationHalo} />
+          <Image
+            source={require('../../assets/call-waiting-illustration.png')}
+            resizeMode="contain"
+            style={styles.illustration}
           />
         </View>
 
         <View style={styles.copy}>
-          <Text style={styles.title}>{copy.home.heading}</Text>
+          <NativeText
+            numberOfLines={3}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+            style={styles.title}
+          >
+            {title}
+          </NativeText>
 
-          <Text style={styles.description}>{copy.home.supportingText}</Text>
-
-          {offerActive && offerAmount > 0 ? (
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.82}
-              style={styles.offer}
-            >
-              Lo ₹{offerAmount} free · Baat karo {offerFreeMinutes}{' '}
-              {offerFreeMinutes === 1 ? 'minute' : 'minutes'}
-            </Text>
-          ) : null}
+          <NativeText
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.78}
+            style={styles.description}
+          >
+            {subtitle}
+          </NativeText>
 
           <TouchableOpacity
             onPress={randomCall}
@@ -79,7 +75,14 @@ const Banner = ({
               <>
                 <ActivityIndicator size="small" color={COLORS.white} />
 
-                <Text style={styles.buttonText}>{copy.call.connecting}</Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.82}
+                  style={styles.buttonText}
+                >
+                  {copy.call.connecting}
+                </Text>
               </>
             ) : (
               <>
@@ -89,7 +92,14 @@ const Banner = ({
                   color={COLORS.white}
                 />
 
-                <Text style={styles.buttonText}>{copy.home.randomMatch}</Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.82}
+                  style={styles.buttonText}
+                >
+                  {copy.home.randomMatch}
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -103,9 +113,9 @@ export default memo(Banner);
 
 const styles = StyleSheet.create({
   bannerShadow: {
-    marginHorizontal: 14,
-    marginTop: 6,
-    borderRadius: 18,
+    marginHorizontal: 16,
+    marginTop: 7,
+    borderRadius: 25,
     backgroundColor: COLORS.white,
     shadowColor: COLORS.tealDark,
     shadowOffset: { width: 0, height: 10 },
@@ -114,54 +124,67 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   banner: {
-    minHeight: 104,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    minHeight: 136,
+    borderRadius: 25,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  illustrationWrap: {
+    width: 104,
+    height: 108,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderRadius: 22,
+  },
+  illustrationHalo: {
+    position: 'absolute',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255, 225, 235, 0.9)',
+  },
+  illustration: {
+    width: 104,
+    height: 108,
+  },
   copy: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 8,
+    minWidth: 0,
     zIndex: 2,
   },
   title: {
     color: COLORS.navy,
-    fontSize: 20,
-    lineHeight: 27,
+    fontSize: 18,
+    lineHeight: 23,
     paddingTop: 2,
-    fontWeight: '500',
-    letterSpacing: -0.8,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
   description: {
     color: COLORS.body,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     paddingTop: 1,
     marginTop: 2,
   },
-  offer: {
-    color: COLORS.tealDark,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
-    fontWeight: '700',
-  },
   button: {
-    marginTop: 7,
+    marginTop: 8,
     backgroundColor: COLORS.tealDark,
-    height: 34,
-    borderRadius: 12,
+    height: 40,
+    borderRadius: 16,
     alignSelf: 'flex-start',
-    paddingHorizontal: 13,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 112,
+    minWidth: 0,
     shadowColor: COLORS.tealDark,
     shadowOffset: { width: 0, height: 7 },
     shadowOpacity: 0.22,
@@ -174,19 +197,10 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.white,
     fontWeight: '800',
-    fontSize: 14,
+    flexShrink: 1,
+    fontSize: 13,
     lineHeight: 19,
     paddingTop: 1,
     marginLeft: 6,
-  },
-  iconBubble: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.mintSoft,
-    borderWidth: 1,
-    borderColor: COLORS.mint,
   },
 });

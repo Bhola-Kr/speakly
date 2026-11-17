@@ -1,10 +1,7 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text } from '../localization/components';
 import React from 'react';
-import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
+import { StyleSheet, ActivityIndicator } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 

@@ -1,11 +1,10 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text, TextInput } from '../localization/components';
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
   StatusBar,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,

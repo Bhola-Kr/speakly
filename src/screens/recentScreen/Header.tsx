@@ -1,6 +1,7 @@
+import { Text } from '../../localization/components';
 import React from 'react';
 
-import { View, Text, Switch } from 'react-native';
+import { View, Switch } from 'react-native';
 
 import Colors from '../../constants/colors';
 interface Props {

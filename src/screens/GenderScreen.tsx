@@ -1,15 +1,14 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text, TextInput } from '../localization/components';
 import React, { useState } from 'react';
 import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
   Alert,
   FlatList,
   Image,
-  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

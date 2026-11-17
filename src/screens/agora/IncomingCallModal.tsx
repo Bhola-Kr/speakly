@@ -1,14 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import {
-  Animated,
-  Easing,
-  Image,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Easing, Image, Modal, StyleSheet, View } from 'react-native';
+import { Text, TouchableOpacity } from '../../localization/components';
 import LinearGradient from 'react-native-linear-gradient';
 import InCallManager from 'react-native-incall-manager';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';

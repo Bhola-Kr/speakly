@@ -90,8 +90,8 @@ export const createAgoraTokenHandler =
         channelName,
         maleUid,
         RtcRole.PUBLISHER,
-        privilegeExpire,
-        privilegeExpire,
+        expireSeconds,
+        expireSeconds,
       );
 
       const femaleToken = RtcTokenBuilder.buildTokenWithUid(
@@ -100,8 +100,8 @@ export const createAgoraTokenHandler =
         channelName,
         femaleUid,
         RtcRole.PUBLISHER,
-        privilegeExpire,
-        privilegeExpire,
+        expireSeconds,
+        expireSeconds,
       );
 
       return res.status(200).json({

@@ -1,10 +1,10 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text } from '../localization/components';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
   NativeSyntheticEvent,
   NativeScrollEvent,

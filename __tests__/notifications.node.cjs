@@ -11,16 +11,22 @@ const snapshot = (value, key) => ({
     for (const [k, v] of Object.entries(value || {})) fn(snapshot(v, k));
   },
 });
-function load(file, users) {
-  for (const user of Object.values(users))
-    user.profile = {
-      name: 'Test User',
-      gender: 'male',
-      avatarSelected: true,
-      ...user.profile,
-    };
+function load(
+  file,
+  users,
+  { functionsEmulator = false, incompleteProfiles = false } = {},
+) {
+  if (!incompleteProfiles)
+    for (const user of Object.values(users))
+      user.profile = {
+        name: 'Test User',
+        gender: 'male',
+        avatarSelected: true,
+        ...user.profile,
+      };
   const sent = [],
-    claims = new Map();
+    claims = new Map(),
+    updates = [];
   const registrations = {};
   for (const [uid, user] of Object.entries(users)) {
     const token =
@@ -40,7 +46,7 @@ function load(file, users) {
               : path === 'speakly/pushTokenOwners'
               ? registrations
               : path.startsWith('speakly/rooms/')
-              ? { status: 'waiting', female: { uid: path.split('/').at(-1) } }
+              ? null
               : users[path.split('/').at(-1)],
           ),
         transaction: async fn => {
@@ -48,7 +54,7 @@ function load(file, users) {
           if (next) claims.set(path, next);
           return { committed: !!next };
         },
-        update: async () => {},
+        update: async value => updates.push({ path, value }),
         remove: async () => {},
       }),
     }),
@@ -61,6 +67,9 @@ function load(file, users) {
   };
   const sandbox = {
     exports: {},
+    process: {
+      env: functionsEmulator ? { FUNCTIONS_EMULATOR: 'true' } : {},
+    },
     require: name =>
       name.includes('pushTokenOwnership')
         ? {
@@ -87,20 +96,26 @@ function load(file, users) {
     }).outputText,
     sandbox,
   );
-  return { handlers: sandbox.exports, sent };
+  return { handlers: sandbox.exports, sent, updates };
 }
-test('online audience excludes hosts, admins, opted-out customers and shared host tokens', async () => {
+test('host online alerts reach non-host users without a room and when returning from busy', async () => {
   const { handlers, sent } = load(
     'firebase-backend/functions/src/hostOnlineNotifications.ts',
     {
       host: {
         isExpert: true,
-        profile: { role: 'expert', name: 'Tina' },
+        phone: '8826520718',
+        profile: { role: 'expert', name: 'Tina', status: 'online' },
         fcmTokens: { token: 'host-token' },
       },
       customer: {
         profile: { role: 'learner' },
         fcmTokens: { token: 'customer-token' },
+      },
+      otherHost: {
+        isExpert: true,
+        profile: { role: 'expert', status: 'offline' },
+        fcmTokens: 'other-host-token',
       },
       staleCustomer: { profile: { role: 'learner' }, fcmTokens: 'host-token' },
       admin: {
@@ -121,7 +136,15 @@ test('online audience excludes hosts, admins, opted-out customers and shared hos
     data: { before: snapshot('offline'), after: snapshot('online') },
   };
   await handlers.notifyAllUsersWhenExpertOnline(event);
-  assert.deepEqual(Array.from(sent[0].tokens), ['customer-token']);
+  assert.deepEqual(Array.from(sent[0].tokens), [
+    'customer-token',
+    'admin-token',
+  ]);
+  assert.equal(sent[0].notification.title, 'Tina ab Online Hai! 🎉');
+  assert.equal(
+    sent[0].notification.body,
+    'Tina aapse baat karne ke liye ready hai. Connect Now!',
+  );
   assert.equal(sent[0].data.hostUid, 'host');
   assert.equal(sent[0].data.eventId, 'event-one');
   await handlers.notifyAllUsersWhenExpertOnline(event);
@@ -129,9 +152,68 @@ test('online audience excludes hosts, admins, opted-out customers and shared hos
   await handlers.notifyAllUsersWhenExpertOnline({
     ...event,
     id: 'event-two',
+    data: { before: snapshot('busy'), after: snapshot('online') },
+  });
+  assert.equal(sent.length, 2);
+  assert.deepEqual(Array.from(sent[1].tokens), [
+    'customer-token',
+    'admin-token',
+  ]);
+  await handlers.notifyAllUsersWhenExpertOnline({
+    ...event,
+    id: 'event-three',
     data: { before: snapshot('online'), after: snapshot('online') },
   });
-  assert.equal(sent.length, 1);
+  assert.equal(sent.length, 2);
+});
+
+test('local functions queue Hinglish alerts without FCM tokens or complete profiles', async () => {
+  const { handlers, sent, updates } = load(
+    'firebase-backend/functions/src/hostOnlineNotifications.ts',
+    {
+      host: {
+        isExpert: true,
+        profile: { role: 'expert', name: 'Tina', status: 'online' },
+        fcmTokens: 'host-token',
+      },
+      customer: {
+        profile: {},
+      },
+      admin: {
+        isAdmin: true,
+        profile: {},
+      },
+      otherHost: {
+        isExpert: true,
+        profile: { role: 'expert' },
+      },
+    },
+    { functionsEmulator: true, incompleteProfiles: true },
+  );
+  await handlers.notifyAllUsersWhenExpertOnline({
+    id: 'event-local',
+    params: { hostUid: 'host' },
+    data: { before: snapshot('offline'), after: snapshot('online') },
+  });
+  assert.equal(sent.length, 0);
+  assert.equal(updates.length, 1);
+  const alertWrites = updates[0].value;
+  assert.deepEqual(
+    Object.keys(alertWrites).sort(),
+    [
+      'speakly/availabilityAlerts/admin/host_event-local',
+      'speakly/availabilityAlerts/customer/host_event-local',
+    ].sort(),
+  );
+  assert.equal(
+    alertWrites['speakly/availabilityAlerts/customer/host_event-local']
+      .hostName,
+    'Tina',
+  );
+  assert.equal(
+    alertWrites['speakly/availabilityAlerts/customer/host_event-local'].eventId,
+    'event-local',
+  );
 });
 test('ordinary customer login does not repeat onboarding alerts', async () => {
   const { handlers, sent } = load(
@@ -160,7 +242,10 @@ test('unapproved expert role cannot send availability alerts', async () => {
   const { handlers, sent } = load(
     'firebase-backend/functions/src/hostOnlineNotifications.ts',
     {
-      host: { isExpert: false, profile: { role: 'expert', name: 'Applicant' } },
+      host: {
+        isExpert: false,
+        profile: { role: 'expert', name: 'Applicant', status: 'online' },
+      },
       customer: { profile: { role: 'learner' }, fcmTokens: 'customer' },
     },
   );

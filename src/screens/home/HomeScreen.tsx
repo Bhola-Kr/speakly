@@ -1,3 +1,4 @@
+import { Text } from '../../localization/components';
 import React, {
   useCallback,
   useEffect,
@@ -10,26 +11,22 @@ import {
   FlatList,
   StatusBar,
   StyleSheet,
-  Text,
   View,
   ActivityIndicator,
-  TouchableOpacity,
   DeviceEventEmitter,
   AppState,
+  Text as NativeText,
 } from 'react-native';
 import { scopedDatabase as database } from '../../firebase/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from './Header';
 import Banner from './Banner';
-import CategoryList from './CategoryList';
 import UserCard from './UserCard';
 
 import Colors from '../../constants/colors';
 import UI from '../../constants/ui';
-import { categories } from '../../constants/dummyData';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
-import RoomService from '../../firebase/RoomService';
 import { useUser } from '../../hooks/UserContext';
 import SignupOfferModal from './SignupOfferModal';
 import {
@@ -43,14 +40,11 @@ import { copy } from '../../constants/strings';
 import auth from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GuestLoginModal from './GuestLoginModal';
-import { isAnonymousProfileName } from '../../utils/profileValidation';
 import { trackFirstCallOfferApplied } from '../../firebase/analytics';
-import {
-  startOutgoingRingback,
-  stopOutgoingRingback,
-} from '../../utils/outgoingRingback';
 import type { CallFollowUpIntent } from '../../types/callFollowUp';
 import { CALL_RECHARGE_PROMPT_EVENT } from '../../utils/callRechargePrompt';
+import { buildExpertBioMap } from '../../utils/expertBios';
+import { useHomeBannerMessage } from './useHomeBannerMessage';
 
 const HOME_COLORS = {
   background: Colors.background,
@@ -85,11 +79,10 @@ const hasCompleteFemaleProfile = (item: any) => {
 
 const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
   const { user, refreshUser } = useUser();
-  const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
   const [expertsLoaded, setExpertsLoaded] = useState(false);
-  const [randomCalling, setRandomCalling] = useState(false);
-  const [callingUserId, setCallingUserId] = useState<string | null>(null);
+  const randomCalling = false;
+  const callingUserId: string | null = null;
   const [loginVisible, setLoginVisible] = useState(false);
   const [guestPendingCall, setGuestPendingCall] = useState<any>(null);
   const [guestDestination, setGuestDestination] = useState<
@@ -106,6 +99,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
   const pendingCallHandledRef = useRef(false);
 
   const canStartCall = useCallBalanceGuard(navigation);
+  const homeBannerMessage = useHomeBannerMessage();
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener(
@@ -165,10 +159,6 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const offerClaimed = Boolean(user?.offers?.signupOffer?.claimedAt);
   const signedIn = Boolean(auth().currentUser);
-  const showProfileReminder =
-    Boolean(user) &&
-    user?.isExpert !== true &&
-    isAnonymousProfileName(user?.profile?.name);
   const showOffer =
     (!signedIn || (Boolean(user) && user?.isExpert !== true)) &&
     offer.active &&
@@ -257,33 +247,16 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       if (
         callInProgressRef.current ||
         !canStartCall(Number(item?.profile?.price))
-      ) {
+      )
         return;
-      }
-
       callInProgressRef.current = true;
-      let handedOffToOutgoingScreen = false;
-      startOutgoingRingback();
-
-      try {
-        setCallingUserId(item.uid);
-
-        const room = await RoomService.callFemale(item.uid);
-
-        navigation.navigate('OutgoingCall', { user: item?.profile, room });
-        handedOffToOutgoingScreen = true;
-      } catch (error: any) {
-        console.log('Call Error:', error);
-
-        Alert.alert(
-          'Call Connect Nahi Hui',
-          error?.message || 'Call connect nahi hui. Dobara try karo.',
-        );
-      } finally {
-        if (!handedOffToOutgoingScreen) stopOutgoingRingback();
-        setCallingUserId(null);
+      navigation.navigate('OutgoingCall', {
+        user: { ...item.profile, uid: item.uid },
+        initiatedAt: Date.now(),
+      });
+      setTimeout(() => {
         callInProgressRef.current = false;
-      }
+      }, 500);
     },
     [canStartCall, navigation],
   );
@@ -339,34 +312,22 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     };
   }, [handleCall, user?.isExpert, user?.uid]);
 
-  const filtered = useMemo(() => {
-    const categoryUsers =
-      selected === 'All'
-        ? femaleUsers
-        : femaleUsers.filter(item => {
-            const topics = Array.isArray(item.profile?.topics)
-              ? item.profile.topics
-                  .map((topic: unknown) => String(topic).trim())
-                  .filter(Boolean)
-              : [];
+  const filtered = useMemo(
+    () =>
+      femaleUsers
+        .map((item, index) => ({ item, index }))
+        .sort((a, b) => {
+          const aStatus = String(a.item?.profile?.status || '').toLowerCase();
+          const bStatus = String(b.item?.profile?.status || '').toLowerCase();
+          const aPriority = STATUS_PRIORITY[aStatus] ?? STATUS_PRIORITY.offline;
+          const bPriority = STATUS_PRIORITY[bStatus] ?? STATUS_PRIORITY.offline;
 
-            return (
-              topics.includes(selected) || item.profile?.category === selected
-            );
-          });
-
-    return categoryUsers
-      .map((item, index) => ({ item, index }))
-      .sort((a, b) => {
-        const aStatus = String(a.item?.profile?.status || '').toLowerCase();
-        const bStatus = String(b.item?.profile?.status || '').toLowerCase();
-        const aPriority = STATUS_PRIORITY[aStatus] ?? STATUS_PRIORITY.offline;
-        const bPriority = STATUS_PRIORITY[bStatus] ?? STATUS_PRIORITY.offline;
-
-        return aPriority - bPriority || a.index - b.index;
-      })
-      .map(({ item }) => item);
-  }, [femaleUsers, selected]);
+          return aPriority - bPriority || a.index - b.index;
+        })
+        .map(({ item }) => item),
+    [femaleUsers],
+  );
+  const expertBios = useMemo(() => buildExpertBioMap(femaleUsers), [femaleUsers]);
 
   const onRandomCall = useCallback(async () => {
     if (!auth().currentUser) {
@@ -377,36 +338,18 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     }
     if (callInProgressRef.current) return;
 
-    callInProgressRef.current = true;
-    let handedOffToOutgoingScreen = false;
-    startOutgoingRingback();
-
-    try {
-      setRandomCalling(true);
-      const randomRoom = await RoomService.getRandomFemaleRoom();
-      if (!canStartCall(Number(randomRoom?.callRatePerMinute))) return;
-
-      const claimedRoom = await RoomService.callFemale(randomRoom?.female?.uid);
-
-      navigation.navigate('OutgoingCall', {
-        user: {
-          uid: randomRoom?.female?.uid,
-          name: randomRoom?.female?.name,
-          tamilName: randomRoom?.female?.tamilName,
-          gender: randomRoom?.female?.gender,
-          avatarId: randomRoom?.female?.avatarId,
-        },
-        room: claimedRoom,
-      });
-      handedOffToOutgoingScreen = true;
-    } catch (e: any) {
-      Alert.alert('Info', e.message);
-    } finally {
-      if (!handedOffToOutgoingScreen) stopOutgoingRingback();
-      setRandomCalling(false);
-      callInProgressRef.current = false;
+    const candidates = femaleUsers.filter(
+      item => item?.profile?.status === 'online',
+    );
+    if (!candidates.length) {
+      Alert.alert(
+        'Expert Abhi Offline Hai',
+        'Abhi koi expert available nahi hai. Thodi der baad try karo.',
+      );
+      return;
     }
-  }, [canStartCall, navigation]);
+    await handleCall(candidates[Math.floor(Math.random() * candidates.length)]);
+  }, [femaleUsers, handleCall]);
 
   useEffect(() => {
     const pendingCall = route?.params?.pendingCall;
@@ -455,60 +398,25 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       <>
         <Header walletPress={walletPress} userProfilePress={userProfilePress} />
 
-        {!showProfileReminder && (
-          <TouchableOpacity
-            activeOpacity={0.84}
-            style={styles.profileReminder}
-            onPress={() => navigation.navigate('EditProfile')}
-          >
-            <View style={styles.profileReminderIcon}>
-              <MaterialCommunityIcons
-                name="account-edit-outline"
-                size={21}
-                color={HOME_COLORS.tealDark}
-              />
-            </View>
-            <View style={styles.profileReminderCopy}>
-              <Text style={styles.profileReminderTitle}>
-                Apni Profile Banao
-              </Text>
-              <Text style={styles.profileReminderText} numberOfLines={1}>
-                Apna naam likho aur avatar chuno.
-              </Text>
-            </View>
-            <Text style={styles.profileReminderAction}>Update</Text>
-          </TouchableOpacity>
-        )}
-
         <Banner
           randomCall={onRandomCall}
           calling={randomCalling}
-          offerActive={offer.active}
-          offerAmount={offer.amount}
-          offerFreeMinutes={offer.freeMinutes}
+          title={homeBannerMessage.title}
+          subtitle={homeBannerMessage.subtitle}
         />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.heading}>{copy.home.availableHosts}</Text>
-          <Text style={styles.sectionHint}>{copy.home.sectionHint}</Text>
+          <NativeText style={styles.heading}>Explore Experts</NativeText>
+          <NativeText style={styles.sectionSubtitle}>
+            Find the right person to talk to.
+          </NativeText>
         </View>
-
-        <CategoryList
-          categories={categories}
-          selected={selected}
-          onSelect={setSelected}
-        />
       </>
     ),
     [
-      navigation,
-      offer.active,
-      offer.amount,
-      offer.freeMinutes,
+      homeBannerMessage,
       onRandomCall,
       randomCalling,
-      selected,
-      showProfileReminder,
       userProfilePress,
       walletPress,
     ],
@@ -518,11 +426,12 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     ({ item }: { item: any }) => (
       <UserCard
         item={item}
+        bio={expertBios.get(String(item?.uid || '')) || ''}
         calling={callingUserId === item.uid}
         onCall={handleCall}
       />
     ),
-    [callingUserId, handleCall],
+    [callingUserId, expertBios, handleCall],
   );
 
   return (
@@ -686,48 +595,6 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
-  profileReminder: {
-    minHeight: 58,
-    marginHorizontal: 14,
-    marginBottom: 4,
-    paddingHorizontal: 12,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: HOME_COLORS.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: HOME_COLORS.white,
-  },
-  profileReminderIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primaryLight,
-  },
-  profileReminderCopy: {
-    flex: 1,
-    minWidth: 0,
-    marginLeft: 10,
-  },
-  profileReminderTitle: {
-    color: HOME_COLORS.navy,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  profileReminderText: {
-    marginTop: 2,
-    color: HOME_COLORS.body,
-    fontSize: 12,
-  },
-  profileReminderAction: {
-    marginLeft: 8,
-    color: HOME_COLORS.tealDark,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-
   heading: {
     fontSize: 21,
     lineHeight: 28,
@@ -737,19 +604,17 @@ const styles = StyleSheet.create({
     letterSpacing: -0.7,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginHorizontal: 17,
-    marginTop: 14,
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginHorizontal: 16,
+    marginTop: 18,
+    marginBottom: 10,
   },
-  sectionHint: {
-    color: HOME_COLORS.tealDark,
+  sectionSubtitle: {
+    marginTop: 3,
+    color: HOME_COLORS.body,
     fontSize: 13,
     lineHeight: 18,
     paddingTop: 1,
-    fontWeight: '700',
   },
 
   listContent: {

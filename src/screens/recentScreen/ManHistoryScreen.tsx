@@ -1,5 +1,7 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, { useEffect, useState } from 'react';
-import { FlatList, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { FlatList, View, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 

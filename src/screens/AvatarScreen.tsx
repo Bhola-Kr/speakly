@@ -1,11 +1,11 @@
+import { TouchableOpacity } from '../localization/components';
+import { Text } from '../localization/components';
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   Alert,
   StyleSheet,
   StatusBar,
-  TouchableOpacity,
   FlatList,
   Image,
 } from 'react-native';

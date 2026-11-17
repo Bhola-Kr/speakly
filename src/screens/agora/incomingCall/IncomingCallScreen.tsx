@@ -1,14 +1,7 @@
 import Colors from '../../../constants/colors';
 import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Easing,
-  Image,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Easing, Image, StatusBar, View } from 'react-native';
+import { Text, TouchableOpacity } from '../../../localization/components';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';

@@ -1,12 +1,7 @@
+import { TouchableOpacity } from '../../localization/components';
+import { Text } from '../../localization/components';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Image, ActivityIndicator } from 'react-native';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -14,14 +9,10 @@ import styles from './styles';
 import Colors from '../../constants/colors';
 import { femaleAvatars, normalizeCallRate } from '../../constants/constants';
 
-import RoomService, { CallHistory } from '../../firebase/RoomService';
+import { CallHistory } from '../../firebase/RoomService';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import SurfaceCard from '../../components/SurfaceCard';
 import { copy, callStatusText } from '../../constants/strings';
-import {
-  startOutgoingRingback,
-  stopOutgoingRingback,
-} from '../../utils/outgoingRingback';
 
 interface Props {
   item: CallHistory;
@@ -74,35 +65,12 @@ const RecentCallCard = ({ item, navigation }: Props) => {
       return;
     }
 
-    let handedOffToOutgoingScreen = false;
-    startOutgoingRingback();
-
-    try {
-      setCalling(true);
-
-      const room = await RoomService.callFemale(item?.femaleInfo?.uid);
-
-      navigation.navigate('OutgoingCall', {
-        user: {
-          uid: item?.femaleInfo?.uid,
-          name: englishName || displayName,
-          tamilName,
-          avatarId: item?.femaleInfo?.avatarId,
-        },
-        room,
-      });
-      handedOffToOutgoingScreen = true;
-    } catch (error: any) {
-      console.log('Call Error:', error);
-
-      Alert.alert(
-        'Call Connect Nahi Hui',
-        error?.message || 'Call connect nahi hui. Dobara try karo.',
-      );
-    } finally {
-      if (!handedOffToOutgoingScreen) stopOutgoingRingback();
-      setCalling(false);
-    }
+    setCalling(true);
+    navigation.navigate('OutgoingCall', {
+      user: { ...item.femaleInfo, uid: item.femaleInfo.uid },
+      initiatedAt: Date.now(),
+    });
+    setTimeout(() => setCalling(false), 500);
   };
 
   return (

@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useAppLanguage } from '../localization/components';
+import { webLocalizationScript } from '../localization/web';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -11,21 +13,32 @@ export const WEB_PAGES = {
   terms: 'https://www.joinspeakly.com/terms-and-conditions',
 } as const;
 
-export const WebPageScreen = ({ url }: { url: string }) => (
-  <SafeAreaView edges={['right', 'bottom', 'left']} style={styles.container}>
-    <WebView
-      source={{ uri: url }}
-      style={styles.webView}
-      startInLoadingState
-      renderLoading={() => (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={Colors.secondary} />
-        </View>
-      )}
-      allowsBackForwardNavigationGestures
-    />
-  </SafeAreaView>
-);
+export const WebPageScreen = ({ url }: { url: string }) => {
+  const language = useAppLanguage();
+  const web = useRef<WebView<object>>(null);
+  const script = webLocalizationScript(language);
+  useEffect(() => {
+    web.current?.injectJavaScript(script);
+  }, [script]);
+  return (
+    <SafeAreaView edges={['right', 'bottom', 'left']} style={styles.container}>
+      <WebView<object>
+        ref={web}
+        injectedJavaScript={script}
+        onLoadEnd={() => web.current?.injectJavaScript(script)}
+        source={{ uri: url }}
+        style={styles.webView}
+        startInLoadingState
+        renderLoading={() => (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color={Colors.secondary} />
+          </View>
+        )}
+        allowsBackForwardNavigationGestures
+      />
+    </SafeAreaView>
+  );
+};
 
 const PrivacyPolicyScreen = () => <WebPageScreen url={WEB_PAGES.privacy} />;
 
