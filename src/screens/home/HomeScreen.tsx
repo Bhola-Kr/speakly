@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   DeviceEventEmitter,
+  AppState,
 } from 'react-native';
 import { scopedDatabase as database } from '../../firebase/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,6 +41,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { copy } from '../../constants/strings';
 import auth from '@react-native-firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import GuestLoginModal from './GuestLoginModal';
 import { isAnonymousProfileName } from '../../utils/profileValidation';
 import { trackFirstCallOfferApplied } from '../../firebase/analytics';
@@ -82,7 +84,7 @@ const hasCompleteFemaleProfile = (item: any) => {
 };
 
 const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
   const [selected, setSelected] = useState('All');
   const [femaleUsers, setFemaleUsers] = useState<any[]>([]);
   const [expertsLoaded, setExpertsLoaded] = useState(false);
@@ -109,14 +111,14 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     const subscription = DeviceEventEmitter.addListener(
       CALL_RECHARGE_PROMPT_EVENT,
       (followUpIntent: CallFollowUpIntent) => {
-        const hostName = followUpIntent.hostName || 'your host';
+        const hostName = followUpIntent.hostName || 'aapke expert';
         const isFreeCall = followUpIntent.source === 'free_call_expired';
 
         Alert.alert(
           isFreeCall
-            ? 'Your free minutes have ended'
-            : 'Your balance has ended',
-          `${hostName} is waiting for you. Recharge and continue talking.`,
+            ? 'Aapke Free Minutes Khatam Ho Gaye'
+            : 'Aapka Balance Khatam Ho Gaya',
+          `${hostName} se phir baat karne ke liye recharge karo.`,
           [
             {
               text: 'Recharge ₹10',
@@ -128,14 +130,14 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
                 }),
             },
             {
-              text: 'Choose another amount',
+              text: 'Dusra Amount Chuno',
               onPress: () =>
                 navigation.navigate('Wallet', {
                   preferredAmount: 20,
                   followUpIntent,
                 }),
             },
-            { text: 'Maybe Later', style: 'cancel' },
+            { text: 'Baad Mein', style: 'cancel' },
           ],
         );
       },
@@ -180,22 +182,23 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       setClaimingOffer(true);
       const creditedAmount = await claimSignupOffer();
+      await refreshUser();
       Alert.alert(
-        `₹${creditedAmount} Free Balance Added`,
-        `Choose an available host and enjoy your first ${offer.freeMinutes} ${
+        `₹${creditedAmount} Free Balance Mil Gaya`,
+        `Available expert chuno aur pehli ${offer.freeMinutes} ${
           offer.freeMinutes === 1 ? 'minute' : 'minutes'
         } free.`,
       );
     } catch (error: any) {
       Alert.alert(
-        'Unable to Claim Offer',
-        error?.message || 'Please try again in a moment.',
+        'Offer Nahi Mila',
+        error?.message || 'Thodi der baad dobara try karo.',
       );
     } finally {
       claimingOfferRef.current = false;
       setClaimingOffer(false);
     }
-  }, [offer.freeMinutes]);
+  }, [offer.freeMinutes, refreshUser]);
 
   const handleOfferClaim = useCallback(() => {
     if (!auth().currentUser) {
@@ -273,8 +276,8 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
         console.log('Call Error:', error);
 
         Alert.alert(
-          'Call Failed',
-          error?.message || 'Unable to connect the call. Please try again.',
+          'Call Connect Nahi Hui',
+          error?.message || 'Call connect nahi hui. Dobara try karo.',
         );
       } finally {
         if (!handedOffToOutgoingScreen) stopOutgoingRingback();
@@ -284,6 +287,57 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     },
     [canStartCall, navigation],
   );
+
+  useEffect(() => {
+    let processing = false;
+    const consume = async () => {
+      if (
+        processing ||
+        !auth().currentUser ||
+        user?.uid !== auth().currentUser?.uid ||
+        user?.isExpert === true ||
+        AppState.currentState !== 'active'
+      )
+        return;
+      processing = true;
+      try {
+        const raw = await AsyncStorage.getItem('pendingOnlineHost');
+        if (!raw) return;
+        await AsyncStorage.removeItem('pendingOnlineHost');
+        const pending = JSON.parse(raw);
+        if (Date.now() - pending.createdAt > 5 * 60 * 1000) return;
+        const snapshot = await database()
+          .ref(`users/${pending.hostUid}`)
+          .once('value');
+        const host = snapshot.val();
+        if (!host || host.profile?.status !== 'online') {
+          Alert.alert(
+            copy.call.timeout,
+            'Expert abhi available nahi hai. Thodi der baad try karo.',
+          );
+          return;
+        }
+        await handleCall({
+          uid: pending.hostUid,
+          profile: { ...host.profile, uid: pending.hostUid },
+        });
+      } finally {
+        processing = false;
+      }
+    };
+    consume().catch(console.warn);
+    const event = DeviceEventEmitter.addListener(
+      'SpeaklyOnlineHostTapped',
+      () => consume().catch(console.warn),
+    );
+    const state = AppState.addEventListener('change', value => {
+      if (value === 'active') consume().catch(console.warn);
+    });
+    return () => {
+      event.remove();
+      state.remove();
+    };
+  }, [handleCall, user?.isExpert, user?.uid]);
 
   const filtered = useMemo(() => {
     const categoryUsers =
@@ -332,7 +386,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
       const randomRoom = await RoomService.getRandomFemaleRoom();
       if (!canStartCall(Number(randomRoom?.callRatePerMinute))) return;
 
-      await RoomService.callFemale(randomRoom?.female?.uid);
+      const claimedRoom = await RoomService.callFemale(randomRoom?.female?.uid);
 
       navigation.navigate('OutgoingCall', {
         user: {
@@ -342,7 +396,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
           gender: randomRoom?.female?.gender,
           avatarId: randomRoom?.female?.avatarId,
         },
-        room: randomRoom,
+        room: claimedRoom,
       });
       handedOffToOutgoingScreen = true;
     } catch (e: any) {
@@ -416,10 +470,10 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
             <View style={styles.profileReminderCopy}>
               <Text style={styles.profileReminderTitle}>
-                Make this profile yours
+                Apni Profile Banao
               </Text>
               <Text style={styles.profileReminderText} numberOfLines={1}>
-                Add your name and choose an avatar.
+                Apna naam likho aur avatar chuno.
               </Text>
             </View>
             <Text style={styles.profileReminderAction}>Update</Text>
@@ -562,6 +616,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
             }
           }
           setLoginVisible(false);
+          await refreshUser();
           const learnerRoutes: any[] = [
             { name: 'Main', params: { pendingCall: guestPendingCall } },
           ];
@@ -582,9 +637,9 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
           if (creditedBonus > 0) {
             setTimeout(() => {
               Alert.alert(
-                `₹${creditedBonus} added successfully!`,
-                'Your free call balance is ready. Choose a host and start your first conversation.',
-                [{ text: 'Start Talking' }],
+                `₹${creditedBonus} add ho gaye!`,
+                'Free call balance ready hai. Expert chuno aur pehli baat shuru karo.',
+                [{ text: 'Abhi Baat Karo' }],
               );
             }, 350);
           }

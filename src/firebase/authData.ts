@@ -70,8 +70,7 @@ class AuthData {
             email: current.email || result.user.email || '',
             profile: {
               ...(current.profile || {}),
-              phone:
-                current.profile?.phone || GOOGLE_DEFAULT_PAYMENT_PHONE,
+              phone: current.profile?.phone || GOOGLE_DEFAULT_PAYMENT_PHONE,
               email: current.profile?.email || result.user.email || '',
             },
             verification: {
@@ -92,13 +91,13 @@ class AuthData {
       const token = await fetchFirebaseToken(phone);
 
       if (!token) {
-        throw new Error('Unable to generate Firebase token.');
+        throw new Error('Session verify nahi hui.');
       }
 
       const user = await this.loginWithCustomToken(token);
 
       if (!user?.uid) {
-        throw new Error('Authentication failed.');
+        throw new Error('Sign in verify nahi hua.');
       }
 
       await AsyncStorage.setItem('uid', user.uid);
@@ -107,13 +106,17 @@ class AuthData {
     } catch (error: any) {
       console.error('verifyOTPAndLogin:', error);
 
-      let message = 'Something went wrong. Please try again.';
+      let message = 'Kuch dikkat aa gayi. Dobara try karo.';
 
-      if (typeof error?.message === 'string' && error.message.trim()) {
+      if (
+        !error?.code &&
+        typeof error?.message === 'string' &&
+        error.message.trim()
+      ) {
         message = error.message;
       }
 
-      Alert.alert('Verification Failed', message);
+      Alert.alert('Verification Nahi Hui', message);
 
       throw new Error(message);
     }
@@ -136,7 +139,7 @@ class AuthData {
     language = 'English',
   ) => {
     if (!user?.uid) {
-      throw new Error('A valid user is required to create an account.');
+      throw new Error('Account banane ke liye sign in zaroori hai.');
     }
 
     const uid = user.uid;
@@ -145,12 +148,13 @@ class AuthData {
     );
     const verifiedPhone = user.phoneNumber || '';
     const phone =
-      verifiedPhone ||
-      (isGoogleAccount ? GOOGLE_DEFAULT_PAYMENT_PHONE : '');
+      verifiedPhone || (isGoogleAccount ? GOOGLE_DEFAULT_PAYMENT_PHONE : '');
     const email = user.email || '';
     const now = Date.now();
 
     await databaseRef(`users/${uid}`).transaction(currentUser => {
+      // Creation must never rewrite an existing account's protected ledger.
+      if (currentUser) return;
       const isNewAccount = !currentUser;
       const existing = currentUser || {};
       const profile = existing.profile || {};
@@ -183,8 +187,9 @@ class AuthData {
           role: existing.profile?.role || role,
           practiceLanguage: existing.profile?.practiceLanguage || language,
           nativeLanguage: existing.profile?.nativeLanguage || language,
-          supportedLanguages:
-            existing.profile?.supportedLanguages || [language],
+          supportedLanguages: existing.profile?.supportedLanguages || [
+            language,
+          ],
         },
         verification: {
           phoneVerified: Boolean(verifiedPhone),
@@ -255,7 +260,7 @@ class AuthData {
     const user = this.getCurrentUser();
 
     if (!user) {
-      throw new Error('No authenticated user found.');
+      throw new Error('Pehle sign in karo.');
     }
 
     const requestedAt = Date.now();
@@ -279,7 +284,7 @@ class AuthData {
     const user = this.getCurrentUser();
 
     if (!user) {
-      throw new Error('No authenticated user found.');
+      throw new Error('Pehle sign in karo.');
     }
 
     await databaseRef(`users/${user.uid}/verification`).update(
@@ -292,11 +297,11 @@ class AuthData {
       const user = this.getCurrentUser();
 
       if (!user) {
-        throw new Error('No authenticated user found.');
+        throw new Error('Pehle sign in karo.');
       }
 
       if (!profileData || Object.keys(profileData).length === 0) {
-        throw new Error('No profile data provided.');
+        throw new Error('Profile ki details nahi mili.');
       }
 
       await databaseRef(`users/${user.uid}/profile`).update(profileData);
@@ -306,13 +311,10 @@ class AuthData {
         profileData.name !== undefined ||
         profileData.tamilName !== undefined
       ) {
-        await databaseRef(`rooms/${user.uid}`).transaction(room => {
-          if (!room?.female || room.female.uid !== user.uid) {
-            return;
-          }
-
-          const female = {
-            ...room.female,
+        const room = databaseRef(`rooms/${user.uid}`);
+        const owner = await room.child('female/uid').once('value');
+        if (owner.val() === user.uid) {
+          await room.child('female').update({
             ...(profileData.avatarId !== undefined
               ? { avatarId: profileData.avatarId }
               : {}),
@@ -322,14 +324,8 @@ class AuthData {
             ...(profileData.tamilName !== undefined
               ? { tamilName: profileData.tamilName }
               : {}),
-          };
-
-          return {
-            ...room,
-            female,
-            updatedAt: Date.now(),
-          };
-        });
+          });
+        }
       }
 
       // Keep Firebase Auth profile in sync
@@ -341,24 +337,24 @@ class AuthData {
 
       return {
         success: true,
-        message: 'Profile updated successfully.',
+        message: 'Profile update ho gayi.',
       };
     } catch (error: any) {
       console.error('updateProfile:', error);
 
-      let message = 'Something went wrong while updating the profile.';
+      let message = 'Profile update karte waqt dikkat aa gayi.';
 
       switch (error?.code) {
         case 'database/permission-denied':
-          message = 'You do not have permission to update this profile.';
+          message = 'Is profile ko badalne ka access nahi hai.';
           break;
 
         case 'database/network-error':
-          message = 'Network error. Please check your internet connection.';
+          message = 'Network mein dikkat hai. Internet check karo.';
           break;
 
         default:
-          if (error?.message) {
+          if (!error?.code && error?.message) {
             message = error.message;
           }
       }

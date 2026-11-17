@@ -69,8 +69,8 @@ const TransactionScreen = ({ navigation }: any) => {
       setTransactions(await fetchPaymentHistory());
     } catch (error) {
       Alert.alert(
-        'Unable to Load Transactions',
-        error instanceof Error ? error.message : 'Please try again.',
+        'Len-Den Load Nahi Hue',
+        error instanceof Error ? error.message : 'Dobara try karo.',
       );
     } finally {
       setLoading(false);
@@ -84,22 +84,14 @@ const TransactionScreen = ({ navigation }: any) => {
 
   const copyTxn = (id: string) => {
     Clipboard.setString(id);
-    Alert.alert('Copied', 'Transaction ID copied.');
+    Alert.alert('Copy Ho Gaya', 'Transaction ID copy ho gayi.');
   };
 
   const handleContactUs = async () => {
     const subject = encodeURIComponent('Speakly 121 Support');
 
-    const body = encodeURIComponent(`Hello Speakly 121 Support Team,
-  
-  Please describe your issue below:
-  
-  ----------------------------
-  
-  
-  ----------------------------
-  
-  Thank you.
+    const body =
+      encodeURIComponent(`Namaste Speakly 121 Support Team, Meri dikkat: ---------------------------- ---------------------------- Dhanyavaad.
   `);
 
     const url = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
@@ -110,13 +102,10 @@ const TransactionScreen = ({ navigation }: any) => {
       if (supported) {
         await Linking.openURL(url);
       } else {
-        Alert.alert(
-          'Email App Not Found',
-          'No email application is installed on this device.',
-        );
+        Alert.alert('Email App Nahi Mili', 'Is device par email app nahi hai.');
       }
     } catch {
-      Alert.alert('Error', 'Unable to open the email application.');
+      Alert.alert('Error', 'Email app nahi khuli.');
     }
   };
 
@@ -134,10 +123,10 @@ const TransactionScreen = ({ navigation }: any) => {
       await loadPayments(true);
     } catch (error) {
       Alert.alert(
-        'Verification Pending',
+        'Verification Baaki Hai',
         error instanceof Error
           ? error.message
-          : 'We will check this payment again automatically.',
+          : 'Hum is payment ko apne aap phir check karenge.',
       );
     }
   };
@@ -223,7 +212,7 @@ const TransactionScreen = ({ navigation }: any) => {
             <View style={styles.infoRow}>
               <Text style={styles.label}>
                 {item.status === 'success'
-                  ? 'Recharge Successful'
+                  ? 'Recharge Ho Gaya'
                   : 'Expected Balance'}
               </Text>
 
@@ -249,7 +238,7 @@ const TransactionScreen = ({ navigation }: any) => {
 
         {item.status === 'failed' && (
           <Text style={styles.failedText}>
-            {item.failureReason || 'Payment was unsuccessful.'}
+            {item.failureReason || 'Payment nahi hui.'}
           </Text>
         )}
 
@@ -271,10 +260,10 @@ const TransactionScreen = ({ navigation }: any) => {
 
           <Text style={styles.bottomButtonText}>
             {item.status === 'success'
-              ? 'Copy Receipt ID'
+              ? 'Receipt ID Copy Karo'
               : item.status === 'failed'
-              ? 'Recharge Again'
-              : 'Refresh Status'}
+              ? 'Phir Recharge Karo'
+              : 'Status Refresh Karo'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -294,7 +283,7 @@ const TransactionScreen = ({ navigation }: any) => {
           />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Transactions</Text>
+        <Text style={styles.headerTitle}>Len-Den</Text>
 
         <TouchableOpacity onPress={handleContactUs}>
           <MaterialCommunityIcons
@@ -328,9 +317,9 @@ const TransactionScreen = ({ navigation }: any) => {
                   size={42}
                   color={Colors.secondary}
                 />
-                <Text style={styles.emptyTitle}>No transactions yet</Text>
+                <Text style={styles.emptyTitle}>Abhi Koi Len-Den Nahi</Text>
                 <Text style={styles.emptyText}>
-                  Your recharges will appear here.
+                  Aapke recharge yahan dikhenge.
                 </Text>
               </>
             )}

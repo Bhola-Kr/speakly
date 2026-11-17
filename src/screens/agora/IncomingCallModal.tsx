@@ -117,7 +117,9 @@ const IncomingCallModal = ({
 
           <Text style={styles.title}>{copy.call.incoming}</Text>
 
-          <Text style={styles.subtitle}>Someone wants to connect with you</Text>
+          <Text style={styles.subtitle}>
+            Koi aapse connect karna chahta hai
+          </Text>
 
           <Animated.View
             style={[
@@ -164,8 +166,8 @@ const IncomingCallModal = ({
             />
 
             <Text style={styles.noticeText}>
-              Stay safe. Never share personal or financial information during
-              calls.
+              Safe raho. Call par personal ya financial jaankari kabhi share mat
+              karo.
             </Text>
           </View>
 

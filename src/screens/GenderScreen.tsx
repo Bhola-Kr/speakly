@@ -60,8 +60,8 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       if (!hasValidUsername(nickname)) {
         Alert.alert(
-          'Enter a nickname',
-          `Use at least ${MIN_USERNAME_LENGTH} letters for your nickname.`,
+          'Apna naam likho',
+          `Kam Se Kam ${MIN_USERNAME_LENGTH} letters ka naam likho.`,
         );
         return;
       }
@@ -105,7 +105,7 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         ],
       });
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Unable to save your choice.');
+      Alert.alert('Error', e?.message || 'Aapki pasand save nahi hui.');
     } finally {
       setLoading(false);
     }
@@ -166,10 +166,10 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={styles.header}>
           <Text style={styles.step}>STEP 3 OF 3</Text>
 
-          <Text style={styles.title}>Create your profile</Text>
+          <Text style={styles.title}>Apni Profile Banao</Text>
 
           <Text style={styles.smallTitle}>
-            Choose your gender, nickname and avatar.
+            Apna gender, naam aur avatar chuno.
           </Text>
         </View>
 
@@ -183,14 +183,14 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         <TextInput
           value={nickname}
           onChangeText={setNickname}
-          placeholder="What should we call you?"
+          placeholder="Aapko Kis Naam Se Bulayein?"
           placeholderTextColor={Colors.placeholder}
           autoCapitalize="words"
           maxLength={20}
           style={styles.input}
         />
 
-        <Text style={styles.label}>Choose an avatar</Text>
+        <Text style={styles.label}>Avatar Chuno</Text>
         <FlatList
           horizontal
           data={avatars}
@@ -223,13 +223,13 @@ const GenderScreen: React.FC<Props> = ({ navigation, route }) => {
         />
 
         <Text style={styles.note}>
-          Speakly 121 is for social voice conversations—not dating, therapy, or
-          professional advice.
+          Speakly 121 social voice baatcheet ke liye hai. Yeh dating, therapy ya
+          professional salah ki service nahi hai.
         </Text>
 
         <GradientButton
           style={styles.actionButton}
-          title={loading ? 'Creating profile...' : 'Start Speaking'}
+          title={loading ? 'Profile ban rahi hai…' : 'Start Communication'}
           disabled={loading || !hasValidUsername(nickname)}
           onPress={completeProfile}
         />

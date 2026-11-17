@@ -1,0 +1,172 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "speakly": {
+      "configs": {
+        ".read": true,
+        ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true"
+      },
+      "users": {
+        ".read": "auth != null || (query.orderByChild === 'isExpert' && query.equalTo === true)",
+        ".indexOn": ["isExpert", "createdAt", "phone", "profile/name"],
+        "$uid": {
+          ".write": "auth != null && (root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || (auth.uid === $uid && newData.exists()))",
+          "isAdmin": {
+            ".validate": "root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || newData.val() === data.val() || (!data.exists() && newData.val() === false)"
+          },
+          "isExpert": {
+            ".validate": "root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || newData.val() === data.val() || (!data.exists() && newData.val() === false)"
+          },
+          "fcmTokens": {
+            ".validate": "newData.val() === data.val()"
+          },
+          "wallet": {
+            ".validate": "root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || newData.val() === data.val() || (!data.exists() && newData.child('balance').val() === 0)"
+          },
+          "expertEarnings": {
+            ".validate": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || newData.val() === data.val()"
+          },
+          "verification": {
+            "voiceVerified": {
+              ".validate": "root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || newData.val() === data.val() || (!data.exists() && newData.val() === false)"
+            }
+          },
+          "profile": {
+            "price": {
+              ".validate": "root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || newData.val() === data.val() || (!data.exists() && newData.val() === 5)"
+            }
+          },
+          ".validate": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || ((!data.child('wallet').exists() || newData.child('wallet').exists()) && (!data.child('expertEarnings').exists() || newData.child('expertEarnings').exists()) && (!data.child('isAdmin').exists() || newData.child('isAdmin').val() === data.child('isAdmin').val()) && (!data.child('isExpert').exists() || newData.child('isExpert').val() === data.child('isExpert').val()) && (!data.child('verification/voiceVerified').exists() || newData.child('verification/voiceVerified').val() === data.child('verification/voiceVerified').val())) && (auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || ((!data.child('profile/price').exists() || newData.child('profile/price').val() === data.child('profile/price').val()) && (!data.child('offers/signupOffer/claimedAt').exists() || newData.child('offers/signupOffer/claimedAt').val() === data.child('offers/signupOffer/claimedAt').val()) && (!data.child('fcmTokens').exists() || newData.child('fcmTokens/token').val() === data.child('fcmTokens/token').val())))"
+        }
+      },
+      "rooms": {
+        ".read": "auth != null",
+        ".indexOn": ["status", "currentCallId", "male/uid"],
+        "$host": {
+          ".write": "auth != null && ((auth.uid === $host && root.child('speakly/users').child($host).child('isExpert').val() === true && ((!data.exists() && newData.child('status').val() === 'waiting') || ((data.child('status').val() === 'waiting' || data.child('status').val() === 'offline' || data.child('status').val() === 'ended' || data.child('status').val() === 'rejected' || data.child('status').val() === 'men_rejected') && (newData.child('status').val() === 'waiting' || newData.child('status').val() === 'offline')) || ((data.child('status').val() === 'calling' || data.child('status').val() === 'ringing') && (newData.child('status').val() === 'accepted' || newData.child('status').val() === 'rejected')))) || (data.child('male/uid').val() === auth.uid && ((data.child('status').val() === 'calling' || data.child('status').val() === 'ringing') && (newData.child('status').val() === 'ringing' || newData.child('status').val() === 'men_rejected') || ((data.child('status').val() === 'ended' || data.child('status').val() === 'men_rejected' || data.child('status').val() === 'rejected') && newData.child('status').val() === 'waiting'))))",
+          ".validate": "newData.child('female/uid').val() === $host && (newData.child('status').val() === 'waiting' || newData.child('status').val() === 'offline' || newData.child('callRatePerMinute').val() === data.child('callRatePerMinute').val()) && ((newData.child('status').val() === 'waiting' || newData.child('status').val() === 'offline') || (newData.child('currentCallId').val() === data.child('currentCallId').val() && newData.child('male/uid').val() === data.child('male/uid').val() && newData.child('callRequestedAt').val() === data.child('callRequestedAt').val()))",
+          "chargedAmount": {
+            ".validate": "newData.val() === data.val() || ((newData.parent().child('status').val() === 'calling' || newData.parent().child('status').val() === 'waiting') && newData.val() === 0)"
+          },
+          "callStartedAt": {
+            ".validate": "newData.val() === data.val()"
+          },
+          "billableMs": {
+            ".validate": "newData.val() === data.val() || (newData.val() === 0 && newData.parent().child('status').val() === 'calling')"
+          },
+          "billingReports": {
+            ".validate": "newData.val() === data.val()"
+          },
+          "billingSince": {
+            ".validate": "newData.val() === data.val()"
+          },
+          "billingConfirmedAt": {
+            ".validate": "newData.val() === data.val() || (newData.val() === 0 && newData.parent().child('status').val() === 'calling')"
+          },
+          "agora": {
+            "male": {
+              "token": {
+                ".validate": "newData.val() === ''"
+              }
+            },
+            "female": {
+              "token": {
+                ".validate": "newData.val() === ''"
+              }
+            },
+            ".validate": "newData.child('male/uid').val() === 1 && newData.child('female/uid').val() === 2 && (newData.parent().child('status').val() === 'waiting' || newData.parent().child('status').val() === 'offline' || newData.child('channelName').val() === data.child('channelName').val())"
+          },
+          "female": {
+            "name": {
+              ".write": "auth != null && auth.uid === $host && root.child('speakly/users').child($host).child('isExpert').val() === true"
+            },
+            "tamilName": {
+              ".write": "auth != null && auth.uid === $host && root.child('speakly/users').child($host).child('isExpert').val() === true"
+            },
+            "avatarId": {
+              ".write": "auth != null && auth.uid === $host && root.child('speakly/users').child($host).child('isExpert').val() === true"
+            }
+          }
+        }
+      },
+      "callHistory": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true)",
+          ".indexOn": ["startedAt"],
+          "$call": {
+            "archivedAt": {
+              ".write": "auth != null && auth.uid === $uid && newData.isNumber() && data.parent().child('callId').exists()"
+            }
+          }
+        }
+      },
+      "pushTokenOwners": {
+        ".indexOn": ["uid"]
+      },
+      "callPresence": {
+        "$call": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.val() === true"
+          }
+        }
+      },
+      "expertCompensation": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true)"
+        }
+      },
+      "$other": {
+        ".read": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true",
+        ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true"
+      },
+      "blocks": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      },
+      "reports": {
+        "$id": {
+          ".read": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true",
+          ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || (auth != null && !data.exists() && newData.child('reporterUid').val() === auth.uid && newData.child('status').val() === 'pending')"
+        }
+      },
+      "expertApplications": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || (auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true))",
+          ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || (auth != null && auth.uid === $uid && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending')"
+        }
+      },
+      "expertActivity": {
+        ".read": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true",
+        "$uid": {
+          ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || (auth != null && auth.uid === $uid && root.child('speakly/users').child($uid).child('isExpert').val() === true)",
+          ".indexOn": ["createdAt"]
+        }
+      },
+      "expertActivityLatest": {
+        ".read": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true",
+        "$uid": {
+          ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true || (auth != null && auth.uid === $uid && root.child('speakly/users').child($uid).child('isExpert').val() === true)"
+        }
+      },
+      "withdrawalRequests": {
+        ".read": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true",
+        "$id": {
+          ".write": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true"
+        },
+        ".indexOn": ["requestedAt"]
+      },
+      "userFirstInstall": {
+        ".read": "auth != null && root.child('speakly/users').child(auth.uid).child('isAdmin').val() === true",
+        "$device": {
+          ".read": true,
+          ".write": "!data.exists() && newData.child('deviceId').val() === $device && newData.child('date').isNumber() && newData.child('date').val() <= now && newData.child('date').val() >= now - 60000"
+        }
+      }
+    }
+  }
+}

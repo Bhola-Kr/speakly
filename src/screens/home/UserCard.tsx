@@ -65,7 +65,7 @@ const UserCard = ({ item, onCall, calling = false }: Props) => {
   const primaryLanguage =
     supportedLanguages[0] ||
     String(item?.profile?.practiceLanguage || '').trim() ||
-    'Not listed';
+    'Jaankari Nahi Hai';
   const displayName = tamilName || englishName || 'N/A';
   const subtitle = copy.host.roleName;
   const avatar =

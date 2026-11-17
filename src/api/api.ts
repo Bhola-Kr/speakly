@@ -1,4 +1,5 @@
 import auth from '@react-native-firebase/auth';
+import DeviceInfo from 'react-native-device-info';
 
 export const API_BASE_URL =
   'https://us-central1-recent-chat-7fd34.cloudfunctions.net/api';
@@ -17,6 +18,8 @@ class Api {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'X-Speakly-Call-Protocol': '2',
+          'X-Speakly-App-Version': DeviceInfo.getVersion(),
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
         body: body ? JSON.stringify(body) : undefined,
@@ -27,18 +30,22 @@ class Api {
       try {
         json = responseText ? JSON.parse(responseText) : {};
       } catch {
-        throw new Error('The server returned an invalid response.');
+        throw new Error('Server se sahi jawaab nahi mila.');
       }
       if (!response.ok || json.success === false) {
         throw new Error(
-          json.message || json.error || `Request failed (${response.status})`,
+          json.message ||
+            json.error ||
+            `Request poori nahi hui (${response.status})`,
         );
       }
       return json as T;
     } catch (error: any) {
       if (error?.name === 'AbortError') {
-        throw new Error('The request timed out. Please check your connection.');
+        throw new Error('Request mein der ho gayi. Internet check karo.');
       }
+      if (error?.name === 'TypeError')
+        throw new Error('Internet check karo aur dobara try karo.');
       throw error;
     } finally {
       clearTimeout(timeout);
@@ -99,7 +106,9 @@ class Api {
   // ============================================
 
   generateAgoraToken(channelName?: string) {
-    return this.post<AgoraTokenResponse>('/generateAgoraToken', { channelName });
+    return this.post<AgoraTokenResponse>('/generateAgoraToken', {
+      channelName,
+    });
   }
 
   // ============================================

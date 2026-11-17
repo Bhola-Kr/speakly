@@ -1,4 +1,4 @@
-import auth from '@react-native-firebase/auth';
+import Api from '../api/api';
 import { databaseRef } from './firebase';
 
 export type SignupOfferConfig = {
@@ -17,9 +17,7 @@ export const DEFAULT_SIGNUP_OFFER_CONFIG: SignupOfferConfig = {
   freeMinutes: DEFAULT_FIRST_CALL_FREE_MINUTES,
 };
 
-const isConfigRecord = (
-  value: unknown,
-): value is Record<string, unknown> =>
+const isConfigRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const parseConfig = (value: unknown): SignupOfferConfig => {
@@ -70,60 +68,8 @@ export const listenSignupOffer = (
 };
 
 export const claimSignupOffer = async (): Promise<number> => {
-  const uid = auth().currentUser?.uid;
-  if (!uid) throw new Error('Please sign in again to claim this offer.');
-
-  // Always read the latest config at claim time. A disabled or malformed offer
-  // is never credited even if an older modal was already visible.
-  const config = await getSignupOfferConfig();
-  if (!config.active || config.amount <= 0) {
-    throw new Error('This offer is no longer available.');
-  }
-
-  const userRef = databaseRef(`users/${uid}`);
-  const initialSnapshot = await userRef.once('value');
-  if (!initialSnapshot.exists()) throw new Error('User account was not found.');
-  const initialUser = initialSnapshot.val();
-  let invocation = 0;
-
-  const result = await userRef.transaction(userValue => {
-    const firstInvocation = invocation === 0;
-    invocation += 1;
-    if (!userValue) {
-      if (!firstInvocation) return;
-      userValue = { ...initialUser };
-    }
-    if (userValue?.isExpert === true) return;
-    if (userValue?.offers?.signupOffer?.claimedAt) return;
-
-    const currentBalance = Number(userValue?.wallet?.balance);
-    const safeBalance = Number.isFinite(currentBalance)
-      ? Math.max(0, currentBalance)
-      : 0;
-
-    return {
-      ...userValue,
-      wallet: {
-        ...(userValue.wallet || {}),
-        balance: safeBalance + config.amount,
-      },
-      offers: {
-        ...(userValue.offers || {}),
-        signupOffer: {
-          claimedAt: Date.now(),
-          amount: config.amount,
-        },
-      },
-    };
-  });
-
-  if (!result.committed) {
-    const value = result.snapshot.val();
-    if (value?.offers?.signupOffer?.claimedAt) {
-      throw new Error('This signup offer has already been claimed.');
-    }
-    throw new Error('This offer is available only to regular users.');
-  }
-
-  return config.amount;
+  const response = await Api.post<{ success: boolean; amount: number }>(
+    '/claimSignupOffer',
+  );
+  return response.amount;
 };

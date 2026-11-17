@@ -2,6 +2,8 @@ import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { creditExpertEarningsForCall } from './expertCompensation.js';
+import { applyCallEvent } from './callBilling';
+import { runDataTransaction } from './databaseTransaction';
 
 const DATA_ROOT = 'speakly';
 const STALE_CALL_GRACE_MS = 75 * 1000;
@@ -27,7 +29,9 @@ export const cleanupStaleCalls = onSchedule(
     const roomsToProcess = Object.entries(roomsSnapshot.val() || {}).filter(
       ([, room]: [string, any]) =>
         room?.status === 'active' ||
-        (room?.status === 'ended' && room?.callSettled === false),
+        ['calling', 'ringing', 'accepted'].includes(room?.status) ||
+        (room?.status === 'ended' &&
+          (room?.callSettled === false || room?.billingReports)),
     );
 
     for (const [expertUid, value] of roomsToProcess) {
@@ -37,6 +41,68 @@ export const cleanupStaleCalls = onSchedule(
       if (!callId || !callerUid) continue;
 
       let endedRoom: any = room;
+      if (
+        !room.billingReports &&
+        ['calling', 'ringing', 'accepted'].includes(room.status)
+      ) {
+        if (
+          now - Number(room.updatedAt || room.callRequestedAt || now) <=
+          STALE_CALL_GRACE_MS
+        )
+          continue;
+        await applyCallEvent(expertUid, callId, callerUid, 'end');
+        await runDataTransaction(
+          admin.database().ref(`${DATA_ROOT}/rooms/${expertUid}`),
+          current => {
+            if (
+              !current ||
+              current.currentCallId !== callId ||
+              current.status !== 'ended'
+            )
+              return;
+            return {
+              ...current,
+              status: 'waiting',
+              currentCallId: '',
+              male: null,
+              callStartedAt: null,
+              chargedAmount: null,
+            };
+          },
+        );
+        continue;
+      }
+      if (room.billingReports) {
+        const reports = Object.values(room.billingReports) as any[];
+        const stale = reports.some(
+          report => now - Number(report.seenAt || 0) > STALE_CALL_GRACE_MS,
+        );
+        if (!stale && room.status !== 'ended') continue;
+        await applyCallEvent(expertUid, callId, callerUid, 'end');
+        await runDataTransaction(
+          admin.database().ref(`${DATA_ROOT}/rooms/${expertUid}`),
+          current => {
+            if (
+              !current ||
+              current.currentCallId !== callId ||
+              current.status !== 'ended'
+            )
+              return;
+            return {
+              ...current,
+              status: 'waiting',
+              currentCallId: '',
+              male: null,
+              callStartedAt: null,
+              chargedAmount: null,
+              billingReports: null,
+              billingSince: null,
+              billableMs: null,
+            };
+          },
+        );
+        continue;
+      }
       let endedAt = Number(room.updatedAt || now);
       const roomRef = admin.database().ref(`${DATA_ROOT}/rooms/${expertUid}`);
       if (room.status === 'active') {
@@ -60,21 +126,24 @@ export const cleanupStaleCalls = onSchedule(
         }
 
         endedAt = Date.now();
-        const endedTransaction = await roomRef.transaction((current: any) => {
-          if (
-            !current ||
-            current.status !== 'active' ||
-            current.currentCallId !== callId
-          ) {
-            return;
-          }
-          return {
-            ...current,
-            status: 'ended',
-            callSettled: false,
-            updatedAt: endedAt,
-          };
-        });
+        const endedTransaction = await runDataTransaction(
+          roomRef,
+          (current: any) => {
+            if (
+              !current ||
+              current.status !== 'active' ||
+              current.currentCallId !== callId
+            ) {
+              return;
+            }
+            return {
+              ...current,
+              status: 'ended',
+              callSettled: false,
+              updatedAt: endedAt,
+            };
+          },
+        );
         if (!endedTransaction.committed) continue;
         endedRoom = endedTransaction.snapshot.val();
       }
@@ -84,7 +153,9 @@ export const cleanupStaleCalls = onSchedule(
       const amount = Number.isFinite(recordedAmount)
         ? Math.floor(Math.max(0, recordedAmount) / rate) * rate
         : 0;
-      const duration = (amount / rate) * 60 * 1000;
+      const duration = endedRoom.callStartedAt
+        ? Math.max(0, endedAt - Number(endedRoom.callStartedAt))
+        : 0;
       const history = {
         callId,
         startedAt: Number(
@@ -108,7 +179,7 @@ export const cleanupStaleCalls = onSchedule(
             [`${DATA_ROOT}/callHistory/${expertUid}/${callId}`]: history,
           });
         await creditExpertEarningsForCall(callId, history);
-        await roomRef.transaction((current: any) => {
+        await runDataTransaction(roomRef, (current: any) => {
           if (
             !current ||
             current.status !== 'ended' ||

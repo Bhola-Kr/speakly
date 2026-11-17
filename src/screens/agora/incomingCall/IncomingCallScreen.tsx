@@ -87,11 +87,11 @@ export default function IncomingCallScreen() {
   });
 
   const onAccept = () => {
-    console.log('Accept Call');
+    console.log('Call Uthao');
   };
 
   const onDecline = () => {
-    console.log('Decline Call');
+    console.log('Call Reject Karo');
   };
 
   return (
@@ -102,7 +102,7 @@ export default function IncomingCallScreen() {
 
         <Text style={styles.title}>{copy.call.incoming}</Text>
 
-        <Text style={styles.subTitle}>Someone wants to talk with you</Text>
+        <Text style={styles.subTitle}>Koi aapse baat karna chahta hai</Text>
       </View>
 
       <View style={styles.body}>
@@ -179,7 +179,9 @@ export default function IncomingCallScreen() {
         </View>
 
         <View style={styles.swipeCard}>
-          <Text style={styles.swipeText}>Tap the green button to answer</Text>
+          <Text style={styles.swipeText}>
+            Call uthane ke liye green button dabao
+          </Text>
         </View>
       </View>
     </SafeAreaView>

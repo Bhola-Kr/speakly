@@ -169,7 +169,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'About Speakly 121',
+          title: 'Speakly 121 Ke Baare Mein',
         }}
         name="About"
         component={AboutScreen}
@@ -194,7 +194,7 @@ function RootStack() {
       <Stack.Screen
         options={{
           headerShown: false,
-          title: 'Recents',
+          title: 'Pichhli Calls',
           headerStyle: { backgroundColor: Colors.background },
         }}
         name="ManHistory"
@@ -248,21 +248,20 @@ function AppNavigator() {
   }, [user?.uid, deletionRequest?.requestedAt]);
 
   const contactDeletionAdmin = React.useCallback(() => {
-    const subject = encodeURIComponent('Account Deletion Support');
-    const body = encodeURIComponent(`Hello Speakly 121 Support Team,
-
-I need help with my pending account deletion request.
-
-User ID: ${user?.uid || 'N/A'}
+    const subject = encodeURIComponent('Account Delete Karne Mein Madad');
+    const body =
+      encodeURIComponent(`Namaste Speakly 121 Support Team, Meri pending account deletion request mein madad chahiye. User ID: ${
+        user?.uid || 'N/A'
+      }
 Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
 
-Thank you.`);
+ Dhanyavaad.`);
     Linking.openURL(
       `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`,
     ).catch(() => {
       Alert.alert(
-        'Contact Admin',
-        `Please email ${SUPPORT_EMAIL} for assistance.`,
+        'Admin Se Baat Karo',
+        `Email karo: ${SUPPORT_EMAIL} par madad ke liye.`,
       );
     });
   }, [user?.phone, user?.profile?.phone, user?.uid]);
@@ -326,7 +325,11 @@ Thank you.`);
     const unsubscribe = RoomService.listenCallStatus(femaleUid, async room => {
       const pendingAction = await consumePendingAcceptedCall();
       if (!subscribed) return;
-      if (room?.status === 'ringing' && room.male && !activeCall) {
+      if (
+        ['calling', 'ringing'].includes(room?.status) &&
+        room.male &&
+        !activeCall
+      ) {
         setIncomingRoom(
           pendingAction?.callId === room.currentCallId ? null : room,
         );
@@ -358,7 +361,7 @@ Thank you.`);
         }
       } else {
         setIncomingRoom(null);
-        if (room?.status !== 'ringing') {
+        if (!['calling', 'ringing'].includes(room?.status)) {
           const resolvedCallId = incomingNotificationRef.current;
           incomingNotificationRef.current = '';
           if (resolvedCallId) {
@@ -381,7 +384,7 @@ Thank you.`);
   const acceptIncomingCall = React.useCallback(async () => {
     if (!incomingRoom || !femaleUid) return;
     try {
-      await RoomService.acceptCall(femaleUid);
+      await RoomService.acceptCall(femaleUid, incomingRoom.currentCallId);
       const room = incomingRoom;
       await cancelIncomingCallNotification(room.currentCallId);
       setIncomingRoom(null);
@@ -400,7 +403,7 @@ Thank you.`);
         });
       }
     } catch {
-      Alert.alert('Unable to Join Call', 'Please try again.');
+      Alert.alert('Call Join Nahi Hui', 'Dobara try karo.');
     }
   }, [femaleUid, incomingRoom]);
 
@@ -411,9 +414,9 @@ Thank you.`);
         await cancelIncomingCallNotification(incomingRoom.currentCallId);
       }
       setIncomingRoom(null);
-      await RoomService.rejectCall(femaleUid);
+      await RoomService.rejectCall(femaleUid, incomingRoom?.currentCallId);
     } catch {
-      Alert.alert('Unable to Decline Call', 'Please try again.');
+      Alert.alert('Call Reject Nahi Hui', 'Dobara try karo.');
     }
   }, [femaleUid, incomingRoom?.currentCallId]);
 
@@ -429,19 +432,19 @@ Thank you.`);
       let room = snapshot.val() as Room | null;
       if (
         !room ||
-        !['ringing', 'accepted'].includes(room.status) ||
+        !['calling', 'ringing', 'accepted'].includes(room.status) ||
         room.currentCallId !== pending.callId
       ) {
         await clearPendingAcceptedCall(pending.callId);
         return;
       }
-      if (room.status === 'ringing') {
+      if (['calling', 'ringing'].includes(room.status)) {
         if (pending.action === 'reject-call') {
           await databaseRef(`rooms/${femaleUid}`).transaction(current => {
             if (
               !current ||
               current.currentCallId !== pending.callId ||
-              current.status !== 'ringing'
+              !['calling', 'ringing'].includes(current.status)
             )
               return;
             return { ...current, status: 'rejected', updatedAt: Date.now() };
@@ -459,7 +462,7 @@ Thank you.`);
             if (!value) return;
             if (
               value.currentCallId !== pending.callId ||
-              !['ringing', 'accepted'].includes(value.status)
+              !['calling', 'ringing', 'accepted'].includes(value.status)
             )
               return;
             return { ...value, status: 'accepted', updatedAt: Date.now() };
@@ -468,11 +471,6 @@ Thank you.`);
         if (!result.committed) return;
         room = result.snapshot.val() as Room;
       }
-      databaseRef(`users/${femaleUid}/profile/status`)
-        .set('busy')
-        .catch(error =>
-          console.warn('Unable to update accepted-call presence:', error),
-        );
       const latest = await databaseRef(`rooms/${femaleUid}`).once('value');
       room = latest.val() as Room | null;
       if (
@@ -552,7 +550,7 @@ Thank you.`);
               style={callStyles.returnButton}
             >
               <Text style={callStyles.returnText}>
-                Call in progress · Tap to return
+                Call chal rahi hai · Wapas jaane ke liye tap karo
               </Text>
             </TouchableOpacity>
           </SafeAreaView>
@@ -585,13 +583,13 @@ Thank you.`);
           <View style={callStyles.deletionOverlay}>
             <View style={callStyles.deletionCard}>
               <Text style={callStyles.deletionTitle}>
-                Account Under Deletion
+                Account Delete Hone Ka Review Chal Raha Hai
               </Text>
               <Text style={callStyles.deletionText}>
-                Your deletion request has been received. Your account data is
-                still retained and will be reviewed for deletion within 15 days.
+                Deletion request mil gayi hai. Account ka data abhi safe rakha
+                hai aur 15 din ke andar deletion ke liye review hoga.
                 {deletionDate
-                  ? `\n\nScheduled by: ${new Date(
+                  ? `Scheduled Time: ${new Date(
                       deletionDate,
                     ).toLocaleDateString('en-IN')}`
                   : ''}
@@ -601,7 +599,7 @@ Thank you.`);
                 onPress={contactDeletionAdmin}
               >
                 <Text style={callStyles.deletionPrimaryText}>
-                  Contact Admin
+                  Admin Se Baat Karo
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -609,7 +607,7 @@ Thank you.`);
                 onPress={() => setDeletionNoticeDismissed(true)}
               >
                 <Text style={callStyles.deletionSecondaryText}>
-                  I Understand
+                  Samajh Gaya
                 </Text>
               </TouchableOpacity>
             </View>
@@ -621,6 +619,7 @@ Thank you.`);
             pointerEvents={visible ? 'auto' : 'none'}
           >
             <CallScreen
+              key={String(activeCall.params.callId || '')}
               route={activeCall}
               visible={visible}
               onMinimize={minimizeCall}

@@ -22,6 +22,7 @@ import notifee, {
 } from '@notifee/react-native';
 import { hasCompletedSignup } from '../utils/profileValidation';
 import { scopedDatabase as database } from '../firebase/firebase';
+import Api from '../api/api';
 
 const CHANNEL_ID = 'voicetamil_general';
 // Android notification-channel sound settings are immutable after creation.
@@ -34,6 +35,7 @@ const ACTION_TTL_MS = 60_000;
 const MISSED_CALL_DELAY_MS = 30_000;
 export const ACCEPTED_CALL_EVENT = 'SpeaklyAcceptedNotificationCall';
 let tokenQueue = Promise.resolve();
+let onlineNotificationQueue: Promise<void> = Promise.resolve();
 let signingOut = false;
 let permissionRequest: Promise<void> | undefined;
 
@@ -139,7 +141,7 @@ export async function displayIncomingCallNotification(
   const channelId = await notifee.createChannel({
     id: INCOMING_CALL_CHANNEL_ID,
     name: 'Incoming voice calls',
-    description: 'Rings when a learner starts a voice call with you',
+    description: 'Customer ki nayi call aane par alert bajta hai',
     importance: AndroidImportance.HIGH,
     vibration: true,
     vibrationPattern: [300, 500, 300, 500],
@@ -147,8 +149,8 @@ export async function displayIncomingCallNotification(
   });
   await notifee.displayNotification({
     id: notificationId,
-    title: 'Incoming Call',
-    body: `${callerName || 'Someone'} is calling you`,
+    title: 'Nayi Call Aa Rahi Hai',
+    body: `${callerName || 'Someone'} aapko call kar rahe hain`,
     data: { type: 'incoming_call', callId, femaleUid },
     android: {
       channelId,
@@ -194,8 +196,8 @@ export async function displayIncomingCallNotification(
   await notifee.createTriggerNotification(
     {
       id: notificationId,
-      title: 'Missed Voice Call',
-      body: `You missed a call from ${callerName || 'Someone'}`,
+      title: 'Missed Call',
+      body: `Inki call miss ho gayi: ${callerName || 'Someone'}`,
       data: { type: 'missed_call', callId, femaleUid },
       android: {
         channelId,
@@ -228,6 +230,50 @@ export const cancelIncomingCallNotification = async (callId: string) => {
 
 export async function handleNotificationEvent(event: Event) {
   const notification = event.detail.notification;
+  if (
+    event.type === EventType.PRESS &&
+    notification?.data?.type === 'expert_online'
+  ) {
+    onlineNotificationQueue = onlineNotificationQueue
+      .catch(() => {})
+      .then(async () => {
+        const eventId = String(
+          notification.data?.eventId || notification.id || '',
+        );
+        const hostUid = String(notification.data?.hostUid || '');
+        const sentAt = Number(notification.data?.sentAt);
+        const now = Date.now();
+        if (
+          !eventId ||
+          !hostUid ||
+          !Number.isFinite(sentAt) ||
+          sentAt <= 0 ||
+          now - sentAt > 300000 ||
+          sentAt - now > 30000
+        )
+          return;
+        let handled: Array<{ id: string; at: number }> = [];
+        try {
+          const stored = JSON.parse(
+            (await AsyncStorage.getItem('handledOnlineHostEvents')) || '[]',
+          );
+          if (Array.isArray(stored)) handled = stored;
+        } catch {}
+        handled = handled.filter(item => now - item.at <= 300000);
+        if (handled.some(item => item.id === eventId)) return;
+        await AsyncStorage.setItem(
+          'pendingOnlineHost',
+          JSON.stringify({ hostUid, createdAt: sentAt }),
+        );
+        await AsyncStorage.setItem(
+          'handledOnlineHostEvents',
+          JSON.stringify([...handled, { id: eventId, at: now }].slice(-50)),
+        );
+        DeviceEventEmitter.emit('SpeaklyOnlineHostTapped');
+      });
+    await onlineNotificationQueue;
+    return;
+  }
   if (event.type !== EventType.ACTION_PRESS) return;
   const action = event.detail.pressAction?.id;
   if (action !== 'accept-call' && action !== 'reject-call') return;
@@ -254,7 +300,11 @@ export async function handleNotificationEvent(event: Event) {
 
   const roomRef = database().ref(`rooms/${femaleUid}`);
   const transaction = await roomRef.transaction(room => {
-    if (!room || room.status !== 'ringing' || room.currentCallId !== callId) {
+    if (
+      !room ||
+      !['calling', 'ringing'].includes(room.status) ||
+      room.currentCallId !== callId
+    ) {
       return;
     }
     return {
@@ -266,7 +316,6 @@ export async function handleNotificationEvent(event: Event) {
 
   if (transaction.committed) {
     {
-      await database().ref(`users/${femaleUid}/profile/status`).set('online');
       await new Promise<void>(resolve => setTimeout(resolve, 1000));
       await roomRef.transaction(room => {
         if (
@@ -343,27 +392,17 @@ function syncToken(token?: string) {
       // single-flight so that event cannot recursively start another prompt.
       await ensureNotificationPermissionRequested();
       const settings = await notifee.getNotificationSettings();
-      const ref = database().ref(`users/${uid}/fcmTokens`);
       if (settings.authorizationStatus < AuthorizationStatus.AUTHORIZED) {
-        await ref.remove();
+        const oldToken = token ?? (await messaging().getToken());
+        await Api.post('/registerPushToken', { token: oldToken, remove: true });
         return;
       }
       const currentToken = token ?? (await messaging().getToken());
       if (signingOut || auth().currentUser?.uid !== uid) return;
 
-      const savedToken = await ref.once('value');
-      const savedValue = savedToken.val();
-      if (
-        savedValue?.token === currentToken &&
-        savedValue?.platform === Platform.OS
-      ) {
-        return;
-      }
-
-      await ref.set({
+      await Api.post('/registerPushToken', {
         token: currentToken,
         platform: Platform.OS,
-        updatedAt: Date.now(),
       });
     })
     .catch(error =>
@@ -378,25 +417,51 @@ export async function unregisterPushNotifications() {
     await tokenQueue;
     const uid = auth().currentUser?.uid;
     if (uid) {
-      await database().ref(`users/${uid}/fcmTokens`).remove();
+      try {
+        const token = await messaging().getToken();
+        await Api.post('/registerPushToken', { token, remove: true });
+      } catch (error) {
+        console.warn('Notification registration remove nahi hui:', error);
+      }
     }
-    await messaging().deleteToken();
+    await messaging()
+      .deleteToken()
+      .catch(error =>
+        console.warn('Device notification token remove nahi hua:', error),
+      );
   } finally {
     signingOut = false;
   }
 }
 
 export function startPushNotifications() {
+  const openGeneral = async (
+    message: FirebaseMessagingTypes.RemoteMessage | null,
+  ) => {
+    if (message?.data?.type !== 'expert_online') return;
+    await handleNotificationEvent({
+      type: EventType.PRESS,
+      detail: { notification: { data: message.data } },
+    });
+  };
+  const unsubscribeOpened = messaging().onNotificationOpenedApp(message => {
+    openGeneral(message).catch(console.warn);
+  });
+  messaging().getInitialNotification().then(openGeneral).catch(console.warn);
   if (Platform.OS === 'android') {
     notifee
       .getInitialNotification()
       .then(initial => {
         if (
           initial &&
-          ['accept-call', 'reject-call'].includes(initial.pressAction.id)
+          (['accept-call', 'reject-call'].includes(initial.pressAction.id) ||
+            initial.notification.data?.type === 'expert_online')
         ) {
           return handleNotificationEvent({
-            type: EventType.ACTION_PRESS,
+            type:
+              initial.notification.data?.type === 'expert_online'
+                ? EventType.PRESS
+                : EventType.ACTION_PRESS,
             detail: {
               notification: initial.notification,
               pressAction: initial.pressAction,
@@ -466,6 +531,7 @@ export function startPushNotifications() {
   return () => {
     active = false;
     unsubscribeMessage();
+    unsubscribeOpened();
     unsubscribeNotificationEvents();
     unsubscribeToken();
     unsubscribeAuth();

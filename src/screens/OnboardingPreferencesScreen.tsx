@@ -63,18 +63,18 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.step}>STEP 2 OF 3</Text>
-        <Text style={styles.title}>How would you like to join?</Text>
+        <Text style={styles.title}>Kaise Join Karna Chahoge?</Text>
         <Text style={styles.subtitle}>
-          Choose your conversation language and how you want to participate.
+          Baat karne ki bhasha aur apna role chuno.
         </Text>
 
-        <Text style={styles.heading}>I want to</Text>
+        <Text style={styles.heading}>Main Chahta Hoon</Text>
         <View style={styles.roleRow}>
           {[
             {
               value: 'learner' as const,
-              title: 'Join conversations',
-              detail: 'Discover Experts and start calls',
+              title: 'Baat Karne Ke Liye Join Karo',
+              detail: 'Experts chuno aur baat shuru karo',
               icon: 'account-voice',
               color: Colors.accent,
               softColor: Colors.accentLight,
@@ -83,7 +83,7 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
             {
               value: 'expert' as const,
               title: copy.host.onboarding,
-              detail: 'Go online and receive calls',
+              detail: 'Online aao aur calls lo',
               icon: 'account-voice',
               color: Colors.primary,
               softColor: Colors.primaryLight,
@@ -133,13 +133,13 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
 
         <Text style={styles.heading}>
           {role === 'expert'
-            ? 'Languages I can converse in'
-            : 'Preferred conversation language'}
+            ? 'Jin Bhashaon Mein Main Baat Kar Sakta Hoon'
+            : 'Baat Karne Ki Pasandida Bhasha'}
         </Text>
         {role === 'expert' ? (
           <Text style={styles.languageHelp}>
-            Select one or more. Your voice verification will use your first
-            selected language: {languages[0]}.
+            Ek ya zyada bhasha chuno. Voice verification pehli chuni hui bhasha
+            mein hogi: {languages[0]}.
           </Text>
         ) : null}
         <View style={styles.languageGrid}>
@@ -183,9 +183,9 @@ const OnboardingPreferencesScreen = ({ navigation, route }: any) => {
               color={Colors.secondary}
             />
             <Text style={styles.infoText}>
-              Experts submit one short recording for voice verification. Review
-              usually completes within 30 minutes. Host access is enabled after
-              approval.
+              Voice verification ke liye chhoti recording bhejo. Review aam taur
+              par 30 minutes mein hota hai. Approval ke baad expert access milta
+              hai.
             </Text>
           </View>
         )}

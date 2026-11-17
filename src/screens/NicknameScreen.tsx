@@ -45,8 +45,8 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
 
     if (!hasValidUsername(nickname)) {
       Alert.alert(
-        'Invalid Username',
-        `Use at least ${MIN_USERNAME_LENGTH} characters. Names can contain letters, spaces, apostrophes, periods, and hyphens, but not phone numbers.`,
+        'Naam Sahi Nahi Hai',
+        `Kam Se Kam ${MIN_USERNAME_LENGTH} characters likho. Naam mein letters, spaces, apostrophes, dots aur hyphens ho sakte hain, phone number nahi.`,
       );
       return;
     }
@@ -62,7 +62,7 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
     } catch (e: any) {
       console.log('Create User Error:', e);
 
-      Alert.alert('Error', e?.message || 'Unable to continue.');
+      Alert.alert('Error', e?.message || 'Aage nahi badh paaye.');
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
           {/* Title */}
 
           <View style={styles.titleContainer}>
-            <Text style={styles.smallTitle}>What is your</Text>
+            <Text style={styles.smallTitle}>Aapka</Text>
 
             <Text style={styles.title}>Nickname?</Text>
           </View>
@@ -114,7 +114,7 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
                   if (!nicknameTouched) setNicknameTouched(true);
                 }}
                 onBlur={() => setNicknameTouched(true)}
-                placeholder="Enter your Nickname"
+                placeholder="Apna Naam Likho"
                 placeholderTextColor={Colors.placeholder}
                 autoCapitalize="words"
                 returnKeyType="done"
@@ -126,13 +126,13 @@ const NicknameScreen: React.FC<Props> = ({ navigation, route }) => {
 
           {nicknameTouched && !hasValidUsername(nickname) && (
             <Text style={styles.validationText}>
-              Use at least {MIN_USERNAME_LENGTH} letters. Phone numbers and
-              numeric characters are not allowed.
+              Kam Se Kam {MIN_USERNAME_LENGTH} letters likho. Phone number aur
+              digits allowed nahi hain.
             </Text>
           )}
 
           <GradientButton
-            title={loading ? 'Please wait...' : 'Next'}
+            title={loading ? 'Thoda intezaar karo…' : 'Next'}
             disabled={!isValid || loading}
             onPress={saveUser}
           />

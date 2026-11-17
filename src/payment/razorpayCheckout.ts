@@ -52,11 +52,11 @@ export const openRazorpayCheckout = async (
     if (payment?.status === 'failed') {
       throw new Error(
         payment.failureReason ||
-          'Payment failed. No coins were added to your balance.',
+          'Payment nahi hui. Balance mein coins add nahi hue.',
       );
     }
     throw new Error(
-      'Payment was cancelled or could not be completed. If money was deducted, Razorpay will verify it and your coin balance will update automatically.',
+      'Payment cancel ho gayi ya poori nahi hui. Paise kate hain toh Razorpay verify karega aur coin balance apne aap update ho jayega.',
     );
   }
 };

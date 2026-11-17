@@ -1,3 +1,4 @@
+import Api from '../api/api';
 import auth from '@react-native-firebase/auth';
 import { scopedDatabase as database } from './firebase';
 
@@ -53,86 +54,11 @@ export type WithdrawalRequest = {
 };
 
 export const requestExpertWithdrawal = async () => {
-  const currentUser = auth().currentUser;
-  if (!currentUser) throw new Error('Please sign in again.');
-
-  const userSnapshot = await database()
-    .ref(`users/${currentUser.uid}`)
-    .once('value');
-  const user = userSnapshot.val() || {};
-  if (user.isExpert !== true) throw new Error('Host access is required.');
-
-  // Read the latest value for every request so a config change is enforced
-  // immediately, even if the dashboard was opened before it changed.
-  const minimumWithdrawalAmount = await getMinimumWithdrawalAmount();
-
-  const requestId = database().ref('withdrawalRequests').push().key;
-  if (!requestId) throw new Error('Unable to create withdrawal request.');
-  const now = Date.now();
-  let reservedAmount = 0;
-  const earningsRef = database().ref(
-    `users/${currentUser.uid}/expertEarnings`,
-  );
-  const reservation = await earningsRef.transaction(value => {
-    const earnings = value && typeof value === 'object' ? value : {};
-    if (earnings.pendingWithdrawal?.id) return;
-    const available = Number(earnings.available || 0);
-    if (
-      !Number.isFinite(available) ||
-      available < minimumWithdrawalAmount
-    ) {
-      return;
-    }
-    reservedAmount = available;
-    return {
-      ...earnings,
-      available: 0,
-      pendingWithdrawal: { id: requestId, amount: available, requestedAt: now },
-      updatedAt: now,
-    };
-  });
-  if (!reservation.committed || reservedAmount <= 0) {
-    const available = Number(reservation.snapshot.val()?.available || 0);
-    throw new Error(
-      reservation.snapshot.val()?.pendingWithdrawal?.id
-        ? 'A withdrawal request is already pending.'
-        : available > 0 &&
-            available < minimumWithdrawalAmount
-          ? `Minimum withdrawal amount is ₹${minimumWithdrawalAmount}.`
-          : 'No earnings are available for withdrawal.',
-    );
-  }
-
-  const request: WithdrawalRequest = {
-    id: requestId,
-    expertUid: currentUser.uid,
-    expertName: String(
-      user.profile?.name || user.profile?.tamilName || 'Host',
-    ),
-    phone: String(user.phone || user.profile?.phone || ''),
-    amount: reservedAmount,
-    status: 'pending',
-    requestedAt: now,
-    updatedAt: now,
-  };
-  try {
-    await database().ref().update({
-      [`withdrawalRequests/${requestId}`]: request,
-      [`users/${currentUser.uid}/withdrawalRequests/${requestId}`]: request,
-    });
-  } catch (error) {
-    await earningsRef.transaction(value => {
-      if (value?.pendingWithdrawal?.id !== requestId) return;
-      return {
-        ...value,
-        available: Number(value.available || 0) + reservedAmount,
-        pendingWithdrawal: null,
-        updatedAt: Date.now(),
-      };
-    });
-    throw error;
-  }
-  return request;
+  const response = await Api.post<{
+    success: boolean;
+    request: WithdrawalRequest;
+  }>('/requestExpertWithdrawal');
+  return response.request;
 };
 
 export const processWithdrawalRequest = async (
@@ -140,9 +66,12 @@ export const processWithdrawalRequest = async (
   decision: 'paid' | 'rejected',
 ) => {
   const adminUid = auth().currentUser?.uid;
-  if (!adminUid) throw new Error('Please sign in again.');
-  const adminSnapshot = await database().ref(`users/${adminUid}/isAdmin`).once('value');
-  if (adminSnapshot.val() !== true) throw new Error('Admin access is required.');
+  if (!adminUid) throw new Error('Dobara sign in karo.');
+  const adminSnapshot = await database()
+    .ref(`users/${adminUid}/isAdmin`)
+    .once('value');
+  if (adminSnapshot.val() !== true)
+    throw new Error('Admin access zaroori hai.');
   const requestRef = database().ref(`withdrawalRequests/${request.id}`);
   const now = Date.now();
   const claimed = await requestRef.transaction(current => {
@@ -155,7 +84,8 @@ export const processWithdrawalRequest = async (
       updatedAt: now,
     };
   });
-  if (!claimed.committed) throw new Error('This request is already processed.');
+  if (!claimed.committed)
+    throw new Error('Yeh request pehle hi process ho chuki hai.');
 
   const earningsRef = database().ref(
     `users/${request.expertUid}/expertEarnings`,

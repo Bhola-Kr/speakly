@@ -59,13 +59,13 @@ const BirthYearScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       setLoading(true);
       if (!birthYear) {
-        throw new Error('Birth year is required.');
+        throw new Error('Janam ka saal likho.');
       }
 
       const currentYear = new Date().getFullYear();
 
       if (birthYear < 1900 || birthYear > currentYear) {
-        throw new Error('Please select a valid birth year.');
+        throw new Error('Sahi janam ka saal chuno.');
       }
 
       await authData.updateProfile({
@@ -76,7 +76,7 @@ const BirthYearScreen: React.FC<Props> = ({ navigation, route }) => {
     } catch (error: any) {
       console.error('updateBirthYear:', error);
 
-      throw new Error(error?.message || 'Unable to update birth year.');
+      throw new Error(error?.message || 'Janam ka saal update nahi hua.');
     } finally {
       setLoading(false);
     }
@@ -95,9 +95,9 @@ const BirthYearScreen: React.FC<Props> = ({ navigation, route }) => {
       </TouchableOpacity>
 
       <View style={styles.titleContainer}>
-        <Text style={styles.smallTitle}>When's your</Text>
+        <Text style={styles.smallTitle}>Aapka</Text>
 
-        <Text style={styles.title}>Birth Year?</Text>
+        <Text style={styles.title}>Janam Ka Saal?</Text>
       </View>
 
       <LinearGradient colors={Colors.gradient} style={styles.gradientBorder}>
@@ -134,7 +134,7 @@ const BirthYearScreen: React.FC<Props> = ({ navigation, route }) => {
       </LinearGradient>
 
       <GradientButton
-        title={loading ? 'Please wait...' : 'Next'}
+        title={loading ? 'Thoda intezaar karo…' : 'Next'}
         disabled={loading || !selectedYear}
         onPress={() => updateBirthYear(selectedYear)}
       />

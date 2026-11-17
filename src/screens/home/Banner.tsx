@@ -64,7 +64,7 @@ const Banner = ({
               minimumFontScale={0.82}
               style={styles.offer}
             >
-              Claim ₹{offerAmount} free · Talk for {offerFreeMinutes}{' '}
+              Lo ₹{offerAmount} free · Baat karo {offerFreeMinutes}{' '}
               {offerFreeMinutes === 1 ? 'minute' : 'minutes'}
             </Text>
           ) : null}

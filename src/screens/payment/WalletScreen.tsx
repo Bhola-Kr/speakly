@@ -76,7 +76,7 @@ const WalletScreen = ({ navigation, route }: any) => {
         console.warn('Unable to load payment gateway config:', error);
         setActivePaymentGateways([]);
         setGatewayConfigError(
-          'Unable to load payment methods. Please try again.',
+          'Payment methods load nahi hue. Dobara try karo.',
         );
         setGatewayConfigLoading(false);
       },
@@ -115,7 +115,7 @@ const WalletScreen = ({ navigation, route }: any) => {
           setPacksError(
             error instanceof Error
               ? error.message
-              : 'Unable to load recharge amounts.',
+              : 'Recharge amounts load nahi hue.',
           );
         }
       } finally {
@@ -145,10 +145,10 @@ const WalletScreen = ({ navigation, route }: any) => {
   );
 
   const packLabel = (amount: number) => {
-    if (amount === 10) return 'QUICK RECHARGE';
+    if (amount === 10) return 'Jaldi Recharge';
     if (amount === 20) return 'STARTER';
-    if (amount === 50) return 'MORE TIME';
-    if (amount === 100) return 'BEST VALUE';
+    if (amount === 50) return 'Aur Samay';
+    if (amount === 100) return 'Behtar Value';
     return '';
   };
 
@@ -183,17 +183,17 @@ const WalletScreen = ({ navigation, route }: any) => {
     (creditedAmount: number) => {
       if (!followUpIntent?.hostUid) {
         Alert.alert(
-          'Recharge successful',
-          `₹${creditedAmount} was recharged to your Speakly balance.`,
+          'Recharge ho gaya',
+          `₹${creditedAmount} aapke Speakly balance mein recharge ho gaye.`,
         );
         return;
       }
 
       Alert.alert(
-        'Recharge successful',
-        `${followUpIntent.hostName} is waiting for you. Continue talking now?`,
+        'Recharge ho gaya',
+        `${followUpIntent.hostName} se phir baat karna chahoge?`,
         [
-          { text: 'Back to Home', style: 'cancel', onPress: returnHome },
+          { text: 'Home Par Jao', style: 'cancel', onPress: returnHome },
           {
             text: `Call ${followUpIntent.hostName} Again`,
             onPress: continueWithHost,
@@ -215,8 +215,8 @@ const WalletScreen = ({ navigation, route }: any) => {
         setPaymentGateway(currentGateways[0] || 'razorpay');
         throw new Error(
           currentGateways.length
-            ? 'That payment method is no longer active. Please select an active method and try again.'
-            : 'No payment methods are currently active.',
+            ? 'Yeh payment method ab active nahi hai. Active method chuno aur dobara try karo.'
+            : 'Abhi koi payment method active nahi hai.',
         );
       }
       const payment =
@@ -228,21 +228,21 @@ const WalletScreen = ({ navigation, route }: any) => {
         showPaymentSuccess(payment.creditedAmount);
       } else if (payment.status === 'failed') {
         Alert.alert(
-          'Payment Unsuccessful',
-          payment.failureReason || 'Your balance was not recharged.',
+          'Payment Nahi Hui',
+          payment.failureReason || 'Aapka balance recharge nahi hua.',
         );
       } else {
         Alert.alert(
-          'Payment Verification Pending',
-          `We are confirming this payment with ${
+          'Payment Check Ho Rahi Hai',
+          `Hum payment verify kar rahe hain: ${
             paymentGateway === 'razorpay' ? 'Razorpay' : 'PayU'
-          }. Your Speakly balance will update automatically after verification.`,
+          }. Verification ke baad Speakly balance apne aap update ho jayega.`,
         );
       }
     } catch (error) {
       Alert.alert(
-        'Unable to Complete Payment',
-        error instanceof Error ? error.message : 'Please try again.',
+        'Payment Poori Nahi Hui',
+        error instanceof Error ? error.message : 'Dobara try karo.',
       );
     } finally {
       setPaying(false);
@@ -303,7 +303,7 @@ const WalletScreen = ({ navigation, route }: any) => {
             color={Colors.secondary}
             size={18}
           />
-          <Text style={styles.transactionText}>Transactions</Text>
+          <Text style={styles.transactionText}>Len-Den</Text>
         </TouchableOpacity>
       </View>
 
@@ -322,11 +322,11 @@ const WalletScreen = ({ navigation, route }: any) => {
             </View>
             <View style={styles.continueCopy}>
               <Text style={styles.continueTitle}>
-                Continue with {followUpIntent.hostName}
+                Isse Aage Badho {followUpIntent.hostName}
               </Text>
               <Text style={styles.continueText}>
                 ₹{selectedPack?.amount || route?.params?.preferredAmount || 10}{' '}
-                gives you about{' '}
+                mein milte hain lagbhag{' '}
                 {Math.max(
                   1,
                   Math.floor(
@@ -337,7 +337,7 @@ const WalletScreen = ({ navigation, route }: any) => {
                     ) / Math.max(1, followUpIntent.ratePerMinute),
                   ),
                 )}{' '}
-                more minutes at ₹{followUpIntent.ratePerMinute}/min.
+                aur minutes ₹{followUpIntent.ratePerMinute}/min.
               </Text>
             </View>
           </View>
@@ -363,16 +363,16 @@ const WalletScreen = ({ navigation, route }: any) => {
               ₹{user?.wallet?.balance || 0}
             </Text>
             <Text style={styles.balanceDescription} numberOfLines={1}>
-              Recharge to continue voice calls
+              Baat jaari rakhne ke liye recharge karo
             </Text>
           </View>
         </LinearGradient>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose a recharge amount</Text>
+          <Text style={styles.sectionTitle}>Recharge Amount Chuno</Text>
 
           <Text style={styles.sectionSubTitle}>
-            Recharge in rupees. Any bonus is added directly to your balance.
+            Rupees mein recharge karo. Bonus seedha balance mein add hota hai.
           </Text>
 
           <View style={styles.grid}>
@@ -390,7 +390,7 @@ const WalletScreen = ({ navigation, route }: any) => {
 
             {!loadingPacks && !packsError && packs.length === 0 && (
               <Text style={styles.packsStatus}>
-                No recharge amounts are available right now.
+                Abhi recharge amounts available nahi hain.
               </Text>
             )}
 
@@ -424,7 +424,9 @@ const WalletScreen = ({ navigation, route }: any) => {
                   <Text style={styles.amount}>₹{pack.amount}</Text>
 
                   <Text style={styles.bonus}>
-                    {pack.bonus > 0 ? `₹${pack.bonus} bonus` : 'No extra fee'}
+                    {pack.bonus > 0
+                      ? `₹${pack.bonus} bonus`
+                      : 'Koi Extra Fee Nahi'}
                   </Text>
 
                   <View style={styles.divider} />
@@ -445,7 +447,7 @@ const WalletScreen = ({ navigation, route }: any) => {
               style={styles.moreAmountsButton}
             >
               <Text style={styles.moreAmountsText}>
-                {showMoreAmounts ? 'Show fewer amounts' : 'View more amounts'}
+                {showMoreAmounts ? 'Kam Amounts Dikhao' : 'Aur Amounts Dekho'}
               </Text>
               <MaterialCommunityIcons
                 name={showMoreAmounts ? 'chevron-up' : 'chevron-down'}
@@ -472,7 +474,7 @@ const WalletScreen = ({ navigation, route }: any) => {
               <Text style={styles.summaryBonus}>
                 {selectedPack.bonus > 0
                   ? `Includes ₹${selectedPack.bonus} bonus`
-                  : 'No subscription or automatic renewal'}
+                  : 'Koi subscription ya automatic renewal nahi'}
               </Text>
             </View>
 
@@ -495,7 +497,7 @@ const WalletScreen = ({ navigation, route }: any) => {
             !gatewayConfigError &&
             activePaymentGateways.length === 0 && (
               <Text style={styles.gatewayStatus}>
-                No payment methods are currently active.
+                Abhi koi payment method active nahi hai.
               </Text>
             )}
 
@@ -543,10 +545,10 @@ const WalletScreen = ({ navigation, route }: any) => {
               color={Colors.success}
             />
             <View style={styles.trustCopy}>
-              <Text style={styles.trustTitle}>Secure payment</Text>
+              <Text style={styles.trustTitle}>Safe Payment</Text>
               <Text style={styles.trustText}>
-                No subscription or automatic renewal. Your payment only
-                recharges your Speakly balance.
+                Koi subscription ya automatic renewal nahi. Payment se sirf
+                aapka Speakly balance recharge hota hai.
               </Text>
             </View>
           </View>

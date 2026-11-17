@@ -81,12 +81,12 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     fullScreenPermissionPrompted.current = true;
 
     Alert.alert(
-      'Allow full-screen call alerts',
-      'This is optional. You can still go online, but enabling full-screen notifications lets incoming calls open over the lock screen.',
+      'Full-screen call alerts allow karo',
+      'Yeh optional hai. Aap online aa sakte ho. Full-screen notifications allow karne se lock screen par incoming-call alert milta hai.',
       [
-        { text: 'Not now', style: 'cancel' },
+        { text: 'Abhi Nahi', style: 'cancel' },
         {
-          text: 'Open settings',
+          text: 'Settings Kholo',
           onPress: async () => {
             try {
               const callNotification = NativeModules.CallNotification;
@@ -99,7 +99,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
               }
 
               throw new Error(
-                'The installed app does not include full-screen settings support.',
+                'Is app version mein full-screen settings ka support nahi hai.',
               );
             } catch (error) {
               console.warn(
@@ -107,8 +107,8 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
                 error,
               );
               Alert.alert(
-                'Setting unavailable',
-                'Update Speakly 121 to the latest build, then try again. You can still go online without enabling this setting.',
+                'Setting Available Nahi Hai',
+                'Speakly 121 update karke dobara try karo. Is setting ke bina bhi online aa sakte ho.',
               );
             }
           },
@@ -142,13 +142,13 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
       setRequestingWithdrawal(true);
       const request = await requestExpertWithdrawal();
       Alert.alert(
-        'Withdrawal Requested',
-        `Your request for ₹${request.amount} has been submitted. The admin will review and process it. During the review, they may contact you on your registered phone number.`,
+        'Withdrawal Request Bhej Di',
+        `Aapki ₹${request.amount} ki request bhej di gayi hai. Admin ise check karke process karega. Review ke dauraan aapke registered number par contact kiya ja sakta hai.`,
       );
     } catch (error: any) {
       Alert.alert(
-        'Unable to Request Withdrawal',
-        error?.message || 'Please try again.',
+        'Withdrawal Request Nahi Gayi',
+        error?.message || 'Dobara try karo.',
       );
     } finally {
       setRequestingWithdrawal(false);
@@ -174,7 +174,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
       navigation.navigate('OnlineRoom');
     } catch (error) {
       console.log('Unable to go online:', error);
-      Alert.alert('Unable to Go Online', 'Please try again in a moment.');
+      Alert.alert('Online Nahi Aa Paaye', 'Thodi der baad dobara try karo.');
     } finally {
       setGoingOnline(false);
     }
@@ -188,8 +188,8 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
     if (goingOnline) return;
 
     Alert.alert(
-      'Go Offline?',
-      'You will not receive any incoming calls while you are offline.',
+      'Offline Jaana Hai?',
+      'Offline hone par nayi calls nahi aayengi.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -202,8 +202,8 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             } catch (error) {
               console.log('Unable to go offline:', error);
               Alert.alert(
-                'Unable to Go Offline',
-                'Please try again in a moment.',
+                'Offline Nahi Ho Paaye',
+                'Thodi der baad dobara try karo.',
               );
             } finally {
               setGoingOnline(false);
@@ -261,7 +261,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
                   !isOnline && styles.statusIndicatorOffline,
                 ]}
               />
-              <Text style={styles.statusTitle}>ACCOUNT STATUS</Text>
+              <Text style={styles.statusTitle}>Account Ka Status</Text>
             </View>
 
             <Text
@@ -271,11 +271,11 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
 
             <Text style={styles.statusDescription}>
-              Your profile is currently{' '}
+              Aapki Profile Abhi{' '}
               <Text style={styles.statusEmphasis}>
                 {isOnline ? 'visible' : 'hidden'}
               </Text>
-              {' to callers.'}
+              {'customers ko.'}
             </Text>
           </View>
 
@@ -290,11 +290,11 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.primaryActionSection}>
           <Text style={styles.primaryActionLabel}>
-            {isOnline ? 'YOU ARE AVAILABLE' : 'READY TO RECEIVE CALLS?'}
+            {isOnline ? 'Aap Available Ho' : 'Calls Lene Ke Liye Ready Ho?'}
           </Text>
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel={isOnline ? 'Go Offline' : 'Go Online'}
+            accessibilityLabel={isOnline ? 'Offline Jao' : 'Online Aao'}
             activeOpacity={0.86}
             onPress={isOnline ? goOffline : goOnLine}
             disabled={goingOnline}
@@ -334,11 +334,11 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.primaryActionHint}>
             {goingOnline
               ? isOnline
-                ? 'Updating your availability…'
-                : 'Preparing your host room…'
+                ? 'Aapka Status Update Ho Raha Hai…'
+                : 'Aapko Online La Rahe Hain…'
               : isOnline
-              ? 'Tap when you want to stop receiving calls'
-              : 'Tap to become visible and receive calls'}
+              ? 'Calls rokne ke liye tap karo'
+              : 'Online aane aur calls lene ke liye tap karo'}
           </Text>
         </View>
 
@@ -382,10 +382,10 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             ) : (
               <Text style={styles.withdrawButtonText}>
                 {pendingWithdrawal?.id
-                  ? `Withdrawal pending · ₹${Number(
+                  ? `Withdrawal Pending Hai · ₹${Number(
                       pendingWithdrawal.amount || 0,
                     )}`
-                  : 'Request withdrawal'}
+                  : 'Withdrawal Request Karo'}
               </Text>
             )}
           </TouchableOpacity>
@@ -394,7 +394,7 @@ const FemaleHomeScreen: React.FC<Props> = ({ navigation }) => {
             availableEarnings > 0 &&
             availableEarnings < minimumWithdrawalAmount && (
               <Text style={styles.withdrawalMinimum}>
-                Minimum withdrawal is ₹{minimumWithdrawalAmount}.
+                Minimum withdrawal ₹{minimumWithdrawalAmount}.
               </Text>
             )}
         </View>

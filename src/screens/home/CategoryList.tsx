@@ -2,6 +2,7 @@ import React, { memo, useCallback } from 'react';
 import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Colors from '../../constants/colors';
+import { topicLabel } from '../../constants/strings';
 
 const COLORS = {
   teal: Colors.primary,
@@ -39,7 +40,7 @@ const CategoryList = ({ categories, selected, onSelect }: Props) => {
             style={[styles.chip, !active && styles.chipInactive]}
           >
             <Text style={[styles.label, active && styles.labelActive]}>
-              {item}
+              {topicLabel(item)}
             </Text>
           </LinearGradient>
         </TouchableOpacity>

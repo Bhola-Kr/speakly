@@ -17,13 +17,13 @@ export const profile = {
 export const manAccountMenus = [
   {
     id: 1,
-    title: 'Recents',
+    title: 'Pichhli Calls',
     icon: 'history',
-    screen: 'Recents',
+    screen: 'Pichhli Calls',
   },
   {
     id: 2,
-    title: 'Transactions',
+    title: 'Len-Den',
     icon: 'cash-multiple',
     screen: 'Transaction',
   },
@@ -32,16 +32,16 @@ export const manAccountMenus = [
 export const femaleAccountMenus = [
   {
     id: 1,
-    title: 'Recents',
+    title: 'Pichhli Calls',
     icon: 'history',
-    screen: 'Recents',
+    screen: 'Pichhli Calls',
   },
 ];
 
 export const preferenceMenus = [
   {
     id: 1,
-    title: 'Conversation Language',
+    title: 'Baat Karne Ki Bhasha',
     value: 'Tamil',
     icon: 'translate',
     screen: 'Language',
@@ -63,7 +63,7 @@ export const securityMenus = [
   },
   {
     id: 2,
-    title: 'Delete Account',
+    title: 'Account Delete Karo',
     icon: 'delete-outline',
     action: 'deleteAccount',
     danger: true,
@@ -73,23 +73,23 @@ export const securityMenus = [
 export const supportMenus = [
   {
     id: 7,
-    title: 'About Speakly 121',
+    title: 'Speakly 121 Ke Baare Mein',
     icon: 'information-outline',
     screen: 'About',
   },
   {
     id: 1,
-    title: 'Rate App',
+    title: 'App Ko Rating Do',
     icon: 'star-outline',
   },
   {
     id: 2,
-    title: 'Share App',
+    title: 'App Share Karo',
     icon: 'share-variant',
   },
   {
     id: 3,
-    title: 'Contact Us',
+    title: 'Humse Baat Karo',
     icon: 'headset',
   },
   {

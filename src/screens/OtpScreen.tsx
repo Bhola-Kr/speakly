@@ -131,7 +131,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       const response = await verifyMSGOtp(phoneNumber, otpToVerify, requestId);
 
       if (!response?.success || !response?.uid || !response?.token) {
-        throw new Error(response?.message || 'Failed to authenticate user.');
+        throw new Error(response?.message || 'Sign in verify nahi hua.');
       }
 
       // OTP verification already returns the Firebase custom token. Reuse it
@@ -170,17 +170,16 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
         routes: [
           {
             name: userInfo?.isExpert === true ? 'FemaleBottomTabs' : 'Main',
-            params:
-              userInfo?.isExpert === true ? undefined : { pendingCall },
+            params: userInfo?.isExpert === true ? undefined : { pendingCall },
           },
         ],
       });
     } catch (e: any) {
       console.error('verifyOtp -> error', e);
 
-      const message = e?.message || 'Something went wrong. Please try again.';
+      const message = e?.message || 'Kuch dikkat aa gayi. Dobara try karo.';
 
-      Alert.alert('Verification Failed', message);
+      Alert.alert('Verification Nahi Hui', message);
     } finally {
       setLoading(false);
     }
@@ -199,7 +198,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
       if (!response?.success) {
         throw new Error(
-          response?.message || 'Failed to resend OTP. Please try again.',
+          response?.message || 'OTP dobara nahi gaya. Dobara try karo.',
         );
       }
 
@@ -213,11 +212,11 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       setTimer(30);
       requestAnimationFrame(() => otpInputRef.current?.focus());
 
-      Alert.alert('Success', 'OTP has been sent successfully.');
+      Alert.alert('Success', 'OTP bhej diya gaya hai.');
     } catch (e: any) {
       console.error('resendOtp -> error', e);
 
-      Alert.alert('Unable to resend OTP', e?.message || 'Please try again.');
+      Alert.alert('OTP dobara nahi gaya', e?.message || 'Dobara try karo.');
     } finally {
       setLoading(false);
     }
@@ -259,12 +258,12 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
             style={styles.image}
           />
 
-          <Text style={styles.eyebrow}>SECURE VERIFICATION</Text>
+          <Text style={styles.eyebrow}>Safe Verification</Text>
 
-          <Text style={styles.title}>Verify your number</Text>
+          <Text style={styles.title}>Apna Number Verify Karo</Text>
 
           <Text style={styles.description}>
-            Enter the 4-digit code sent to{' '}
+            Is number par bheja 4-digit code likho:{' '}
             <Text style={styles.bold}>{displayPhoneNumber}</Text>
           </Text>
 
@@ -273,8 +272,8 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
             onPress={() => navigation.goBack()}
           >
             <Text style={styles.changeText}>
-              Not your number?{' '}
-              <Text style={styles.changeLink}>Change here.</Text>
+              Yeh aapka number nahi hai?{' '}
+              <Text style={styles.changeLink}>Yahan badlo.</Text>
             </Text>
           </TouchableOpacity>
 
@@ -327,7 +326,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
               })}
             </View>
 
-            <Text style={styles.pinHint}>{otp.length}/4 digits entered</Text>
+            <Text style={styles.pinHint}>{otp.length}/4 digits likhe</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -369,13 +368,13 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
                 activeOpacity={0.8}
                 onPress={resendOtp}
               >
-                <Text style={styles.resend}>Resend code</Text>
+                <Text style={styles.resend}>Code Phir Bhejo</Text>
               </TouchableOpacity>
             ) : (
               <Text style={styles.timerText}>
-                Didn&apos;t receive a code?{' '}
+                Code nahi mila?{' '}
                 <Text style={styles.timer}>
-                  Resend in 00:{String(timer).padStart(2, '0')}
+                  Phir bhejo 00:{String(timer).padStart(2, '0')}
                 </Text>
               </Text>
             )}

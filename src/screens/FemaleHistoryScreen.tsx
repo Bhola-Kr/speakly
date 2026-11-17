@@ -18,7 +18,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { getMaleAvatar } from '../constants/constants';
 import RoomService, { CallHistory } from '../firebase/RoomService';
 import Colors from '../constants/colors';
-import { copy } from '../constants/strings';
+import { copy, callStatusText } from '../constants/strings';
 
 const COLORS = {
   background: Colors.background,
@@ -138,7 +138,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
             <Text
               style={[styles.statusText, !completed && styles.statusTextMissed]}
             >
-              {completed ? copy.call.ended : item.status}
+              {completed ? copy.call.ended : callStatusText(item.status)}
             </Text>
           </View>
 
@@ -172,14 +172,12 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>{copy.recents.title}</Text>
-          <Text style={styles.subtitle}>
-            {copy.recents.supportingText}
-          </Text>
+          <Text style={styles.subtitle}>{copy.recents.supportingText}</Text>
         </View>
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Call history options"
+          accessibilityLabel="Pichhli calls ke options"
           activeOpacity={0.82}
           style={styles.menuButton}
           onPress={() => setMenuVisible(true)}
@@ -221,7 +219,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.popupItem}
             >
               <Ionicons name="person-outline" size={20} color={COLORS.navy} />
-              <Text style={styles.popupText}>My Profile</Text>
+              <Text style={styles.popupText}>Meri Profile</Text>
             </TouchableOpacity>
 
             <View style={styles.divider} />
@@ -231,8 +229,8 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => {
                 setMenuVisible(false);
                 Alert.alert(
-                  'Archive Call History',
-                  'Older calls will be hidden from this list but safely retained. New calls will continue to appear here.',
+                  'Pichhli Calls Archive Karo',
+                  'Purani calls is list se chhup jayengi, par safe rahengi. Nayi calls yahan dikhti rahengi.',
                   [
                     { text: 'Cancel', style: 'cancel' },
                     {
@@ -241,13 +239,13 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
                         try {
                           await RoomService.clearCallHistory();
                           Alert.alert(
-                            'History Archived',
-                            'Older calls have been hidden from this list.',
+                            'Pichhli Calls Archive Ho Gayi',
+                            'Purani calls is list se chhupa di gayi hain.',
                           );
                         } catch {
                           Alert.alert(
                             'Error',
-                            'Unable to archive your call history. Please try again.',
+                            'Pichhli calls archive nahi hui. Dobara try karo.',
                           );
                         }
                       },
@@ -262,7 +260,7 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
                 color={COLORS.tealDark}
               />
               <Text style={[styles.popupText, styles.archiveText]}>
-                Archive History
+                Calls Archive Karo
               </Text>
             </TouchableOpacity>
           </View>

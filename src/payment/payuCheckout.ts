@@ -44,13 +44,13 @@ export const openPayUCheckout = async (
   packId: number,
 ): Promise<PaymentTransaction> => {
   if (!PayUBizSdk?.openCheckoutScreen) {
-    throw new Error(`PayU checkout is unavailable on ${Platform.OS}.`);
+    throw new Error(`PayU checkout yahan available nahi hai: ${Platform.OS}.`);
   }
 
   const initiation = await initiateWalletPayment(packId);
   const { paymentParams, transaction } = initiation.data;
   const token = await auth().currentUser?.getIdToken();
-  if (!token) throw new Error('Please sign in again to continue.');
+  if (!token) throw new Error('Aage badhne ke liye dobara sign in karo.');
 
   return new Promise((resolve, reject) => {
     const emitter = new NativeEventEmitter(PayUBizSdk as any);
@@ -127,9 +127,7 @@ export const openPayUCheckout = async (
           return;
         }
         reject(
-          new Error(
-            result.data.failureReason || 'The payment was not completed.',
-          ),
+          new Error(result.data.failureReason || 'Payment poori nahi hui.'),
         );
       } catch (error) {
         reject(error);
@@ -140,7 +138,7 @@ export const openPayUCheckout = async (
       emitter.addListener('generateHash', async (event: HashEvent) => {
         try {
           if (!event.hashString || !event.hashName) {
-            throw new Error('PayU requested an invalid payment hash.');
+            throw new Error('Payment verify nahi hui. Dobara try karo.');
           }
           const response = await PayUBizSdk.makeHttpRequest(
             `${API_BASE_URL}/payments/hash`,
@@ -162,7 +160,7 @@ export const openPayUCheckout = async (
             const message = String(
               (parsed as any)?.message ||
                 (parsed as any)?.error ||
-                'Payment hash was not returned by the server.',
+                'Server se payment verification nahi mili.',
             );
             console.error('PayU hash response did not contain a hash', parsed);
             throw new Error(message);

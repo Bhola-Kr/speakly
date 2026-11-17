@@ -1,11 +1,8 @@
 import auth from '@react-native-firebase/auth';
+import Api from '../api/api';
 import { scopedDatabase as database } from './firebase';
 import { normalizeCallRate } from '../constants/constants';
-import {
-  fetchAgoraToken,
-  sendIncomingCallPush,
-  settleExpertCallEarnings,
-} from '../api/calls';
+import { sendIncomingCallPush } from '../api/calls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FEMALE_AVAILABILITY_KEY = 'femaleAvailabilityEnabled';
@@ -21,7 +18,7 @@ export type RoomStatus =
   | 'ended'
   | 'men_rejected';
 
-export type CallStatus = 'Missed' | 'Completed';
+export type CallStatus = 'Missed' | 'Completed' | 'Failed';
 
 export interface CallHistory {
   callId: string;
@@ -47,6 +44,10 @@ export interface UserInfo {
 }
 
 export interface Room {
+  billingReports?: any;
+  billingSince?: number | null;
+  billingConfirmedAt?: number;
+  billableMs?: number;
   roomId: string;
   currentCallId: string;
   agora: {
@@ -79,7 +80,7 @@ class RoomService {
     const user = auth().currentUser;
 
     if (!user) {
-      throw new Error('User not logged in');
+      throw new Error('Pehle sign in karo');
     }
 
     return user;
@@ -89,7 +90,7 @@ class RoomService {
     const snapshot = await database().ref(`users/${uid}`).once('value');
 
     if (!snapshot.exists()) {
-      throw new Error('User not found');
+      throw new Error('User nahi mila');
     }
 
     return snapshot.val();
@@ -134,12 +135,20 @@ class RoomService {
     ]);
   }
 
-  private scheduleRoomReset(femaleUid: string, terminalStatus: RoomStatus) {
+  private scheduleRoomReset(
+    femaleUid: string,
+    terminalStatus: RoomStatus,
+    callId?: string,
+  ) {
     setTimeout(() => {
       database()
         .ref(`rooms/${femaleUid}`)
         .transaction(room => {
-          if (!room || room.status !== terminalStatus) {
+          if (
+            !room ||
+            (callId && room.currentCallId !== callId) ||
+            room.status !== terminalStatus
+          ) {
             return;
           }
 
@@ -170,7 +179,6 @@ class RoomService {
   private async setOnline() {
     const firebaseUser = this.getCurrentUser();
     const user = await this.getUser(firebaseUser?.uid);
-    const agoraRes = await fetchAgoraToken();
     const tamilName = String(user?.profile?.tamilName || '').trim();
 
     const room: Room = {
@@ -198,8 +206,8 @@ class RoomService {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       agora: {
-        male: agoraRes.male,
-        female: agoraRes.female,
+        male: { uid: 1, token: '' },
+        female: { uid: 2, token: '' },
       },
     };
 
@@ -302,143 +310,34 @@ class RoomService {
     return isActiveBlock(firstBlocksSecond) || isActiveBlock(secondBlocksFirst);
   }
 
-  async callFemale(femaleUid: string) {
-    const firebaseUser = this.getCurrentUser();
-    const blocked = await this.isBlocked(femaleUid, firebaseUser.uid);
-    if (blocked) {
-      throw new Error('You are blocked by this user.');
-    }
-    const [male, female] = await Promise.all([
-      this.getUser(firebaseUser.uid),
-      this.getUser(femaleUid),
-    ]);
-    const callRatePerMinute = normalizeCallRate(female?.profile?.price);
-    const roomRef = database().ref(`rooms/${femaleUid}`);
-
-    // Load the server room before starting the transaction. On a male user's
-    // first call attempt, RTDB can otherwise invoke the transaction callback
-    // with a cold-cache null even though the room already exists.
-    const initialRoomSnapshot = await roomRef.once('value');
-    if (!initialRoomSnapshot.exists()) {
-      throw new Error('This user is currently offline.');
-    }
-
-    const initialRoom = initialRoomSnapshot.val() as Room;
-    const callId = database().ref('callHistory').push().key;
-    if (!callId) {
-      throw new Error('Unable to create call.');
-    }
-    const agoraRes = await fetchAgoraToken(`call_${callId}`);
-
-    let transactionInvocationCount = 0;
-
-    const claimRoom = (room: Room | null) => {
-      const isFirstInvocation = transactionInvocationCount === 0;
-      transactionInvocationCount += 1;
-
-      if (room == null) {
-        // Use the server value only for the transaction's first cold-cache
-        // invocation. A later null means the room was genuinely removed and
-        // must not be recreated from stale data.
-        if (!isFirstInvocation) {
-          return;
-        }
-
-        room = { ...initialRoom };
-      }
-
-      if (['rejected', 'men_rejected', 'ended'].includes(room.status)) {
-        room.status = 'waiting';
-        room.currentCallId = '';
-        room.male = null;
-        room.callStartedAt = null;
-        room.chargedAmount = null;
-        room.callSettled = null;
-      }
-
-      if (room.status !== 'waiting') {
-        return;
-      }
-      room.status = 'calling';
-      room.currentCallId = callId;
-      room.callRequestedAt = Date.now();
-      room.callStartedAt = null;
-      room.chargedAmount = 0;
-      room.callSettled = null;
-      room.male = {
-        uid: firebaseUser.uid,
-        name: male.profile.name,
-        gender: male.profile.gender,
-        avatarId: male.profile.avatarId,
-      };
-      room.female = {
-        ...room.female,
-        price: callRatePerMinute,
-      };
-      room.callRatePerMinute = callRatePerMinute;
-      room.agora = {
-        channelName: agoraRes.channelName,
-        male: agoraRes.male,
-        female: agoraRes.female,
-      };
-
-      room.updatedAt = Date.now();
-      return room;
-    };
-
-    let transaction = await roomRef.transaction(claimRoom);
-
-    // Some Android RTDB clients can still abort the first transaction while
-    // returning the now-cached waiting room. Retry that specific false abort
-    // inside this call attempt so the user does not have to tap Call twice.
-    if (
-      !transaction.committed &&
-      (transaction.snapshot.val() as Room | null)?.status === 'waiting'
-    ) {
-      transactionInvocationCount = 0;
-      transaction = await roomRef.transaction(claimRoom);
-    }
-
-    if (!transaction.committed) {
-      const room = transaction.snapshot.val() as Room | null;
-
-      if (!room) {
-        throw new Error('This user is currently offline.');
-      }
-
-      if (['calling', 'ringing', 'accepted', 'active'].includes(room.status)) {
-        throw new Error('This user is currently busy on another call.');
-      }
-
-      throw new Error(
-        'This user is not available right now. Please try again.',
-      );
-    }
-
-    const claimedRoom = transaction.snapshot.val() as Room;
+  async callFemale(femaleUid: string, maximumRate?: number) {
+    const response = await Api.post<{ success: boolean; room: Room }>(
+      '/claimCall',
+      { hostUid: femaleUid, maximumRate },
+    );
+    const room = response.room;
     sendIncomingCallPush({
       recipientUid: femaleUid,
       femaleUid,
-      callId,
-      callerName: String(male?.profile?.name || 'Someone'),
+      callId: room.currentCallId,
+      callerName: room.male?.name || 'User',
     })
-      .then(response => {
-        if (!response?.success || response.delivered === false) return;
-        return roomRef.transaction(room => {
-          if (
-            !room ||
-            room.status !== 'calling' ||
-            room.currentCallId !== callId
-          ) {
-            return;
-          }
-          return { ...room, status: 'ringing', updatedAt: Date.now() };
-        });
+      .then(result => {
+        if (!result?.success || result.delivered === false) return;
+        return database()
+          .ref(`rooms/${femaleUid}`)
+          .transaction(current => {
+            if (
+              !current ||
+              current.currentCallId !== room.currentCallId ||
+              current.status !== 'calling'
+            )
+              return;
+            return { ...current, status: 'ringing', updatedAt: Date.now() };
+          });
       })
-      .catch(error =>
-        console.warn('Unable to send incoming call push:', error),
-      );
-    return claimedRoom;
+      .catch(error => console.warn('Call notification nahi gayi:', error));
+    return room;
   }
 
   listenIncomingCall(femaleUid: string, callback: (room: Room) => void) {
@@ -467,35 +366,54 @@ class RoomService {
     return () => ref.off('value', listener);
   }
 
-  async acceptCall(femaleUid: string) {
-    const firebaseUser = this.getCurrentUser();
-    const updates: Record<string, any> = {
-      [`rooms/${femaleUid}/status`]: 'accepted',
-      [`rooms/${femaleUid}/updatedAt`]: Date.now(),
-      [`users/${firebaseUser.uid}/profile/status`]: 'busy',
-    };
-
-    await database().ref().update(updates);
+  async acceptCall(femaleUid: string, callId?: string) {
+    if (this.getCurrentUser().uid !== femaleUid)
+      throw new Error('Call access nahi mila.');
+    const result = await database()
+      .ref(`rooms/${femaleUid}`)
+      .transaction(room => {
+        if (
+          !room ||
+          (callId && room.currentCallId !== callId) ||
+          !['calling', 'ringing'].includes(room.status)
+        )
+          return;
+        return { ...room, status: 'accepted', updatedAt: Date.now() };
+      });
+    if (!result.committed) throw new Error('Call ab available nahi hai.');
   }
 
-  async rejectCall(femaleUid: string) {
-    const firebaseUser = this.getCurrentUser();
-
-    const updates: Record<string, any> = {
-      [`rooms/${femaleUid}/status`]: 'rejected',
-      [`rooms/${femaleUid}/updatedAt`]: Date.now(),
-      [`users/${firebaseUser.uid}/profile/status`]: 'online',
-    };
-
-    await database().ref().update(updates);
-    this.scheduleRoomReset(femaleUid, 'rejected');
+  async rejectCall(femaleUid: string, callId?: string) {
+    if (this.getCurrentUser().uid !== femaleUid)
+      throw new Error('Call access nahi mila.');
+    const result = await database()
+      .ref(`rooms/${femaleUid}`)
+      .transaction(room => {
+        if (
+          !room ||
+          (callId && room.currentCallId !== callId) ||
+          !['calling', 'ringing'].includes(room.status)
+        )
+          return;
+        return { ...room, status: 'rejected', updatedAt: Date.now() };
+      });
+    if (!result.committed) return;
+    this.scheduleRoomReset(
+      femaleUid,
+      'rejected',
+      result.snapshot.val().currentCallId,
+    );
   }
 
-  async menRejectCall(femaleUid: string) {
+  async menRejectCall(femaleUid: string, callId?: string) {
     const roomRef = database().ref(`rooms/${femaleUid}`);
 
     const transaction = await roomRef.transaction(room => {
-      if (!room || !['calling', 'ringing'].includes(room.status)) {
+      if (
+        !room ||
+        (callId && room.currentCallId !== callId) ||
+        !['calling', 'ringing'].includes(room.status)
+      ) {
         return;
       }
 
@@ -507,34 +425,28 @@ class RoomService {
     });
 
     if (transaction.committed) {
-      await this.saveCallHistory(transaction.snapshot.val() as Room);
-      this.scheduleRoomReset(femaleUid, 'men_rejected');
+      this.scheduleRoomReset(
+        femaleUid,
+        'men_rejected',
+        transaction.snapshot.val().currentCallId,
+      );
     }
   }
 
-  async callConnected(femaleUid: string): Promise<number> {
-    const roomRef = database().ref(`rooms/${femaleUid}`);
-    const connectedAt = Date.now();
-    const transaction = await roomRef.transaction(room => {
-      if (!room || room.status === 'ended' || room.status === 'waiting') {
-        return;
-      }
+  async callConnected(femaleUid: string, callId: string): Promise<number> {
+    const result = await this.callSessionEvent(femaleUid, callId, 'connected');
+    return result.startedAt;
+  }
 
-      return {
-        ...room,
-        status: 'active',
-        callStartedAt: room.callStartedAt || connectedAt,
-        updatedAt: connectedAt,
-      };
-    });
-    const room = transaction.snapshot.val() as Room | null;
-    if (!transaction.committed || !room) return connectedAt;
-    await this.logExpertActivity(
-      femaleUid,
-      'active',
-      room.currentCallId,
-    ).catch(error => console.warn('Unable to record expert activity:', error));
-    return Number(room.callStartedAt || connectedAt);
+  async callSessionEvent(hostUid: string, callId: string, event: string) {
+    return Api.post<{
+      success: boolean;
+      active: boolean;
+      ended: boolean;
+      insufficient: boolean;
+      startedAt: number;
+      duration: number;
+    }>('/callSessionEvent', { hostUid, callId, event });
   }
 
   async startCallPresence(callId: string, uid: string) {
@@ -549,173 +461,22 @@ class RoomService {
     await presenceRef.remove();
   }
 
-  async chargeCallMinute(femaleUid: string): Promise<boolean> {
-    const firebaseUser = this.getCurrentUser();
-    const roomRef = database().ref(`rooms/${femaleUid}`);
-    const roomSnapshot = await roomRef.once('value');
-    const room = roomSnapshot.val() as Room | null;
-
-    if (
-      !room ||
-      room.status !== 'active' ||
-      room.male?.uid !== firebaseUser.uid
-    ) {
-      return false;
-    }
-    const callRatePerMinute = normalizeCallRate(room.callRatePerMinute);
-
-    const walletTransaction = await database()
-      .ref(`users/${firebaseUser.uid}/wallet/balance`)
-      .transaction(balance => {
-        const currentBalance = Number(balance || 0);
-
-        if (currentBalance < callRatePerMinute) {
-          return;
-        }
-
-        return currentBalance - callRatePerMinute;
-      });
-
-    if (!walletTransaction.committed) {
-      return false;
-    }
-
-    const billingUpdate = await roomRef.transaction(currentRoom => {
-      if (
-        !currentRoom ||
-        currentRoom.status !== 'active' ||
-        currentRoom.male?.uid !== firebaseUser.uid
-      ) {
-        return;
-      }
-
-      return {
-        ...currentRoom,
-        chargedAmount:
-          Number(currentRoom.chargedAmount || 0) + callRatePerMinute,
-        updatedAt: Date.now(),
-      };
-    });
-
-    if (!billingUpdate.committed) {
-      await database()
-        .ref(`users/${firebaseUser.uid}/wallet/balance`)
-        .transaction(balance => Number(balance || 0) + callRatePerMinute);
-      return false;
-    }
-
-    // A successful charge pays for the upcoming minute, even when it consumes
-    // the final balance. The next charge attempt will end the call.
-    return true;
+  async chargeCallMinute(femaleUid: string, callId: string): Promise<boolean> {
+    const result = await this.callSessionEvent(femaleUid, callId, 'heartbeat');
+    return !result.ended && !result.insufficient;
   }
 
-  async endCall(femaleUid: string) {
-    const roomRef = database().ref(`rooms/${femaleUid}`);
-    const endedAt = Date.now();
-    const transaction = await roomRef.transaction(room => {
-      if (
-        !room ||
-        room.status === 'ended' ||
-        room.status === 'waiting' ||
-        room.callSettled
-      ) {
-        return;
-      }
-
-      return {
-        ...room,
-        status: 'ended',
-        callSettled: true,
-        updatedAt: endedAt,
-      };
-    });
-
-    if (!transaction.committed) {
-      return;
-    }
-
-    const room = transaction.snapshot.val() as Room;
-
-    if (room.currentCallId) {
-      await this.saveCallHistory(room, endedAt);
-    }
-    await this.logExpertActivity(femaleUid, 'online', room.currentCallId).catch(
-      error => console.warn('Unable to record expert activity:', error),
-    );
-
-    // Wait a moment so both users receive "ended"
-    setTimeout(async () => {
-      const updatedAt = Date.now();
-      await database()
-        .ref()
-        .update({
-          [`rooms/${femaleUid}/status`]: 'waiting',
-          [`rooms/${femaleUid}/currentCallId`]: '',
-          [`rooms/${femaleUid}/male`]: null,
-          [`rooms/${femaleUid}/callStartedAt`]: null,
-          [`rooms/${femaleUid}/callSettled`]: null,
-          [`rooms/${femaleUid}/chargedAmount`]: null,
-          [`rooms/${femaleUid}/updatedAt`]: updatedAt,
-          [`users/${femaleUid}/profile/status`]: 'online',
-        });
-    }, 1000);
-  }
-
-  async saveCallHistory(room: Room, endedAt: number = Date.now()) {
-    if (!room.currentCallId) {
-      return;
-    }
-
-    // Only wallet debits recorded while the room was active are billable.
-    // Clamp malformed or stale values to whole call minutes at the snapshotted
-    // rate, and derive history duration from those billed minutes.
-    const rate = normalizeCallRate(room.callRatePerMinute);
-    const recordedAmount = Number(room.chargedAmount);
-    const amount =
-      Number.isFinite(recordedAmount) && recordedAmount > 0
-        ? Math.floor(recordedAmount / rate) * rate
-        : 0;
-    const duration = (amount / rate) * 60 * 1000;
-
-    const history = {
-      callId: room.currentCallId,
-      startedAt:
-        room.callRequestedAt ||
-        room.callStartedAt ||
-        room.updatedAt ||
-        room.createdAt,
-      endedAt,
-      duration,
-      amount,
-      callRatePerMinute: rate,
-      status: duration === 0 ? 'Missed' : 'Completed',
-      maleInfo: room.male,
-      femaleInfo: room.female,
-    };
-
-    const updates: Record<string, any> = {};
-
-    // Save to male history
-    updates[`callHistory/${room?.male?.uid}/${room.currentCallId}`] = history;
-
-    // Save to female history
-    updates[`callHistory/${room?.female?.uid}/${room.currentCallId}`] = history;
-
-    await database().ref().update(updates);
-
-    if (amount > 0 && room.female?.uid && room.currentCallId) {
-      await settleExpertCallEarnings(room.currentCallId).catch(error =>
-        console.warn('Unable to settle expert earnings:', error),
-      );
-    }
-
+  async endCall(femaleUid: string, callId?: string) {
+    if (!callId) throw new Error('Call ID zaroori hai.');
+    await this.callSessionEvent(femaleUid, callId, 'end');
+    this.scheduleRoomReset(femaleUid, 'ended', callId);
   }
 
   async getCallHistory() {
     const uid = auth().currentUser?.uid;
 
     if (!uid) {
-      throw new Error('User not logged in');
+      throw new Error('Pehle sign in karo');
     }
 
     const snapshot = await database().ref(`callHistory/${uid}`).once('value');
@@ -741,7 +502,7 @@ class RoomService {
     const uid = auth().currentUser?.uid;
 
     if (!uid) {
-      throw new Error('User not logged in');
+      throw new Error('Pehle sign in karo');
     }
 
     const historyRef = database().ref(`callHistory/${uid}`);
@@ -880,14 +641,18 @@ class RoomService {
   }
 
   async cancelCall(femaleUid: string) {
-    await database().ref(`rooms/${femaleUid}`).update({
-      status: 'waiting',
-      currentCallId: '',
-      male: null,
-      updatedAt: Date.now(),
-    });
+    const room = (
+      await database().ref(`rooms/${femaleUid}`).once('value')
+    ).val();
+    if (!room?.currentCallId) return;
+    if (this.getCurrentUser().uid === femaleUid)
+      await this.rejectCall(femaleUid, room.currentCallId);
+    else await this.menRejectCall(femaleUid, room.currentCallId);
   }
-  async getRandomFemaleRoom(): Promise<Room> {
+  async getRandomFemaleRoom(
+    excludedUids: string[] = [],
+    maximumRate = Infinity,
+  ): Promise<Room> {
     const snapshot = await database()
       .ref('rooms')
       .orderByChild('status')
@@ -902,7 +667,7 @@ class RoomService {
     });
 
     if (rooms.length === 0) {
-      throw new Error('No hosts are currently online.');
+      throw new Error('Abhi koi expert online nahi hai.');
     }
 
     // Shuffle so every user has an equal chance
@@ -910,6 +675,9 @@ class RoomService {
 
     // Return the first room whose user profile is still online
     for (const room of shuffled) {
+      if (excludedUids.includes(room.female.uid)) continue;
+      if (await this.isBlocked(room.female.uid, this.getCurrentUser().uid))
+        continue;
       const userSnapshot = await database()
         .ref(`users/${room.female.uid}`)
         .once('value');
@@ -920,15 +688,16 @@ class RoomService {
 
       const user = userSnapshot.val();
 
-      if (user?.profile?.status === 'online') {
+      if (user?.isExpert === true && user?.profile?.status === 'online') {
         const rate = normalizeCallRate(user?.profile?.price);
+        if (rate > maximumRate) continue;
         room.callRatePerMinute = rate;
         room.female = { ...room.female, price: rate };
         return room;
       }
     }
 
-    throw new Error('No hosts are currently online.');
+    throw new Error('Abhi koi expert online nahi hai.');
   }
 }
 

@@ -51,8 +51,8 @@ class OTPService {
 
       if (!phone) {
         Alert.alert(
-          'Invalid Number',
-          'Please enter a valid 10-digit mobile number.',
+          'Number Sahi Nahi Hai',
+          'Sahi 10-digit mobile number likho.',
         );
 
         return false;
@@ -94,8 +94,8 @@ class OTPService {
           console.error('2Factor JSON Parse Error:', error);
 
           Alert.alert(
-            'OTP Error',
-            `Invalid response from 2Factor.\nHTTP ${response.status}`,
+            'OTP Mein Dikkat',
+            `OTP service se sahi jawaab nahi mila. Code ${response.status}`,
           );
 
           return false;
@@ -113,15 +113,15 @@ class OTPService {
 
           this.phoneNumber = phone;
 
-          Alert.alert('OTP Sent', `OTP has been sent by SMS to +91 ${phone}.`);
+          Alert.alert(
+            'OTP Bhej Diya',
+            `SMS se OTP bhej diya hai: +91 ${phone}.`,
+          );
 
           return true;
         }
 
-        Alert.alert(
-          'OTP Failed',
-          data.Details || 'Unable to send OTP. Please try again.',
-        );
+        Alert.alert('OTP Verify Nahi Hua', 'OTP nahi gaya. Dobara try karo.');
 
         return false;
       } catch (error: any) {
@@ -129,8 +129,8 @@ class OTPService {
 
         if (error?.name === 'AbortError') {
           Alert.alert(
-            'Request Timeout',
-            'OTP request timed out. Please try again.',
+            'Request Mein Der Ho Gayi',
+            'OTP aane mein der ho gayi. Dobara try karo.',
           );
 
           return false;
@@ -142,8 +142,8 @@ class OTPService {
       console.error('Send OTP Error:', error);
 
       Alert.alert(
-        'Network Error',
-        'Unable to connect to 2Factor. Please check your internet connection and try again.',
+        'Network Mein Dikkat',
+        'OTP service se connect nahi hua. Internet check karke dobara try karo.',
       );
 
       return false;
@@ -160,13 +160,13 @@ class OTPService {
   async verifyOTP(otp: string): Promise<boolean> {
     try {
       if (!this.sessionId) {
-        Alert.alert('Session Expired', 'Please request a new OTP.');
+        Alert.alert('Session Khatam Ho Gaya', 'Naya OTP mangao.');
 
         return false;
       }
 
       if (!otp) {
-        Alert.alert('Enter OTP', 'Please enter the OTP you received.');
+        Alert.alert('OTP Likho', 'Jo OTP mila hai, woh likho.');
 
         return false;
       }
@@ -174,7 +174,7 @@ class OTPService {
       const cleanOTP = otp.replace(/\s/g, '');
 
       if (!/^\d{4,6}$/.test(cleanOTP)) {
-        Alert.alert('Invalid OTP', 'Please enter a valid OTP.');
+        Alert.alert('OTP Sahi Nahi Hai', 'Sahi OTP likho.');
 
         return false;
       }
@@ -201,8 +201,8 @@ class OTPService {
         data = JSON.parse(rawResponse);
       } catch {
         Alert.alert(
-          'Verification Error',
-          'Invalid response received from 2Factor.',
+          'Verification Mein Dikkat',
+          'OTP service se sahi jawaab nahi mila.',
         );
 
         return false;
@@ -213,23 +213,20 @@ class OTPService {
         (data.Details?.toLowerCase().includes('matched') ||
           data.Details?.toLowerCase().includes('verified'))
       ) {
-        Alert.alert('Success', 'Mobile number verified successfully.');
+        Alert.alert('Success', 'Mobile number verify ho gaya.');
 
         return true;
       }
 
-      Alert.alert(
-        'Invalid OTP',
-        data.Details || 'The OTP you entered is incorrect.',
-      );
+      Alert.alert('OTP Sahi Nahi Hai', 'Aapka OTP sahi nahi hai.');
 
       return false;
     } catch (error) {
       console.error('Verify OTP Error:', error);
 
       Alert.alert(
-        'Verification Failed',
-        'Unable to verify OTP. Please try again.',
+        'Verification Nahi Hui',
+        'OTP verify nahi hua. Dobara try karo.',
       );
 
       return false;
@@ -242,7 +239,7 @@ class OTPService {
   async resendOTP(): Promise<boolean> {
     try {
       if (!this.phoneNumber) {
-        Alert.alert('Error', 'Mobile number not found. Please start again.');
+        Alert.alert('Error', 'Mobile number nahi mila. Dobara shuru karo.');
 
         return false;
       }
@@ -252,8 +249,8 @@ class OTPService {
       console.error('Resend OTP Error:', error);
 
       Alert.alert(
-        'Resend Failed',
-        'Unable to resend OTP. Please try again later.',
+        'OTP Phir Nahi Bhej Paaye',
+        'OTP dobara nahi gaya. Thodi der baad try karo.',
       );
 
       return false;

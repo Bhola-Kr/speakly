@@ -67,9 +67,7 @@ const EmptyState = ({ onPress }: Props) => {
 
       <Text style={styles.title}>{copy.recents.emptyTitle}</Text>
 
-      <Text style={styles.subtitle}>
-        {copy.recents.emptyText}
-      </Text>
+      <Text style={styles.subtitle}>{copy.recents.emptyText}</Text>
 
       <TouchableOpacity
         activeOpacity={0.9}
@@ -84,7 +82,7 @@ const EmptyState = ({ onPress }: Props) => {
         >
           <Ionicons name="call" size={22} color={COLORS.white} />
           <Text numberOfLines={1} style={styles.buttonText}>
-            Find an expert
+            Expert Dhundho
           </Text>
         </LinearGradient>
       </TouchableOpacity>

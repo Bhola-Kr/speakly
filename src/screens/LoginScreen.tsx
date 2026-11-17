@@ -45,9 +45,9 @@ const COLORS = {
 };
 
 const benefits = [
-  { icon: 'message-text', label: 'Real people' },
-  { icon: 'waveform', label: 'Voice\nconversations' },
-  { icon: 'chart-bar', label: 'Talk your\nway' },
+  { icon: 'message-text', label: 'Asli Log' },
+  { icon: 'waveform', label: 'Dil Khol Ke Baat Karo' },
+  { icon: 'chart-bar', label: 'Apne Andaaz Mein Baat Karo' },
 ] as const;
 
 interface Props {
@@ -70,10 +70,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
     active: false,
   });
 
-  useEffect(
-    () => listenSignupOffer(setSignupOffer),
-    [],
-  );
+  useEffect(() => listenSignupOffer(setSignupOffer), []);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => {
@@ -109,9 +106,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
       console.log('onGetOTP -> response', response);
       if (!response?.success) {
-        throw new Error(
-          response?.message || 'Failed to send OTP. Please try again.',
-        );
+        throw new Error(response?.message || 'OTP nahi gaya. Dobara try karo.');
       }
 
       navigation.navigate('Otp', {
@@ -121,7 +116,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
       });
     } catch (error: any) {
       console.error('onGetOTP -> error', error);
-      Alert.alert('Unable to send OTP', error?.message || 'Please try again.');
+      Alert.alert('OTP nahi gaya', error?.message || 'Dobara try karo.');
     } finally {
       setLoading(false);
     }
@@ -196,8 +191,8 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
               <Text style={styles.heroSubtitle}>
                 {signupOffer.active && signupOffer.amount > 0
-                  ? `Choose an available host. ₹${signupOffer.amount} free balance covers your first ${signupOffer.freeMinutes} minutes.`
-                  : 'Choose an available host and enjoy live voice conversations.'}
+                  ? `Available expert chuno. ₹${signupOffer.amount} free balance mein pehli ${signupOffer.freeMinutes} minutes.`
+                  : 'Available expert chuno aur dil khol ke baat karo.'}
               </Text>
 
               <View style={styles.benefitsRow}>
@@ -224,8 +219,8 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
               <Text style={styles.formTitle}>{copy.login.heading}</Text>
               <Text style={styles.formSubtitle}>
                 {signupOffer.active && signupOffer.amount > 0
-                  ? `Claim ₹${signupOffer.amount} free call balance—enough for your first ${signupOffer.freeMinutes} minutes. No subscription.`
-                  : 'Sign in to choose an available host. No subscription.'}
+                  ? `Lo ₹${signupOffer.amount} free call balance mein pehli ${signupOffer.freeMinutes} minutes ki baat. Subscription nahi chahiye.`
+                  : 'Sign in karo aur expert chuno. Subscription nahi chahiye.'}
               </Text>
             </View>
 
@@ -235,7 +230,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 activeOpacity={0.75}
                 onPress={() => setPickerVisible(true)}
                 accessibilityRole="button"
-                accessibilityLabel="Choose country"
+                accessibilityLabel="Desh Chuno"
               >
                 <CountryPicker
                   countryCode={country}
@@ -275,7 +270,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
             <View style={styles.consentRow}>
               <TouchableOpacity
-                accessibilityLabel="Agree to the Terms of Use and Privacy Policy"
+                accessibilityLabel="Terms of Use aur Privacy Policy se sehmat ho"
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: acceptedPolicies }}
                 activeOpacity={0.8}
@@ -295,7 +290,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
               </TouchableOpacity>
 
               <Text style={styles.consentText}>
-                I have read and agree to Speakly 121&apos;s{' '}
+                Maine Speakly 121 ke yeh niyam padhe hain aur inse sehmat hoon:{' '}
                 <Text
                   style={styles.link}
                   onPress={() => navigation.navigate('TermsAndConditions')}
@@ -343,7 +338,7 @@ const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
             {!acceptedPolicies && (
               <Text style={styles.consentHint}>
-                Please agree before continuing.
+                Aage badhne se pehle sehmati do.
               </Text>
             )}
 

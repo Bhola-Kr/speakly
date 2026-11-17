@@ -25,6 +25,7 @@ import {
   stopOutgoingRingback,
 } from '../../../utils/outgoingRingback';
 import { trackCallLifecycle } from '../../../firebase/analytics';
+import { useCallBalanceGuard } from '../../../hooks/useCallBalanceGuard';
 
 interface Props {
   navigation: any;
@@ -35,6 +36,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const { height } = useWindowDimensions();
   const compactLayout = height < 700;
   const data = route?.params?.user;
+  const expectedCallId = route?.params?.room?.currentCallId;
   const femaleUid = data.uid;
   const tamilName = String(data?.tamilName || '').trim();
   const englishName = String(data?.name || '').trim();
@@ -51,7 +53,82 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const terminalTracked = useRef(false);
 
   const [cancelling, setCancelling] = useState(false);
+  const [retryProgress, setRetryProgress] = useState<number | null>(null);
+  const retryCancelled = useRef(false);
+  const canStartCall = useCallBalanceGuard(navigation);
+  const attemptedHosts: string[] = route.params?.attemptedHosts || [femaleUid];
+  useEffect(() => {
+    if (retryProgress === null) return;
+    const timer = setInterval(
+      () =>
+        setRetryProgress(value =>
+          value === null ? null : Math.min(100, value + 5),
+        ),
+      150,
+    );
+    return () => clearInterval(timer);
+  }, [retryProgress === null]);
+  useEffect(() => {
+    if (retryProgress !== 100) return;
+    setRetryProgress(null);
+    const retry = async () => {
+      try {
+        const next = await RoomService.getRandomFemaleRoom(
+          attemptedHosts,
+          Number(route.params?.room?.callRatePerMinute || data.price || 5),
+        );
+        if (retryCancelled.current) return;
+        if (!canStartCall(next.callRatePerMinute)) {
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+          return;
+        }
+        const room = await RoomService.callFemale(
+          next.female.uid,
+          Number(route.params?.room?.callRatePerMinute || data.price || 5),
+        );
+        if (retryCancelled.current) {
+          await RoomService.menRejectCall(next.female.uid, room.currentCallId);
+          return;
+        }
+        navigation.replace('OutgoingCall', {
+          user: next.female,
+          room,
+          attemptedHosts: [...attemptedHosts, next.female.uid],
+        });
+      } catch (error: any) {
+        if (!retryCancelled.current) {
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+          Alert.alert(
+            copy.call.timeout,
+            error?.message || 'Abhi koi expert available nahi hai.',
+          );
+        }
+      }
+    };
+    retry();
+  }, [retryProgress]);
+  useEffect(
+    () => () => {
+      retryCancelled.current = true;
+    },
+    [],
+  );
   const [callPhase, setCallPhase] = useState<'calling' | 'ringing'>('calling');
+
+  useEffect(
+    () =>
+      navigation.addListener?.('beforeRemove', () => {
+        retryCancelled.current = true;
+        if (!callResolved.current) {
+          callResolved.current = true;
+          stopOutgoingRingback();
+          RoomService.menRejectCall(femaleUid, expectedCallId).catch(
+            console.warn,
+          );
+        }
+      }),
+    [navigation, femaleUid, expectedCallId],
+  );
 
   useEffect(() => {
     trackCallLifecycle('OutgoingCallAttempted', {
@@ -62,6 +139,12 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   }, []);
 
   const cancelCall = async () => {
+    if (callResolved.current) {
+      retryCancelled.current = true;
+      setRetryProgress(null);
+      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      return;
+    }
     if (cancelling) {
       return;
     }
@@ -73,11 +156,11 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
       trackCallLifecycle('OutgoingCallCancelled', {
         ...(femaleUid ? { expert_id: femaleUid } : {}),
       });
-      await RoomService.menRejectCall(femaleUid);
+      await RoomService.menRejectCall(femaleUid, expectedCallId);
     } catch (error) {
       console.error('Unable to cancel call:', error);
       setCancelling(false);
-      Alert.alert('Unable to Cancel Call', 'Please try again.');
+      Alert.alert('Call Cancel Nahi Hui', 'Dobara try karo.');
     }
   };
 
@@ -85,11 +168,16 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
     callResolved.current = false;
 
     const timeout = setTimeout(async () => {
+      if (callResolved.current || retryCancelled.current) return;
       const snapshot = await database().ref(`rooms/${femaleUid}`).once('value');
+      if (callResolved.current || retryCancelled.current) return;
       const room = snapshot.val();
-      if (['calling', 'ringing'].includes(room?.status)) {
+      if (
+        room?.currentCallId === expectedCallId &&
+        ['calling', 'ringing'].includes(room?.status)
+      ) {
         timedOut.current = true;
-        await RoomService.menRejectCall(femaleUid);
+        await RoomService.menRejectCall(femaleUid, expectedCallId);
       }
     }, 30000);
 
@@ -120,6 +208,10 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           }
         };
 
+        if (room?.currentCallId !== expectedCallId) {
+          closeCall();
+          return;
+        }
         switch (room?.status) {
           case 'calling':
             setCallPhase('calling');
@@ -177,12 +269,12 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
                 { ...(femaleUid ? { expert_id: femaleUid } : {}) },
               );
             }
-            timedOut.current
-              ? closeCall(
-                  copy.call.timeout,
-                  'This host did not answer. Try another available host.',
-                )
-              : closeCall();
+            if (timedOut.current) {
+              callResolved.current = true;
+              clearTimeout(timeout);
+              stopOutgoingRingback();
+              setRetryProgress(0);
+            } else closeCall();
             break;
 
           case 'waiting':
@@ -193,7 +285,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
           case 'offline':
             closeCall(
               copy.call.timeout,
-              'This host is not available right now. Try another host.',
+              'Expert abhi available nahi hai. Dusra expert chuno.',
             );
             break;
         }
@@ -270,6 +362,29 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
+      {retryProgress !== null && (
+        <View style={{ padding: 16 }}>
+          <TouchableOpacity
+            accessibilityLabel="Automatic call cancel karo"
+            onPress={() => {
+              retryCancelled.current = true;
+              setRetryProgress(null);
+              navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+            }}
+          >
+            <Text>Agla expert connect ho raha hai… {retryProgress}% ✕</Text>
+          </TouchableOpacity>
+          <View style={{ height: 4, backgroundColor: Colors.border }}>
+            <View
+              style={{
+                height: 4,
+                width: `${retryProgress}%`,
+                backgroundColor: Colors.primary,
+              }}
+            />
+          </View>
+        </View>
+      )}
       <View style={[styles.header, compactLayout && styles.headerCompact]}>
         <Text style={styles.logo}>{strings.appName}</Text>
 
@@ -356,8 +471,8 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <Text style={styles.callingText}>
             {callPhase === 'ringing'
-              ? 'Waiting for an answer'
-              : 'Contacting host'}
+              ? 'Jawab ka intezaar hai'
+              : 'Expert Se Connect Ho Raha Hai'}
           </Text>
         </View>
       </View>
@@ -366,7 +481,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
         <Icon name="headphones" size={28} color={Colors.secondary} />
 
         <Text style={styles.footerText}>
-          Use headphones for better voice quality and reduced background noise.
+          Saaf awaaz ke liye headphones lagao.
         </Text>
       </View>
 
@@ -377,7 +492,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
         disabled={cancelling}
       >
         <Text style={styles.endText}>
-          {cancelling ? 'Cancelling...' : 'Cancel Call'}
+          {cancelling ? 'Cancelling...' : 'Call Cancel Karo'}
         </Text>
       </TouchableOpacity>
     </SafeAreaView>

@@ -8,62 +8,59 @@ export const SUPPORT_EMAIL = 'support@joinspeakly.com';
 export const faqs = [
   {
     id: 1,
-    question: 'How do I change my preferred conversation language?',
-    answer:
-      'Go to Profile > Language and choose the language you prefer for conversations.',
+    question: 'Baat karne ki bhasha kaise badlun?',
+    answer: 'Profile > Language par jaakar baat karne ki bhasha chuno.',
   },
   {
     id: 2,
-    question: 'Money was deducted but coins were not added.',
+    question: 'Paise kat gaye par coins nahi aaye.',
     answer:
-      'Please wait for a few minutes. If your coins are still not credited, open Transactions, select the payment, and contact support with the transaction details.',
+      'Kuch minutes intezaar karo. Coins phir bhi na aayein toh Len-Den kholo, payment chuno aur uski details ke saath support se baat karo.',
   },
   {
     id: 3,
-    question: 'How do I add coins?',
+    question: 'Coins kaise add karun?',
     answer:
-      'Open My Coins and choose a coin pack. Complete the payment using any available payment method.',
+      'Mere Coins kholo aur coin pack chuno. Available payment method se payment poori karo.',
   },
   {
     id: 4,
-    question: 'How do I update my profile?',
-    answer:
-      'Go to Profile > Edit Profile to update your available profile information and avatar.',
+    question: 'Apni profile kaise badlun?',
+    answer: 'Profile > Edit Profile par jaakar apni details aur avatar badlo.',
   },
   {
     id: 5,
-    question: 'Can I get a refund for a coin purchase?',
+    question: 'Coins kharidne par refund mil sakta hai?',
     answer:
-      'Coin purchases are generally non-refundable after they are successfully credited. If you experience a payment issue, please contact support.',
+      'Coins successfully credit hone ke baad aam taur par refund nahi milta. Payment mein dikkat ho toh support se baat karo.',
   },
   {
     id: 6,
-    question: 'How do I view my call history?',
-    answer:
-      'Open Recents to view your previous conversations and call details.',
+    question: 'Pichhli calls kaise dekhun?',
+    answer: 'Pichhli Calls kholo aur apni calls ki details dekho.',
   },
   {
     id: 7,
-    question: 'How do I delete my account?',
+    question: 'Apna account kaise delete karun?',
     answer:
-      'Go to Profile > Delete Account. Your request will be recorded and reviewed within 15 days. Your data is not deleted immediately, and you can contact support during the review period.',
+      'Profile > Delete Account par jao. Aapki request record hogi aur 15 din ke andar review ki jayegi. Data turant delete nahi hota. Review ke dauraan support se baat kar sakte ho.',
   },
   {
     id: 8,
-    question: 'Is my personal information secure?',
+    question: 'Kya meri personal jaankari safe hai?',
     answer:
-      'Yes. We use industry-standard security practices to protect your personal information and transactions.',
+      'Haan. Aapki personal jaankari aur transactions ko safe rakhne ke liye hum industry-standard security ka istemaal karte hain.',
   },
   {
     id: 9,
-    question: 'Why am I unable to make a call?',
+    question: 'Main call kyun nahi kar paa raha hoon?',
     answer:
-      'Please check your internet connection, microphone permission, and coin balance. Host calls are charged per minute at the price shown before you call. If the issue continues, contact support.',
+      'Internet, mic permission aur coin balance check karo. Expert calls ka charge call se pehle dikhaye rate par per minute lagta hai. Dikkat bani rahe toh support se baat karo.',
   },
   {
     id: 10,
-    question: 'How can I contact customer support?',
-    answer: `You can contact us anytime by emailing ${SUPPORT_EMAIL} from the Contact Us section in the app.`,
+    question: 'Customer support se kaise baat karun?',
+    answer: `Madad ke liye kabhi bhi humein email karo: ${SUPPORT_EMAIL} par. App mein Humse Baat Karo section kholo.`,
   },
 ];
 

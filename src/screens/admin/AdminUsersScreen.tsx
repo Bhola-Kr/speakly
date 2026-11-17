@@ -19,6 +19,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { scopedDatabase as database } from '../../firebase/firebase';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Colors from '../../constants/colors';
+import { callStatusText } from '../../constants/strings';
+import { matchesCallDate } from '../../utils/callMonitoring';
 import { useUser } from '../../hooks/UserContext';
 import { CALL_RATE_PER_MINUTE } from '../../constants/constants';
 import {
@@ -80,6 +82,7 @@ type ExpertCallHistory = {
   endedAt?: number;
   duration: number;
   amount: number;
+  hostEarnings?: number;
   status: string;
   maleInfo?: { name?: string };
   archivedAt?: number;
@@ -221,7 +224,7 @@ const getDailyExpertSummaries = (
   );
 };
 const readableError = (error: any, fallback: string) =>
-  typeof error?.message === 'string' && error.message.trim()
+  !error?.code && typeof error?.message === 'string' && error.message.trim()
     ? error.message
     : fallback;
 const getCreatedAt = (user: UserRecord) => {
@@ -232,7 +235,8 @@ const sortNewestUsersFirst = (records: UserRecord[]) =>
   [...records].sort((a, b) => getCreatedAt(b) - getCreatedAt(a));
 const formatCreatedAt = (value: unknown) => {
   const timestamp = Number(value || 0);
-  if (!Number.isFinite(timestamp) || timestamp <= 0) return 'Date unavailable';
+  if (!Number.isFinite(timestamp) || timestamp <= 0)
+    return 'Date Available Nahi Hai';
   return new Date(timestamp).toLocaleString('en-IN', {
     day: '2-digit',
     month: 'short',
@@ -288,8 +292,32 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [adminTab, setAdminTab] = useState<
-    'users' | 'activity' | 'withdrawals'
+    'users' | 'activity' | 'withdrawals' | 'currentCalls'
   >('users');
+  const [currentCalls, setCurrentCalls] = useState<any[]>([]);
+  const [callFilter, setCallFilter] = useState('');
+  useEffect(() => {
+    if (!allowed || adminTab !== 'currentCalls') return;
+    const ref = database().ref('rooms');
+    const listener = ref.on(
+      'value',
+      snapshot => {
+        setCurrentCalls(
+          Object.values(snapshot.val() || {}).filter(
+            (room: any) =>
+              room.currentCallId &&
+              ['calling', 'ringing', 'accepted', 'active'].includes(
+                room.status,
+              ),
+          ),
+        );
+      },
+      error => Alert.alert('Calls load nahi hui', error.message),
+    );
+    return () => {
+      ref.off('value', listener);
+    };
+  }, [adminTab, allowed]);
   const [expertHistoryRefreshKey, setExpertHistoryRefreshKey] = useState(0);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -433,7 +461,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         setHasMoreUsers(loaded.length === USER_PAGE_SIZE + 1);
       } catch (loadError: any) {
         setError(
-          readableError(loadError, 'Unable to load users. Please try again.'),
+          readableError(loadError, 'Users load nahi hue. Dobara try karo.'),
         );
       } finally {
         setLoading(false);
@@ -524,18 +552,22 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       setLoadingExpertHistory(true);
       setExpertHistoryError('');
       try {
-        const [activitySnapshot, historySnapshot] = await Promise.all([
-          database()
-            .ref(`expertActivity/${selectedExpertUid}`)
-            .orderByChild('createdAt')
-            .limitToLast(ADMIN_QUEUE_LIMIT)
-            .once('value'),
-          database()
-            .ref(`callHistory/${selectedExpertUid}`)
-            .orderByChild('startedAt')
-            .limitToLast(HISTORY_PAGE_SIZE + 1)
-            .once('value'),
-        ]);
+        const [activitySnapshot, historySnapshot, earningsSnapshot] =
+          await Promise.all([
+            database()
+              .ref(`expertActivity/${selectedExpertUid}`)
+              .orderByChild('createdAt')
+              .limitToLast(ADMIN_QUEUE_LIMIT)
+              .once('value'),
+            database()
+              .ref(`callHistory/${selectedExpertUid}`)
+              .orderByChild('startedAt')
+              .limitToLast(HISTORY_PAGE_SIZE + 1)
+              .once('value'),
+            database()
+              .ref(`users/${selectedExpertUid}/expertEarnings/creditedCalls`)
+              .once('value'),
+          ]);
         const recentActivities: ExpertActivity[] = [];
         activitySnapshot.forEach((child: any) => {
           const value = child.val();
@@ -551,10 +583,15 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         const history: ExpertCallHistory[] = [];
         historySnapshot.forEach((child: any) => {
           const value = child.val();
-          if (value && !value.archivedAt) {
+          if (value) {
             history.push({
               ...value,
               id: child.key || value.callId,
+              hostEarnings: Number(
+                earningsSnapshot
+                  .child(`${value.callId || child.key}/amount`)
+                  .val() || 0,
+              ),
             });
           }
           return false;
@@ -589,7 +626,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           setExpertHistoryError(
             readableError(
               loadError,
-              'Unable to load this host’s call history.',
+              'Is expert ki call history load nahi hui.',
             ),
           );
         }
@@ -599,8 +636,35 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     };
 
     loadExpertHistory();
+    const liveHistory = database()
+      .ref(`callHistory/${selectedExpertUid}`)
+      .orderByChild('startedAt')
+      .limitToLast(HISTORY_PAGE_SIZE + 1);
+    const liveEarnings = database().ref(
+      `users/${selectedExpertUid}/expertEarnings/creditedCalls`,
+    );
+    let initialHistory = true,
+      initialEarnings = true;
+    const onHistory = () => {
+      if (initialHistory) {
+        initialHistory = false;
+        return;
+      }
+      loadExpertHistory();
+    };
+    const onEarnings = () => {
+      if (initialEarnings) {
+        initialEarnings = false;
+        return;
+      }
+      loadExpertHistory();
+    };
+    liveHistory.on('value', onHistory);
+    liveEarnings.on('value', onEarnings);
     return () => {
       active = false;
+      liveHistory.off('value', onHistory);
+      liveEarnings.off('value', onEarnings);
     };
   }, [expertHistoryRefreshKey, selectedExpertUid]);
 
@@ -623,11 +687,20 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         .limitToLast(HISTORY_PAGE_SIZE + 1)
         .once('value');
       const loaded: ExpertCallHistory[] = [];
+      const earnings = await database()
+        .ref(`users/${selectedExpertUid}/expertEarnings/creditedCalls`)
+        .once('value');
       snapshot.forEach((child: any) => {
         const value = child.val();
         const id = child.key || value?.callId;
-        if (value && !value.archivedAt && id !== expertHistoryCursor.id) {
-          loaded.push({ ...value, id });
+        if (value && id !== expertHistoryCursor.id) {
+          loaded.push({
+            ...value,
+            id,
+            hostEarnings: Number(
+              earnings.child(`${value.callId || id}/amount`).val() || 0,
+            ),
+          });
         }
         return false;
       });
@@ -651,7 +724,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       setHasMoreExpertHistory(snapshot.numChildren() === HISTORY_PAGE_SIZE + 1);
     } catch (loadError: any) {
       setExpertHistoryError(
-        readableError(loadError, 'Unable to load older call history.'),
+        readableError(loadError, 'Purani calls load nahi hui.'),
       );
     } finally {
       setLoadingMoreExpertHistory(false);
@@ -667,15 +740,15 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       setProcessingWithdrawal(request.id);
       await processWithdrawalRequest(request, decision);
       Alert.alert(
-        decision === 'paid' ? 'Payment Recorded' : 'Request Rejected',
+        decision === 'paid' ? 'Payment Record Ho Gayi' : 'Request Reject Hui',
         decision === 'paid'
-          ? `₹${request.amount} was marked as manually paid.`
-          : `₹${request.amount} was restored to the host's available earnings.`,
+          ? `₹${request.amount} ki payment manually paid mark kar di gayi.`
+          : `₹${request.amount} expert ki available kamai mein wapas add kar diye.`,
       );
     } catch (processError: any) {
       Alert.alert(
-        'Unable to Process Request',
-        readableError(processError, 'Please try again.'),
+        'Request Process Nahi Hui',
+        readableError(processError, 'Dobara try karo.'),
       );
     } finally {
       setProcessingWithdrawal('');
@@ -765,7 +838,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       } catch (searchError: any) {
         if (!cancelled) {
           setSearchResults([]);
-          setError(readableError(searchError, 'Unable to search users.'));
+          setError(readableError(searchError, 'Users ki search nahi hui.'));
         }
       } finally {
         if (!cancelled) setSearching(false);
@@ -779,7 +852,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
 
   const selectUser = async (item: UserRecord) => {
     const uid = String(item.uid || '');
-    if (!uid) return setError('This record has no valid user ID.');
+    if (!uid) return setError('Is record mein sahi user ID nahi hai.');
     let expertRate = DEFAULT_EXPERT_CALL_RATE_PER_MINUTE;
     if (item.isExpert === true) {
       try {
@@ -871,16 +944,16 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         birthYear &&
         (!Number.isInteger(year) || year < 1900 || year > currentYear)
       ) {
-        throw new Error(`Birth year must be between 1900 and ${currentYear}.`);
+        throw new Error(`Janam ka saal 1900 aur ${currentYear}.`);
       }
       const balance = editingUser.balance.trim()
         ? Number(editingUser.balance.trim())
         : 0;
       if (!Number.isFinite(balance))
-        throw new Error('Balance must be a valid number.');
+        throw new Error('Balance mein sahi number likho.');
       const callRatePerMinute = Number(editingUser.callRatePerMinute.trim());
       if (!Number.isFinite(callRatePerMinute) || callRatePerMinute <= 0) {
-        throw new Error('Call rate must be greater than zero.');
+        throw new Error('Call ka rate zero se zyada hona chahiye.');
       }
       const expertCallRatePerMinute = Number(
         editingUser.expertCallRatePerMinute.trim(),
@@ -890,7 +963,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         (!Number.isFinite(expertCallRatePerMinute) ||
           expertCallRatePerMinute <= 0)
       ) {
-        throw new Error('Host earning rate must be greater than zero.');
+        throw new Error('Expert ki kamai ka rate zero se zyada hona chahiye.');
       }
       const avatarText = editingUser.avatarId.trim();
       const avatarId =
@@ -926,11 +999,14 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       }
       updateLocalUser(selectedUid, normalized);
       setEditingUser(normalized);
-      Alert.alert('Saved', 'The user was updated successfully.');
+      Alert.alert('Saved', 'User ki details update ho gayi.');
     } catch (saveError: any) {
-      const message = readableError(saveError, 'Unable to update this user.');
+      const message = readableError(
+        saveError,
+        'User ki details update nahi hui.',
+      );
       setError(message);
-      Alert.alert('Update Failed', message);
+      Alert.alert('Update Nahi Hua', message);
     } finally {
       setSaving(false);
     }
@@ -940,8 +1016,8 @@ export const AdminUsersScreen = ({ navigation }: any) => {
     if (!selectedUid || saving) return;
     const uid = selectedUid;
     Alert.alert(
-      'Delete User Data',
-      `Permanently delete database data for ${uid}? This cannot be undone. The Firebase Authentication account is not deleted.`,
+      'User Ka Data Delete Karo',
+      `Inka database data hamesha ke liye delete karo: ${uid}? Ise wapas nahi laa sakte. Firebase Authentication account delete nahi hoga.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -968,10 +1044,10 @@ export const AdminUsersScreen = ({ navigation }: any) => {
             } catch (deleteError: any) {
               const message = readableError(
                 deleteError,
-                'Unable to delete this user.',
+                'User delete nahi hua.',
               );
               setError(message);
-              Alert.alert('Delete Failed', message);
+              Alert.alert('Delete Nahi Hua', message);
             } finally {
               setSaving(false);
             }
@@ -1017,21 +1093,21 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           return null;
         });
         Alert.alert(
-          "You're Approved!",
+          'Aap Approve Ho Gaye!',
           notification?.delivered
-            ? 'The user now has host access and was notified.'
-            : 'The user now has host access, but no notification could be delivered. Ask them to open Speakly 121 and allow notifications.',
+            ? 'User ko expert access mil gaya aur notification bhej di gayi.'
+            : 'User ko expert access mil gaya, par notification nahi pahunchi. Unse Speakly 121 kholkar notifications allow karne ko kaho.',
         );
         return;
       }
       Alert.alert(
-        'Application Rejected',
-        'The user can continue using Speakly 121 as a caller.',
+        'Application Reject Hui',
+        'User Speakly 121 par customer ki tarah calls kar sakta hai.',
       );
     } catch (reviewError: any) {
       Alert.alert(
-        'Review Failed',
-        readableError(reviewError, 'Unable to update this application.'),
+        'Review Nahi Hua',
+        readableError(reviewError, 'Application update nahi hui.'),
       );
     } finally {
       setReviewingUid('');
@@ -1041,14 +1117,14 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const renderApplications = () => (
     <View style={styles.reviewSection}>
       <View style={styles.reviewHeadingRow}>
-        <Text style={styles.reviewHeading}>Host applications</Text>
+        <Text style={styles.reviewHeading}>Expert Applications</Text>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>{applications.length}</Text>
         </View>
       </View>
       {applications.length === 0 ? (
         <Text style={styles.noApplications}>
-          No applications awaiting review.
+          Abhi koi application review ke liye pending nahi hai.
         </Text>
       ) : (
         applications.map(application => {
@@ -1059,7 +1135,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               <View style={styles.applicationTopRow}>
                 <View style={styles.userCopy}>
                   <Text style={styles.applicationUid} numberOfLines={1}>
-                    {application.applicantName || 'Unnamed applicant'}
+                    {application.applicantName || 'Naam Available Nahi Hai'}
                   </Text>
                   <Text style={styles.applicationPhone} numberOfLines={1}>
                     {application.applicantPhone || application.uid}
@@ -1067,10 +1143,13 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   <Text style={styles.applicationMeta}>
                     {(
                       application.supportedLanguages || [
-                        application.language || 'Unknown language',
+                        application.language || 'Bhasha Available Nahi Hai',
                       ]
                     ).join(', ')}{' '}
-                    · {overdue ? 'Review overdue' : 'Within review window'}
+                    ·{' '}
+                    {overdue
+                      ? 'Review Mein Der Ho Gayi'
+                      : 'Review Ka Time Baaki Hai'}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -1078,7 +1157,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   onPress={() =>
                     application.audioUrl
                       ? Linking.openURL(application.audioUrl)
-                      : Alert.alert('Audio unavailable')
+                      : Alert.alert('Audio available nahi hai')
                   }
                 >
                   <MaterialCommunityIcons
@@ -1110,7 +1189,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   {busy ? (
                     <ActivityIndicator color={Colors.white} />
                   ) : (
-                    <Text style={styles.approveButtonText}>Approve host</Text>
+                    <Text style={styles.approveButtonText}>
+                      Expert Approve Karo
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1124,14 +1205,14 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const renderWithdrawals = () => (
     <View style={styles.reviewSection}>
       <View style={styles.reviewHeadingRow}>
-        <Text style={styles.reviewHeading}>Withdrawal requests</Text>
+        <Text style={styles.reviewHeading}>Withdrawal Requests</Text>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>{withdrawals.length}</Text>
         </View>
       </View>
       {withdrawals.length === 0 ? (
         <Text style={styles.noApplications}>
-          No withdrawals awaiting payment.
+          Abhi koi withdrawal payment pending nahi hai.
         </Text>
       ) : (
         withdrawals.map(request => {
@@ -1163,7 +1244,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   {busy ? (
                     <ActivityIndicator color={Colors.white} />
                   ) : (
-                    <Text style={styles.approveButtonText}>Mark paid</Text>
+                    <Text style={styles.approveButtonText}>
+                      Payment Ho Gayi Mark Karo
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1177,14 +1260,14 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const renderExpertActivity = () => (
     <View style={styles.reviewSection}>
       <View style={styles.reviewHeadingRow}>
-        <Text style={styles.reviewHeading}>Host activity history</Text>
+        <Text style={styles.reviewHeading}>Expert Ki Activity History</Text>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>{expertGroups.length}</Text>
         </View>
       </View>
       {expertGroups.length === 0 ? (
         <Text style={styles.noApplications}>
-          No activity has been recorded yet.
+          Abhi koi activity record nahi hui.
         </Text>
       ) : (
         expertGroups.map(expert => (
@@ -1245,15 +1328,15 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           size={52}
           color={Colors.danger}
         />
-        <Text style={styles.deniedTitle}>Access denied</Text>
+        <Text style={styles.deniedTitle}>Access nahi mila</Text>
         <Text style={styles.deniedText}>
-          This account is not configured as an administrator.
+          Is account ko admin access nahi mila hai.
         </Text>
         <TouchableOpacity
           style={styles.primaryButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.primaryButtonText}>Go Back</Text>
+          <Text style={styles.primaryButtonText}>Wapas Jao</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -1261,7 +1344,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const renderUser = ({ item }: { item: UserRecord }) => {
     const uid = String(item.uid || '');
     const name = String(
-      item.profile?.name || item.profile?.tamilName || 'Unnamed user',
+      item.profile?.name ||
+        item.profile?.tamilName ||
+        'Naam Available Nahi Hai',
     );
     const preferredLanguage = getPreferredLanguage(item);
     const isExpertAccount =
@@ -1289,7 +1374,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           </Text>
           {isExpertAccount && preferredLanguage ? (
             <Text style={styles.userLanguage} numberOfLines={1}>
-              Host language: {preferredLanguage}
+              Expert Ki Bhasha: {preferredLanguage}
             </Text>
           ) : null}
           {isExpertAccount ? (
@@ -1320,13 +1405,13 @@ export const AdminUsersScreen = ({ navigation }: any) => {
             color={Colors.text}
           />
         </TouchableOpacity>
-        <Text style={styles.title}>Manage Users</Text>
+        <Text style={styles.title}>Users Manage Karo</Text>
         <TouchableOpacity
           disabled={refreshing}
           onPress={refreshAdminData}
           style={styles.iconButton}
           accessibilityRole="button"
-          accessibilityLabel="Refresh admin data"
+          accessibilityLabel="Admin Data Refresh Karo"
         >
           {refreshing ? (
             <ActivityIndicator size="small" color={Colors.secondary} />
@@ -1344,6 +1429,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           [
             { id: 'users', label: 'Users', count: applications.length },
             { id: 'activity', label: 'Activity', count: 0 },
+            { id: 'currentCalls', label: 'Abhi Ki Calls', count: 0 },
             {
               id: 'withdrawals',
               label: 'Withdrawals',
@@ -1394,6 +1480,46 @@ export const AdminUsersScreen = ({ navigation }: any) => {
         onEndReachedThreshold={0.35}
         ListHeaderComponent={
           <>
+            {adminTab === 'currentCalls' && (
+              <View>
+                <TextInput
+                  style={styles.searchInput}
+                  value={callFilter}
+                  onChangeText={setCallFilter}
+                  placeholder="Date/time chuno: YYYY-MM-DD HH:mm"
+                />
+                {currentCalls
+                  .filter(room =>
+                    matchesCallDate(
+                      room.callStartedAt || room.callRequestedAt,
+                      callFilter,
+                    ),
+                  )
+                  .map(room => (
+                    <View
+                      key={room.currentCallId}
+                      style={{ paddingVertical: 12 }}
+                    >
+                      <Text>
+                        {room.female?.name} — {room.male?.name}
+                      </Text>
+                      <Text>
+                        {callStatusText(room.status)} ·{' '}
+                        {new Date(
+                          room.callStartedAt || room.callRequestedAt,
+                        ).toLocaleString()}
+                      </Text>
+                      <Text>
+                        {Math.floor(Number(room.billableMs || 0) / 1000)}s · ₹
+                        {Number(room.chargedAmount || 0)}
+                      </Text>
+                    </View>
+                  ))}
+                {!currentCalls.length && (
+                  <Text>Abhi koi active call nahi hai.</Text>
+                )}
+              </View>
+            )}
             {adminTab === 'withdrawals' && renderWithdrawals()}
             {adminTab === 'activity' && renderExpertActivity()}
             {adminTab === 'users' && (
@@ -1402,7 +1528,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 <TextInput
                   value={query}
                   onChangeText={setQuery}
-                  placeholder="Search all users..."
+                  placeholder="Users Dhundho…"
                   placeholderTextColor={Colors.placeholder}
                   style={styles.searchInput}
                   autoCapitalize="none"
@@ -1414,7 +1540,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   <Text style={styles.resultText}>
                     {isSearching
                       ? `${displayedUsers.length} matches`
-                      : `${users.length} users loaded`}
+                      : `${users.length} users load ho gaye`}
                   </Text>
                   {searching ? (
                     <ActivityIndicator size="small" color={Colors.secondary} />
@@ -1429,7 +1555,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
             <ActivityIndicator color={Colors.secondary} style={styles.loader} />
           ) : (
             <Text style={styles.empty}>
-              {isSearching ? 'No users found.' : 'No users available.'}
+              {isSearching
+                ? 'Koi user nahi mila.'
+                : 'Abhi koi user available nahi hai.'}
             </Text>
           )
         }
@@ -1440,7 +1568,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               style={styles.footerLoader}
             />
           ) : !isSearching && users.length > 0 && !hasMoreUsers ? (
-            <Text style={styles.endText}>All users loaded</Text>
+            <Text style={styles.endText}>Saare users load ho gaye</Text>
           ) : null
         }
       />
@@ -1468,7 +1596,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 />
               </TouchableOpacity>
               <View style={styles.modalTitleCopy}>
-                <Text style={styles.editorTitle}>Edit User</Text>
+                <Text style={styles.editorTitle}>User Ki Details Badlo</Text>
                 <Text style={styles.uidText} numberOfLines={1}>
                   {selectedUid}
                 </Text>
@@ -1489,12 +1617,12 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   placeholder="Name"
                   placeholderTextColor={Colors.placeholder}
                 />
-                <Text style={styles.label}>Tamil Name</Text>
+                <Text style={styles.label}>Tamil Naam</Text>
                 <TextInput
                   value={editingUser.tamilName}
                   onChangeText={value => updateField('tamilName', value)}
                   style={styles.input}
-                  placeholder="Tamil name"
+                  placeholder="Tamil naam"
                   placeholderTextColor={Colors.placeholder}
                 />
                 <Text style={styles.label}>Gender</Text>
@@ -1505,7 +1633,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   placeholder="Gender"
                   placeholderTextColor={Colors.placeholder}
                 />
-                <Text style={styles.label}>Birth Year</Text>
+                <Text style={styles.label}>Janam Ka Saal</Text>
                 <TextInput
                   value={editingUser.birthYear}
                   onChangeText={value =>
@@ -1558,9 +1686,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 <Text style={styles.sectionTitle}>Verification</Text>
                 <View style={styles.switchRow}>
                   <View style={styles.switchCopy}>
-                    <Text style={styles.switchTitle}>Host access</Text>
+                    <Text style={styles.switchTitle}>Expert Access</Text>
                     <Text style={styles.switchHelp}>
-                      Experts can go online and receive paid calls.
+                      Experts online aakar paid calls le sakte hain.
                     </Text>
                   </View>
                   <Switch
@@ -1571,9 +1699,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 </View>
                 <View style={styles.switchRow}>
                   <View style={styles.switchCopy}>
-                    <Text style={styles.switchTitle}>Voice Verified</Text>
+                    <Text style={styles.switchTitle}>Awaaz Verify Ho Gayi</Text>
                     <Text style={styles.switchHelp}>
-                      Mark this user's voice verification status.
+                      Is user ka voice verification status chuno.
                     </Text>
                   </View>
                   <Switch
@@ -1582,9 +1710,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                     trackColor={{ false: Colors.border, true: Colors.primary }}
                   />
                 </View>
-                <Text style={styles.sectionTitle}>My Coins</Text>
+                <Text style={styles.sectionTitle}>Mere Coins</Text>
                 <Text style={styles.label}>
-                  User charge rate (coins per minute)
+                  Customer Ka Rate (coins per minute)
                 </Text>
                 <TextInput
                   value={editingUser.callRatePerMinute}
@@ -1602,7 +1730,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 {editingUser.isExpert && (
                   <>
                     <Text style={styles.label}>
-                      Host earning rate (₹ per minute)
+                      Expert Ki Kamai (₹ per minute)
                     </Text>
                     <TextInput
                       value={editingUser.expertCallRatePerMinute}
@@ -1618,8 +1746,8 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                       keyboardType="decimal-pad"
                     />
                     <Text style={styles.switchHelp}>
-                      Private payout rate. Only the host and administrators can
-                      see it.
+                      Kamai ka private rate. Sirf expert aur admin ise dekh
+                      sakte hain.
                     </Text>
                   </>
                 )}
@@ -1645,7 +1773,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   {saving ? (
                     <ActivityIndicator color={Colors.white} />
                   ) : (
-                    <Text style={styles.primaryButtonText}>Save Changes</Text>
+                    <Text style={styles.primaryButtonText}>Save Karo</Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1653,7 +1781,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   style={[styles.deleteButton, saving && styles.buttonDisabled]}
                   onPress={deleteUser}
                 >
-                  <Text style={styles.deleteText}>Delete User Data</Text>
+                  <Text style={styles.deleteText}>
+                    User Ka Data Delete Karo
+                  </Text>
                 </TouchableOpacity>
               </ScrollView>
             ) : null}
@@ -1671,7 +1801,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               style={styles.iconButton}
               onPress={() => setSelectedExpert(null)}
               accessibilityRole="button"
-              accessibilityLabel="Close host history"
+              accessibilityLabel="Expert Ki History Band Karo"
             >
               <MaterialCommunityIcons
                 name="arrow-left"
@@ -1680,14 +1810,14 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               />
             </TouchableOpacity>
             <View style={styles.modalTitleCopy}>
-              <Text style={styles.editorTitle}>Host history</Text>
+              <Text style={styles.editorTitle}>Expert Ki History</Text>
             </View>
             <TouchableOpacity
               disabled={loadingExpertHistory}
               style={styles.iconButton}
               onPress={() => setExpertHistoryRefreshKey(key => key + 1)}
               accessibilityRole="button"
-              accessibilityLabel="Refresh host history"
+              accessibilityLabel="Expert Ki History Refresh Karo"
             >
               {loadingExpertHistory ? (
                 <ActivityIndicator size="small" color={Colors.secondary} />
@@ -1717,7 +1847,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                     <Text style={styles.expertStatValue}>
                       {expertCallHistory.length}
                     </Text>
-                    <Text style={styles.expertStatLabel}>Total calls</Text>
+                    <Text style={styles.expertStatLabel}>Kul Calls</Text>
                   </View>
                   <View style={styles.expertStat}>
                     <Text style={styles.expertStatValue}>
@@ -1728,7 +1858,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                         ),
                       )}
                     </Text>
-                    <Text style={styles.expertStatLabel}>Call time</Text>
+                    <Text style={styles.expertStatLabel}>Call Ka Samay</Text>
                   </View>
                   <View style={styles.expertStat}>
                     <Text style={styles.expertStatValue}>
@@ -1736,7 +1866,9 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                         getOnlineDuration(selectedExpert.activities),
                       )}
                     </Text>
-                    <Text style={styles.expertStatLabel}>Online time</Text>
+                    <Text style={styles.expertStatLabel}>
+                      Online Rehne Ka Samay
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -1774,7 +1906,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                         styles.expertHistoryTabTextSelected,
                     ]}
                   >
-                    Daily Activity
+                    Roz Ki Activity
                   </Text>
                 </TouchableOpacity>
 
@@ -1807,7 +1939,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                         styles.expertHistoryTabTextSelected,
                     ]}
                   >
-                    Call History
+                    Pichhli Calls
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1815,7 +1947,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               {expertHistoryTab === 'activity' ? (
                 <>
                   <Text style={styles.expertHistoryHeading}>
-                    Daily activity
+                    Roz Ki Activity
                   </Text>
                   {loadingExpertHistory ? (
                     <ActivityIndicator
@@ -1824,7 +1956,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                     />
                   ) : dailyExpertSummaries.length === 0 ? (
                     <Text style={styles.noApplications}>
-                      No daily activity is available for this host.
+                      Is expert ki abhi koi roz ki activity nahi hai.
                     </Text>
                   ) : (
                     dailyExpertSummaries.map(day => (
@@ -1867,7 +1999,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                           </View>
                         </View>
                         <Text style={styles.dailyCallTime}>
-                          Total call time: {formatDuration(day.callDuration)}
+                          Kul call samay: {formatDuration(day.callDuration)}
                         </Text>
                       </View>
                     ))
@@ -1875,7 +2007,13 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                 </>
               ) : (
                 <>
-                  <Text style={styles.expertHistoryHeading}>Call history</Text>
+                  <Text style={styles.expertHistoryHeading}>Pichhli Calls</Text>
+                  <TextInput
+                    style={styles.searchInput}
+                    value={callFilter}
+                    onChangeText={setCallFilter}
+                    placeholder="Date/time chuno (local date ya time)"
+                  />
                   {loadingExpertHistory ? (
                     <ActivityIndicator
                       color={Colors.secondary}
@@ -1885,40 +2023,72 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                     <Text style={styles.error}>{expertHistoryError}</Text>
                   ) : expertCallHistory.length === 0 ? (
                     <Text style={styles.noApplications}>
-                      No call history is available for this host.
+                      Is expert ki abhi koi call history nahi hai.
                     </Text>
                   ) : (
-                    expertCallHistory.map(call => (
-                      <View key={call.id} style={styles.expertCallCard}>
-                        <View style={styles.expertCallCopy}>
-                          <Text style={styles.expertCallName} numberOfLines={1}>
-                            {call.maleInfo?.name || 'Caller'}
-                          </Text>
-                          <Text style={styles.expertCallMeta}>
-                            {call.startedAt
-                              ? new Date(call.startedAt).toLocaleString(
-                                  'en-IN',
-                                  {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  },
-                                )
-                              : 'Date unavailable'}
-                          </Text>
+                    expertCallHistory
+                      .filter(call =>
+                        matchesCallDate(call.startedAt || 0, callFilter),
+                      )
+                      .map(call => (
+                        <View key={call.id} style={styles.expertCallCard}>
+                          <View style={styles.expertCallCopy}>
+                            <Text
+                              style={styles.expertCallName}
+                              numberOfLines={1}
+                            >
+                              {call.maleInfo?.name || 'Customer'}
+                            </Text>
+                            <Text style={styles.expertCallMeta}>
+                              {call.startedAt
+                                ? new Date(call.startedAt).toLocaleString(
+                                    'en-IN',
+                                    {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    },
+                                  )
+                                : 'Date Available Nahi Hai'}
+                            </Text>
+                            <Text
+                              style={styles.expertCallMeta}
+                              numberOfLines={1}
+                            >
+                              Expert:{' '}
+                              {selectedExpert?.expertName || selectedExpertUid}
+                            </Text>
+                            <Text
+                              style={styles.expertCallMeta}
+                              numberOfLines={1}
+                            >
+                              Khatam:{' '}
+                              {call.endedAt
+                                ? new Date(call.endedAt).toLocaleString('en-IN')
+                                : '—'}
+                            </Text>
+                          </View>
+                          <View style={styles.expertCallDetails}>
+                            <Text style={styles.expertCallDuration}>
+                              {formatDuration(Number(call.duration || 0))}
+                            </Text>
+                            <Text style={styles.expertCallStatus}>
+                              {callStatusText(call.status)}
+                            </Text>
+                            <Text style={styles.expertCallMeta}>
+                              Customer: ₹{Number(call.amount || 0)}
+                            </Text>
+                            <Text style={styles.expertCallMeta}>
+                              Host:{' '}
+                              {call.hostEarnings === undefined
+                                ? '—'
+                                : `₹${call.hostEarnings}`}
+                            </Text>
+                          </View>
                         </View>
-                        <View style={styles.expertCallDetails}>
-                          <Text style={styles.expertCallDuration}>
-                            {formatDuration(Number(call.duration || 0))}
-                          </Text>
-                          <Text style={styles.expertCallStatus}>
-                            {call.status || 'Unknown'}
-                          </Text>
-                        </View>
-                      </View>
-                    ))
+                      ))
                   )}
                   {hasMoreExpertHistory ? (
                     <TouchableOpacity
@@ -1930,7 +2100,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                         <ActivityIndicator color={Colors.secondary} />
                       ) : (
                         <Text style={styles.loadMoreText}>
-                          Load older calls
+                          Purani Calls Dekho
                         </Text>
                       )}
                     </TouchableOpacity>

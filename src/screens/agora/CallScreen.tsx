@@ -42,6 +42,7 @@ import {
 import Colors from '../../constants/colors';
 import { copy } from '../../constants/strings';
 import RoomService from '../../firebase/RoomService';
+import { fetchAgoraToken } from '../../api/calls';
 import {
   getFemaleAvatar,
   getMaleAvatar,
@@ -110,7 +111,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     callRatePerMinute: routeCallRate,
     agora,
   } = route?.params ?? {};
-  const channelName = String(routeChannelName || agora?.channelName || 'voice_tamil');
+  const channelName = String(routeChannelName || agora?.channelName || '');
   const callRatePerMinute = normalizeCallRate(routeCallRate);
 
   const token = gender === 'male' ? agora?.male?.token : agora?.female?.token;
@@ -127,6 +128,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   );
 
   const engine = useRef<IRtcEngine | null>(null);
+  const rtcGeneration = useRef(0);
 
   const timerRef = useRef<(() => void) | null>(null);
   const billingTimerRef = useRef<(() => void) | null>(null);
@@ -203,11 +205,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       );
       if (hasCompletedCall) return;
       const room = roomSnapshot.val();
-      const roomStartedAt = Number(room?.callStartedAt);
-      const startedAt =
-        Number.isFinite(roomStartedAt) && roomStartedAt > 0
-          ? roomStartedAt
-          : Date.now();
+      const billableMs = Number(room?.billableMs || 0);
       const creditedAmount = Number(user?.offers?.signupOffer?.amount);
 
       stopListeningForOffer = listenSignupOffer(config => {
@@ -219,7 +217,9 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           return;
         }
 
-        const endsAt = startedAt + config.freeMinutes * BILLING_INTERVAL_MS;
+        const endsAt =
+          Date.now() +
+          Math.max(0, config.freeMinutes * BILLING_INTERVAL_MS - billableMs);
         setFreeCallMinutes(config.freeMinutes);
         setFreeCallAmount(
           Number.isFinite(creditedAmount) && creditedAmount > 0
@@ -309,12 +309,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       return;
     }
 
-    seconds.current = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-    setElapsedSeconds(seconds.current);
-    timerRef.current = setCallInterval(() => {
-      seconds.current = Math.floor((Date.now() - startedAt) / 1000);
-      setElapsedSeconds(seconds.current);
-    }, 1000);
+    // Connected duration is supplied by backend-confirmed intervals.
+    void startedAt;
   }, []);
 
   const stopTimer = useCallback(() => {
@@ -322,9 +318,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       timerRef.current();
       timerRef.current = null;
     }
-
-    seconds.current = 0;
-    setElapsedSeconds(0);
   }, []);
 
   const formatCallTime = (totalSeconds: number) => {
@@ -370,7 +363,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           callConnectedAtRef.current
             ? Math.max(0, (Date.now() - callConnectedAtRef.current) / 1000)
             : 0,
-          endReason || (callConnectedAtRef.current ? 'normal' : 'not_connected'),
+          endReason ||
+            (callConnectedAtRef.current ? 'normal' : 'not_connected'),
         );
       }
       peerRecoveryRef.current?.();
@@ -423,7 +417,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
       if (updateRoom && femaleUid) {
         try {
-          await RoomService.endCall(femaleUid);
+          await RoomService.endCall(femaleUid, callId);
         } catch (error) {
           console.error('Unable to update ended call:', error);
         }
@@ -458,7 +452,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       setFreeCallSecondsRemaining(remaining);
 
       if (remaining === 0 && !callEndedRef.current) {
-        setStatus('Free minutes ended');
+        setStatus('Free Minutes Khatam Ho Gaye');
         endingTimer = setTimeout(
           () => finishCall(true, 'free_call_expired'),
           800,
@@ -501,11 +495,11 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     billingChargeInProgressRef.current = true;
 
     try {
-      return await RoomService.chargeCallMinute(femaleUid);
+      return await RoomService.chargeCallMinute(femaleUid, callId);
     } finally {
       billingChargeInProgressRef.current = false;
     }
-  }, [femaleUid]);
+  }, [femaleUid, callId]);
 
   const startBilling = useCallback(async () => {
     if (
@@ -541,199 +535,307 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
             Date.now() >= freeCallEndsAtRef.current)
         )
           return;
-        const nextMinuteCharged = await chargeNextMinute();
-
-        if (!nextMinuteCharged) {
-          await endForInsufficientBalance();
+        try {
+          const nextMinuteCharged = await chargeNextMinute();
+          if (!nextMinuteCharged) {
+            await endForInsufficientBalance();
+          }
+        } catch {
+          if (!callEndedRef.current) setStatus(copy.call.reconnecting);
         }
-      }, 60 * 1000);
+      }, 5000);
+    } catch {
+      if (!callEndedRef.current) setStatus(copy.call.reconnecting);
     } finally {
       billingStartingRef.current = false;
     }
   }, [chargeNextMinute, endForInsufficientBalance, gender]);
 
-  const initializeAgora = useCallback(async () => {
-    const permission = await requestPermission();
+  const initializeAgora = useCallback(
+    async (generation: number) => {
+      const permission = await requestPermission();
 
-    if (callEndedRef.current) {
-      return;
-    }
+      if (callEndedRef.current || generation !== rtcGeneration.current) {
+        return;
+      }
 
-    if (!permission) {
-      Alert.alert('Permission', 'Microphone permission required.');
-      await finishCall();
-      return;
-    }
+      if (!permission) {
+        Alert.alert('Permission', 'Mic ki permission zaroori hai.');
+        await finishCall();
+        return;
+      }
 
-    try {
-      await startCallRuntime();
-    } catch (error) {
-      console.error('Unable to start background call service:', error);
-      Alert.alert(
-        'Unable to start call',
-        'Please reopen Speakly 121 and try again.',
+      try {
+        await startCallRuntime();
+      } catch (error) {
+        if (generation !== rtcGeneration.current) return;
+        console.error('Unable to start background call service:', error);
+        Alert.alert(
+          'Call shuru nahi hui',
+          'Speakly 121 dobara kholo aur try karo.',
+        );
+        await finishCall();
+        return;
+      }
+      if (callEndedRef.current || generation !== rtcGeneration.current) {
+        return;
+      }
+
+      const rtcEngine = createAgoraRtcEngine();
+      const isCurrentSession = () =>
+        generation === rtcGeneration.current &&
+        !callEndedRef.current &&
+        engine.current === rtcEngine;
+
+      rtcEngine.initialize({
+        appId: 'f6bec5b940ea4b11af21f3b931f73536', // Replace with your Agora App ID
+      });
+
+      rtcEngine.enableAudio();
+
+      rtcEngine.setChannelProfile(
+        ChannelProfileType.ChannelProfileCommunication,
       );
-      await finishCall();
-      return;
-    }
-    if (callEndedRef.current) {
-      stopCallRuntime();
-      return;
-    }
 
-    const rtcEngine = createAgoraRtcEngine();
+      rtcEngine.setClientRole(ClientRoleType.ClientRoleBroadcaster);
 
-    rtcEngine.initialize({
-      appId: 'f6bec5b940ea4b11af21f3b931f73536', // Replace with your Agora App ID
-    });
+      rtcEngine.setEnableSpeakerphone(false);
 
-    rtcEngine.enableAudio();
+      rtcEngine.registerEventHandler({
+        onJoinChannelSuccess: () => {
+          if (!isCurrentSession()) return;
+          setStatus(copy.call.connecting);
+        },
 
-    rtcEngine.setChannelProfile(ChannelProfileType.ChannelProfileCommunication);
-
-    rtcEngine.setClientRole(ClientRoleType.ClientRoleBroadcaster);
-
-    rtcEngine.setEnableSpeakerphone(false);
-
-    rtcEngine.registerEventHandler({
-      onJoinChannelSuccess: () => {
-        setStatus(copy.call.connecting);
-      },
-
-      onUserJoined: async () => {
-        if (callEndedRef.current) {
-          return;
-        }
-        peerRecoveryRef.current?.();
-        peerRecoveryRef.current = null;
-        connectedRef.current = true;
-        setConnected(true);
-        if (!callConnectedAtRef.current) {
-          callConnectedAtRef.current = Date.now();
-          trackCallConnected(isCaller ? 'caller' : 'expert', callRatePerMinute);
-        } else {
-          trackCallLifecycle('CallReconnected', {
-            role: isCaller ? 'caller' : 'expert',
-            ...(callId ? { call_id: callId } : {}),
-          });
-        }
-
-        setStatus(copy.call.connected);
-
-        const participantUid =
-          gender === 'male' ? auth().currentUser?.uid : femaleUid;
-        if (callId && participantUid) {
-          await RoomService.startCallPresence(callId, participantUid).catch(
-            error => console.warn('Unable to mark call presence:', error),
-          );
-        }
-
-        const callStartedAt = await RoomService.callConnected(femaleUid);
-        startTimer(callStartedAt);
-        if (isCaller && !callStartedTrackedRef.current) {
-          callStartedTrackedRef.current = true;
-          trackCallStarted('caller', callRatePerMinute);
-        }
-        await startBilling();
-      },
-
-      onUserOffline: (_connection, _remoteUid, reason) => {
-        if (reason === UserOfflineReasonType.UserOfflineQuit) {
-          finishCallFromRemote(true, 'The host ended the call.');
-        } else {
-          connectedRef.current = false;
-          setConnected(false);
-          trackCallLifecycle('CallConnectionLost', {
-            role: isCaller ? 'caller' : 'expert',
-            ...(callId ? { call_id: callId } : {}),
-          });
-          pauseBilling();
-          setStatus(copy.call.reconnecting);
-          if (!peerRecoveryRef.current) {
-            peerRecoveryRef.current = setCallInterval(async () => {
-              peerRecoveryRef.current?.();
-              peerRecoveryRef.current = null;
-              await finishCall();
-            }, 120000);
+        onUserJoined: async (_connection, remoteUid) => {
+          const expectedPeer = isCaller ? agora?.female?.uid : agora?.male?.uid;
+          if (!isCurrentSession() || remoteUid !== expectedPeer) {
+            return;
           }
-        }
-      },
+          peerRecoveryRef.current?.();
+          peerRecoveryRef.current = null;
+          connectedRef.current = true;
+          setConnected(true);
+          if (!callConnectedAtRef.current) {
+            callConnectedAtRef.current = Date.now();
+            trackCallConnected(
+              isCaller ? 'caller' : 'expert',
+              callRatePerMinute,
+            );
+          } else {
+            trackCallLifecycle('CallReconnected', {
+              role: isCaller ? 'caller' : 'expert',
+              ...(callId ? { call_id: callId } : {}),
+            });
+          }
 
-      onLocalAudioStateChanged: (_connection, state, reason) => {
-        if (callEndedRef.current) return;
-        if (
-          reason === LocalAudioStreamReason.LocalAudioStreamReasonInterrupted ||
-          reason === LocalAudioStreamReason.LocalAudioStreamReasonDeviceBusy
-        ) {
-          setStatus(copy.call.reconnecting);
-        } else if (
-          state === LocalAudioStreamState.LocalAudioStreamStateRecording ||
-          state === LocalAudioStreamState.LocalAudioStreamStateEncoding
-        ) {
           setStatus(copy.call.connected);
-        }
-      },
 
-      onConnectionStateChanged: (_connection, state: ConnectionStateType) => {
-        switch (state) {
-          case ConnectionStateType.ConnectionStateConnecting:
-            setStatus(copy.call.connecting);
-            break;
+          const participantUid =
+            gender === 'male' ? auth().currentUser?.uid : femaleUid;
+          if (callId && participantUid) {
+            await RoomService.startCallPresence(callId, participantUid).catch(
+              error => console.warn('Unable to mark call presence:', error),
+            );
+          }
 
-          case ConnectionStateType.ConnectionStateConnected:
-            setStatus(copy.call.connected);
-            break;
+          if (!isCurrentSession()) return;
+          let callStartedAt: number;
+          try {
+            callStartedAt = await RoomService.callConnected(femaleUid, callId);
+          } catch {
+            if (isCurrentSession()) await finishCall(false);
+            return;
+          }
+          if (!isCurrentSession()) return;
+          startTimer(callStartedAt);
+          if (isCaller && !callStartedTrackedRef.current) {
+            callStartedTrackedRef.current = true;
+            trackCallStarted('caller', callRatePerMinute);
+          }
+          await startBilling();
+        },
 
-          case ConnectionStateType.ConnectionStateReconnecting:
+        onUserOffline: (_connection, _remoteUid, reason) => {
+          if (!isCurrentSession()) return;
+          if (_remoteUid !== (isCaller ? agora?.female?.uid : agora?.male?.uid))
+            return;
+          RoomService.callSessionEvent(femaleUid, callId, 'disconnected').catch(
+            console.warn,
+          );
+          if (reason === UserOfflineReasonType.UserOfflineQuit) {
+            finishCallFromRemote(true, 'Expert ne call khatam kar di.');
+          } else {
+            connectedRef.current = false;
+            setConnected(false);
+            trackCallLifecycle('CallConnectionLost', {
+              role: isCaller ? 'caller' : 'expert',
+              ...(callId ? { call_id: callId } : {}),
+            });
+            pauseBilling();
+            stopTimer();
             setStatus(copy.call.reconnecting);
-            break;
-
-          case ConnectionStateType.ConnectionStateDisconnected:
-            if (!callEndedRef.current) {
-              connectedRef.current = false;
-              setConnected(false);
-              pauseBilling();
-              setStatus(copy.call.reconnecting);
+            if (!peerRecoveryRef.current) {
+              peerRecoveryRef.current = setCallInterval(async () => {
+                peerRecoveryRef.current?.();
+                peerRecoveryRef.current = null;
+                await finishCall();
+              }, 120000);
             }
-            break;
+          }
+        },
 
-          case ConnectionStateType.ConnectionStateFailed:
-            finishCall();
-            break;
+        onLocalAudioStateChanged: (_connection, state, reason) => {
+          if (!isCurrentSession()) return;
+          if (
+            reason ===
+              LocalAudioStreamReason.LocalAudioStreamReasonInterrupted ||
+            reason === LocalAudioStreamReason.LocalAudioStreamReasonDeviceBusy
+          ) {
+            setStatus(copy.call.reconnecting);
+          } else if (
+            state === LocalAudioStreamState.LocalAudioStreamStateRecording ||
+            state === LocalAudioStreamState.LocalAudioStreamStateEncoding
+          ) {
+            setStatus(copy.call.connected);
+          }
+        },
+
+        onConnectionStateChanged: (_connection, state: ConnectionStateType) => {
+          if (!isCurrentSession()) return;
+          switch (state) {
+            case ConnectionStateType.ConnectionStateConnecting:
+              setStatus(copy.call.connecting);
+              break;
+
+            case ConnectionStateType.ConnectionStateConnected:
+              setStatus(copy.call.connected);
+              if (
+                callConnectedAtRef.current &&
+                !peerRecoveryRef.current &&
+                !connectedRef.current &&
+                !callEndedRef.current
+              ) {
+                RoomService.callSessionEvent(femaleUid, callId, 'connected')
+                  .then(() => {
+                    if (isCurrentSession()) {
+                      connectedRef.current = true;
+                      setConnected(true);
+                    }
+                  })
+                  .catch(console.warn);
+              }
+              break;
+
+            case ConnectionStateType.ConnectionStateReconnecting:
+              setStatus(copy.call.reconnecting);
+            case ConnectionStateType.ConnectionStateDisconnected:
+              RoomService.callSessionEvent(
+                femaleUid,
+                callId,
+                'disconnected',
+              ).catch(console.warn);
+              if (!callEndedRef.current) {
+                connectedRef.current = false;
+                setConnected(false);
+                pauseBilling();
+                stopTimer();
+                setStatus(copy.call.reconnecting);
+              }
+              break;
+
+            case ConnectionStateType.ConnectionStateFailed:
+              finishCall();
+              break;
+          }
+        },
+      });
+
+      engine.current = rtcEngine;
+
+      if (!callId || channelName !== `call_${callId}` || !uid) {
+        Alert.alert('Call Mein Dikkat', 'Call shuru nahi hui.');
+        await finishCall();
+        return;
+      }
+
+      let ownToken: string;
+      try {
+        const credentials = await fetchAgoraToken(channelName);
+        ownToken = isCaller ? credentials.male.token : credentials.female.token;
+        if (!ownToken) throw new Error('Call access nahi mila.');
+      } catch {
+        if (isCurrentSession()) await finishCall();
+        return;
+      }
+      if (!isCurrentSession()) return;
+      rtcEngine.joinChannel(ownToken, channelName, uid, {
+        clientRoleType: ClientRoleType.ClientRoleBroadcaster,
+      });
+    },
+    [
+      callRatePerMinute,
+      callId,
+      channelName,
+      femaleUid,
+      finishCall,
+      finishCallFromRemote,
+      isCaller,
+      gender,
+      requestPermission,
+      pauseBilling,
+      startTimer,
+      stopTimer,
+      startBilling,
+      token,
+      uid,
+    ],
+  );
+
+  useEffect(() => {
+    if (!connected || !callId || !femaleUid) return;
+    let active = true;
+    let pending = false;
+    const heartbeat = async () => {
+      if (pending || callEndedRef.current) return;
+      pending = true;
+      try {
+        const result = await RoomService.callSessionEvent(
+          femaleUid,
+          callId,
+          'heartbeat',
+        );
+        if (!active) return;
+        setBillingStarted(result.active);
+        seconds.current = Math.floor(result.duration / 1000);
+        setElapsedSeconds(seconds.current);
+        if (freeCallEndsAtRef.current > 0) {
+          const endsAt =
+            Date.now() +
+            Math.max(
+              0,
+              freeCallMinutes * BILLING_INTERVAL_MS - result.duration,
+            );
+          freeCallEndsAtRef.current = endsAt;
+          setFreeCallEndsAt(endsAt);
         }
-      },
-    });
-
-    engine.current = rtcEngine;
-
-    if (!token || uid === undefined) {
-      Alert.alert('Call Error', 'Unable to initialize the call.');
-      await finishCall();
-      return;
-    }
-
-    rtcEngine.joinChannel(token, channelName, uid, {
-      clientRoleType: ClientRoleType.ClientRoleBroadcaster,
-    });
-  }, [
-    callRatePerMinute,
-    callId,
-    channelName,
-    femaleUid,
-    finishCall,
-    finishCallFromRemote,
-    isCaller,
-    gender,
-    requestPermission,
-    pauseBilling,
-    startTimer,
-    startBilling,
-    token,
-    uid,
-  ]);
+        if (result.ended || result.insufficient) await finishCall(false);
+      } catch {
+        if (active) setStatus(copy.call.reconnecting);
+      } finally {
+        pending = false;
+      }
+    };
+    heartbeat();
+    const timer = setInterval(heartbeat, 5000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [connected, femaleUid, callId, finishCall, freeCallMinutes]);
 
   const leaveCall = () => {
-    Alert.alert('End Call', 'Are you sure you want to end this call?', [
+    Alert.alert('Call Khatam Karo', 'Kya aap call khatam karna chahte ho?', [
       {
         text: 'Cancel',
         style: 'cancel',
@@ -775,22 +877,19 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     const reportedUid = gender === 'male' ? femaleUid : maleUid;
 
     if (!reporterUid || !reportedUid) {
-      Alert.alert(
-        'Unable to Report',
-        'The other user could not be identified.',
-      );
+      Alert.alert('Report Nahi Gayi', 'Dusre user ki pehchaan nahi hui.');
       return;
     }
 
     RoomService.reportUser(reporterUid, reportedUid, reason)
       .then(() => {
         Alert.alert(
-          'Report Submitted',
-          'Your report has been received and will be reviewed by our moderation team.',
+          'Report Bhej Di Gayi',
+          'Report mil gayi hai. Hamari moderation team ise check karegi.',
         );
       })
       .catch(() => {
-        Alert.alert('Unable to Report', 'Please try again.');
+        Alert.alert('Report Nahi Gayi', 'Dobara try karo.');
       });
   };
 
@@ -799,14 +898,14 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       return;
     }
 
-    Alert.alert('Report User', 'Choose a reason for this report.', [
+    Alert.alert('User Ko Report Karo', 'Report ka reason chuno.', [
       {
         text: 'Harassment',
         onPress: () => reportUser('Harassment'),
       },
       {
-        text: 'Inappropriate behaviour',
-        onPress: () => reportUser('Inappropriate behaviour'),
+        text: 'Galat Vyavahaar',
+        onPress: () => reportUser('Galat Vyavahaar'),
       },
       {
         text: 'Other',
@@ -825,13 +924,13 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     const blockedUid = gender === 'male' ? femaleUid : maleUid;
 
     if (!blockerUid || !blockedUid) {
-      Alert.alert('Unable to Block', 'The other user could not be identified.');
+      Alert.alert('Block Nahi Hua', 'Dusre user ki pehchaan nahi hui.');
       return;
     }
 
     Alert.alert(
-      'Block User',
-      `Block ${displayName}? You will no longer be able to call each other.`,
+      'User Ko Block Karo',
+      `Block ${displayName}? Iske baad aap ek-dusre ko call nahi kar paoge.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -844,7 +943,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               await RoomService.blockUser(blockerUid, blockedUid);
               await finishCall();
             } catch {
-              Alert.alert('Unable to Block', 'Please try again.');
+              Alert.alert('Block Nahi Hua', 'Dobara try karo.');
               setSafetyActionLoading(false);
             }
           },
@@ -859,11 +958,15 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     }
 
     Alert.alert(
-      'Safety Options',
-      `Manage your interaction with ${displayName}.`,
+      'Safety Ke Options',
+      `Inke saath baat karne ke options: ${displayName}.`,
       [
-        { text: 'Report User', onPress: showReportOptions },
-        { text: 'Block User', style: 'destructive', onPress: blockUser },
+        { text: 'User Ko Report Karo', onPress: showReportOptions },
+        {
+          text: 'User Ko Block Karo',
+          style: 'destructive',
+          onPress: blockUser,
+        },
         { text: 'Cancel', style: 'cancel' },
       ],
     );
@@ -871,12 +974,15 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
   useEffect(() => {
     callEndedRef.current = false;
-    initializeAgora().catch(async error => {
+    const generation = ++rtcGeneration.current;
+    initializeAgora(generation).catch(async error => {
+      if (generation !== rtcGeneration.current) return;
       console.error('Unable to initialize call:', error);
       await finishCall();
     });
 
     return () => {
+      rtcGeneration.current += 1;
       callEndedRef.current = true;
       peerRecoveryRef.current?.();
       peerRecoveryRef.current = null;
@@ -914,6 +1020,10 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     }
 
     return RoomService.listenCallStatus(femaleUid, room => {
+      if (room.currentCallId !== callId) {
+        finishCall(false);
+        return;
+      }
       if (
         gender === 'female' &&
         room?.status === 'active' &&
@@ -924,7 +1034,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       }
 
       if (room?.status === 'ended' && gender === 'male') {
-        finishCallFromRemote(false, 'The call has ended.');
+        finishCallFromRemote(false, 'Call khatam ho gayi.');
       } else if (
         !room ||
         ['ended', 'waiting', 'offline', 'rejected', 'men_rejected'].includes(
@@ -934,7 +1044,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         finishCall(false);
       }
     });
-  }, [femaleUid, finishCall, finishCallFromRemote, gender]);
+  }, [callId, femaleUid, finishCall, finishCallFromRemote, gender]);
 
   return (
     <LinearGradient
@@ -997,7 +1107,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 letterSpacing: 1.5,
               }}
             >
-              FIRST CALL OFFER
+              Pehli Call Ka Offer
             </Text>
             <Text
               style={{
@@ -1009,8 +1119,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 textAlign: 'center',
               }}
             >
-              Your first {freeCallMinutes}{' '}
-              {freeCallMinutes === 1 ? 'minute' : 'minutes'} are free
+              Aapki Pehli {freeCallMinutes}{' '}
+              {freeCallMinutes === 1 ? 'minute' : 'minutes'} free hain
             </Text>
             <Text
               style={{
@@ -1021,9 +1131,10 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                 textAlign: 'center',
               }}
             >
-              We added ₹{freeCallAmount} free call balance. It covers{' '}
-              {freeCallMinutes}{' '}
-              {freeCallMinutes === 1 ? 'minute' : 'minutes'} with any host.
+              Humne Add Kiye ₹{freeCallAmount} free call balance. Ismein milte
+              hain {freeCallMinutes}{' '}
+              {freeCallMinutes === 1 ? 'minute' : 'minutes'} kisi bhi expert ke
+              saath.
             </Text>
             <TouchableOpacity
               onPress={() => setShowFreeCallModal(false)}
@@ -1049,7 +1160,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                     fontWeight: '800',
                   }}
                 >
-                  Continue call
+                  Baat Jaari Rakho
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -1070,7 +1181,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         >
           <TouchableOpacity
             onPress={onMinimize}
-            accessibilityLabel="Minimize call"
+            accessibilityLabel="Call Chhoti Karo"
             style={styles.headerActionCaller}
           >
             <MaterialCommunityIcons
@@ -1087,12 +1198,12 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               compactLayout && styles.headerTitleCompact,
             ]}
           >
-            Ongoing Voice Call
+            Call Chal Rahi Hai
           </Text>
 
           {connected ? (
             <TouchableOpacity
-              accessibilityLabel="Safety options"
+              accessibilityLabel="Safety ke options"
               accessibilityRole="button"
               disabled={safetyActionLoading}
               onPress={showSafetyOptions}
@@ -1139,12 +1250,12 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               }}
             >
               {freeCallSecondsRemaining <= 5
-                ? `Free call ending in ${freeCallSecondsRemaining} seconds`
+                ? `Free call khatam hogi: ${freeCallSecondsRemaining} seconds`
                 : freeCallSecondsRemaining <= 15
-                ? `${freeCallSecondsRemaining} seconds left\n${displayName} is waiting after the call.`
+                ? `${freeCallSecondsRemaining} seconds baaki${displayName} se baat jaari rakh sakte ho.`
                 : freeCallSecondsRemaining <= 30
-                ? `${freeCallSecondsRemaining} seconds left with ${displayName}\nYou can recharge after the call to continue.`
-                : `Free call · ${freeCallSecondsRemaining}s`}
+                ? `${freeCallSecondsRemaining} seconds baaki hain: ${displayName}Baat jaari rakhne ke liye call ke baad recharge kar sakte ho.`
+                : `Free Call · ${freeCallSecondsRemaining}s`}
             </Text>
           </View>
         )}
@@ -1247,7 +1358,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                   <Text style={styles.callBalanceRupeeText}>₹</Text>
                 </View>
                 <Text style={styles.callerBalanceLabel}>
-                  {gender === 'male' ? 'Your balance' : 'Caller balance'}
+                  {gender === 'male' ? 'Aapka Balance' : 'Customer Ka Balance'}
                 </Text>
                 <Text style={styles.callerBalanceValue}>
                   ₹{Math.floor(displayedBalance).toLocaleString()}
@@ -1257,8 +1368,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
             {estimatedMinutesRemaining !== null && (
               <Text style={styles.balanceEstimate}>
                 {freeCallSecondsRemaining > 0
-                  ? `Free call: about ${estimatedMinutesRemaining} min left`
-                  : `About ${estimatedMinutesRemaining} min of calling left`}
+                  ? `Free call: lagbhag ${estimatedMinutesRemaining} min baaki`
+                  : `Lagbhag ${estimatedMinutesRemaining} min ki baat baaki`}
               </Text>
             )}
 
@@ -1270,7 +1381,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                   compactLayout && styles.callDurationLabelCompact,
                 ]}
               >
-                Call duration
+                Call Ka Samay
               </Text>
             )}
 
@@ -1300,9 +1411,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
             <View style={styles.controlItem}>
               <TouchableOpacity
-                accessibilityLabel={
-                  muted ? 'Unmute microphone' : 'Mute microphone'
-                }
+                accessibilityLabel={muted ? 'Mic Chalu Karo' : 'Mic Band Karo'}
                 accessibilityRole="button"
                 style={[
                   styles.controlButton,
@@ -1354,7 +1463,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           {/* End Call */}
 
           <TouchableOpacity
-            accessibilityLabel="End call"
+            accessibilityLabel="Call Khatam Karo"
             accessibilityRole="button"
             activeOpacity={0.9}
             style={styles.endButtonCaller}
@@ -1365,7 +1474,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               size={compactLayout ? 22 : 24}
               color={Colors.white}
             />
-            <Text style={styles.endButtonCallerText}>End Call</Text>
+            <Text style={styles.endButtonCallerText}>Call Khatam Karo</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

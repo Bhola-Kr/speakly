@@ -42,7 +42,7 @@ const SignupOfferModal = ({
     <View style={styles.overlay}>
       <View style={styles.card}>
         <TouchableOpacity
-          accessibilityLabel="Close welcome offer"
+          accessibilityLabel="Welcome Offer Band Karo"
           onPress={onDismiss}
           style={styles.closeButton}
           hitSlop={10}
@@ -86,14 +86,15 @@ const SignupOfferModal = ({
             />
           </View>
         </LinearGradient>
-        <Text style={styles.eyebrow}>A LITTLE GIFT FOR YOU</Text>
+        <Text style={styles.eyebrow}>Aapke Liye Chhota Sa Gift</Text>
         <Text style={styles.title}>
-          Your first {freeMinutes} {freeMinutes === 1 ? 'minute' : 'minutes'} are
-          free
+          Aapki Pehli {freeMinutes} {freeMinutes === 1 ? 'minute' : 'minutes'}{' '}
+          free hain
         </Text>
         <Text style={styles.message}>
-          Claim ₹{amount} free call balance for your first {freeMinutes}{' '}
-          {freeMinutes === 1 ? 'minute' : 'minutes'} with any available host.
+          Lo ₹{amount} pehli call ke liye free balance {freeMinutes}{' '}
+          {freeMinutes === 1 ? 'minute' : 'minutes'} kisi bhi available expert
+          ke saath.
         </Text>
         <TouchableOpacity
           disabled={claiming}
@@ -110,7 +111,7 @@ const SignupOfferModal = ({
               <>
                 <Text style={styles.claimText}>
                   {requiresLogin
-                    ? `Sign In & Claim ${freeMinutes} Free ${
+                    ? `Sign In Karke Offer Lo ${freeMinutes} Free ${
                         freeMinutes === 1 ? 'Minute' : 'Minutes'
                       }`
                     : `Claim ${freeMinutes} Free ${
@@ -127,7 +128,7 @@ const SignupOfferModal = ({
           </LinearGradient>
         </TouchableOpacity>
         <TouchableOpacity disabled={claiming} onPress={onDismiss}>
-          <Text style={styles.laterText}>Maybe later</Text>
+          <Text style={styles.laterText}>Baad Mein</Text>
         </TouchableOpacity>
       </View>
     </View>

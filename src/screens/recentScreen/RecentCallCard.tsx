@@ -17,7 +17,7 @@ import { femaleAvatars, normalizeCallRate } from '../../constants/constants';
 import RoomService, { CallHistory } from '../../firebase/RoomService';
 import { useCallBalanceGuard } from '../../hooks/useCallBalanceGuard';
 import SurfaceCard from '../../components/SurfaceCard';
-import { copy } from '../../constants/strings';
+import { copy, callStatusText } from '../../constants/strings';
 import {
   startOutgoingRingback,
   stopOutgoingRingback,
@@ -57,7 +57,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
   const primaryLanguage =
     item.femaleInfo?.supportedLanguages?.[0] ||
     item.femaleInfo?.practiceLanguage ||
-    'Not listed';
+    'Jaankari Nahi Hai';
   const callRate = normalizeCallRate(
     item.callRatePerMinute || item.femaleInfo?.price,
   );
@@ -96,8 +96,8 @@ const RecentCallCard = ({ item, navigation }: Props) => {
       console.log('Call Error:', error);
 
       Alert.alert(
-        'Call Failed',
-        error?.message || 'Unable to connect the call. Please try again.',
+        'Call Connect Nahi Hui',
+        error?.message || 'Call connect nahi hui. Dobara try karo.',
       );
     } finally {
       if (!handedOffToOutgoingScreen) stopOutgoingRingback();
@@ -148,7 +148,7 @@ const RecentCallCard = ({ item, navigation }: Props) => {
                 style={[styles.cardStatusDot, { backgroundColor: statusColor }]}
               />
               <Text style={[styles.cardStatusText, { color: statusColor }]}>
-                {completed ? copy.call.ended : item.status}
+                {completed ? copy.call.ended : callStatusText(item.status)}
               </Text>
             </View>
           </View>

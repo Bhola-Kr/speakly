@@ -45,9 +45,7 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
               <Text style={styles.count}>{history.length}</Text>
             </View>
 
-            <Text style={styles.subtitle}>
-              {copy.recents.supportingText}
-            </Text>
+            <Text style={styles.subtitle}>{copy.recents.supportingText}</Text>
           </View>
         </View>
 
@@ -56,8 +54,8 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
             style={styles.clearButton}
             onPress={() => {
               Alert.alert(
-                'Archive History',
-                'Older calls will be hidden from this list but safely retained. New calls will continue to appear here.',
+                'Calls Archive Karo',
+                'Purani calls is list se chhup jayengi, par safe rahengi. Nayi calls yahan dikhti rahengi.',
                 [
                   {
                     text: 'Cancel',
@@ -70,14 +68,11 @@ const ManHistoryScreen = ({ navigation, route }: any) => {
                         await RoomService.clearCallHistory();
 
                         Alert.alert(
-                          'History Archived',
-                          'Older calls have been hidden from this list.',
+                          'Pichhli Calls Archive Ho Gayi',
+                          'Purani calls is list se chhupa di gayi hain.',
                         );
                       } catch {
-                        Alert.alert(
-                          'Error',
-                          'Unable to archive your call history.',
-                        );
+                        Alert.alert('Error', 'Pichhli calls archive nahi hui.');
                       }
                     },
                   },

@@ -20,6 +20,11 @@ class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     supportFragmentManager.fragmentFactory = RNScreensFragmentFactory()
     super.onCreate(savedInstanceState)
+    if (android.os.Build.VERSION.SDK_INT >= 27) {
+      setShowWhenLocked(false)
+      setTurnScreenOn(false)
+    }
+    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
   }
 
 

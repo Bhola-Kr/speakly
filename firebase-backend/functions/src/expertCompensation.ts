@@ -1,3 +1,80 @@
+import { tokensForUser, tokensForAdmins } from './pushTokenOwnership';
+import { runDataTransaction } from './databaseTransaction';
+
+export async function reserveExpertWithdrawal(uid: string) {
+  const root = admin.database().ref(DATA_ROOT);
+  const id = root.child('withdrawalRequests').push().key!;
+  const now = Date.now();
+  let failure = 'Withdrawal request nahi bani.';
+  const result = await runDataTransaction(root, data => {
+    const user = data?.users?.[uid];
+    if (user?.isExpert !== true) {
+      failure = 'Expert access zaroori hai.';
+      return;
+    }
+    const earnings = user.expertEarnings || {};
+    if (earnings.pendingWithdrawal?.id) {
+      failure = 'Ek withdrawal request pehle se pending hai.';
+      return;
+    }
+    const configured = Number(data.configs?.minimumWithdrawalAmount);
+    const minimum =
+      Number.isFinite(configured) && configured > 0 ? configured : 99;
+    const available = Number(earnings.available || 0);
+    if (!Number.isFinite(available) || available < minimum) {
+      failure =
+        available > 0
+          ? `Minimum withdrawal amount ₹${minimum}.`
+          : 'Withdrawal ke liye kamai available nahi hai.';
+      return;
+    }
+    const request = {
+      id,
+      expertUid: uid,
+      expertName: String(
+        user.profile?.name || user.profile?.tamilName || 'Host',
+      ),
+      phone: String(user.phone || user.profile?.phone || ''),
+      amount: available,
+      status: 'pending',
+      requestedAt: now,
+      updatedAt: now,
+    };
+    user.expertEarnings = {
+      ...earnings,
+      available: 0,
+      pendingWithdrawal: { id, amount: available, requestedAt: now },
+      updatedAt: now,
+    };
+    data.withdrawalRequests ||= {};
+    data.withdrawalRequests[id] = request;
+    user.withdrawalRequests ||= {};
+    user.withdrawalRequests[id] = request;
+    return data;
+  });
+  if (!result.committed) throw new Error(failure);
+  return result.snapshot.child(`withdrawalRequests/${id}`).val();
+}
+
+export async function requestExpertWithdrawal(req: Request, res: Response) {
+  try {
+    const uid = await authenticatedUid(req);
+    return res.json({
+      success: true,
+      request: await reserveExpertWithdrawal(uid),
+    });
+  } catch (error: any) {
+    return res
+      .status(error?.message === 'UNAUTHENTICATED' ? 401 : 409)
+      .json({
+        success: false,
+        message:
+          error?.message === 'UNAUTHENTICATED'
+            ? 'Sign in zaroori hai.'
+            : error?.message || 'Withdrawal request nahi bani.',
+      });
+  }
+}
 import { Request, Response } from 'express';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
@@ -116,7 +193,7 @@ export const getMyExpertCompensation = async (req: Request, res: Response) => {
     if (user.isExpert !== true) {
       return res
         .status(403)
-        .json({ success: false, message: 'Expert access is required' });
+        .json({ success: false, message: 'Expert access zaroori hai.' });
     }
     return res.json({
       success: true,
@@ -131,7 +208,7 @@ export const getMyExpertCompensation = async (req: Request, res: Response) => {
     logger.error('Get expert compensation failed', error);
     return res.status(error?.message === 'UNAUTHENTICATED' ? 401 : 500).json({
       success: false,
-      message: 'Unable to load expert compensation',
+      message: 'Expert ki kamai ka rate load nahi hua.',
     });
   }
 };
@@ -155,7 +232,7 @@ export const getExpertCompensationForAdmin = async (
     if (!user)
       return res
         .status(404)
-        .json({ success: false, message: 'User not found' });
+        .json({ success: false, message: 'User nahi mila' });
     return res.json({
       success: true,
       data: {
@@ -174,7 +251,10 @@ export const getExpertCompensationForAdmin = async (
         : 500;
     return res
       .status(status)
-      .json({ success: false, message: 'Unable to load expert compensation' });
+      .json({
+        success: false,
+        message: 'Expert ki kamai ka rate load nahi hua.',
+      });
   }
 };
 
@@ -187,7 +267,7 @@ export const updateExpertCompensation = async (req: Request, res: Response) => {
     if (!Number.isFinite(rate) || rate <= 0) {
       return res
         .status(400)
-        .json({ success: false, message: 'Rate must be greater than zero' });
+        .json({ success: false, message: 'Rate zero se zyada hona chahiye.' });
     }
     const userSnapshot = await admin
       .database()
@@ -196,7 +276,7 @@ export const updateExpertCompensation = async (req: Request, res: Response) => {
     if (userSnapshot.val()?.isExpert !== true) {
       return res
         .status(400)
-        .json({ success: false, message: 'User is not an expert' });
+        .json({ success: false, message: 'Yeh user expert nahi hai.' });
     }
     await admin
       .database()
@@ -216,7 +296,7 @@ export const updateExpertCompensation = async (req: Request, res: Response) => {
         : 500;
     return res.status(status).json({
       success: false,
-      message: 'Unable to update expert compensation',
+      message: 'Expert ki kamai ka rate update nahi hua.',
     });
   }
 };
@@ -226,22 +306,17 @@ export const notifyExpertApproval = async (req: Request, res: Response) => {
     const adminUid = await authenticatedUid(req);
     await requireAdmin(adminUid);
     const expertUid = String(req.params.uid || '');
-    const [userSnapshot, tokenSnapshot] = await Promise.all([
-      admin.database().ref(`${DATA_ROOT}/users/${expertUid}`).once('value'),
-      admin
-        .database()
-        .ref(`${DATA_ROOT}/users/${expertUid}/fcmTokens`)
-        .once('value'),
-    ]);
+    const userSnapshot = await admin
+      .database()
+      .ref(`${DATA_ROOT}/users/${expertUid}`)
+      .once('value');
     const user = userSnapshot.val();
     if (!user || user.isExpert !== true) {
       return res
         .status(400)
-        .json({ success: false, message: 'Approved expert not found' });
+        .json({ success: false, message: 'Approved expert nahi mila.' });
     }
-    const tokenValue = tokenSnapshot.val();
-    const token =
-      typeof tokenValue === 'string' ? tokenValue : tokenValue?.token;
+    const token = (await tokensForUser(expertUid))[0];
     if (typeof token !== 'string' || !token.trim()) {
       return res.json({ success: true, delivered: false });
     }
@@ -265,7 +340,7 @@ export const notifyExpertApproval = async (req: Request, res: Response) => {
         : 500;
     return res.status(status).json({
       success: false,
-      message: 'Unable to send expert approval notification',
+      message: 'Expert approval ki notification nahi gayi.',
     });
   }
 };
@@ -291,16 +366,7 @@ const sendExpertApplicationNotificationToAdmins = async (
   const applicantName = String(
     applicant.profile?.name || applicant.profile?.tamilName || 'A new expert',
   );
-  const tokens: string[] = [];
-  usersSnapshot.forEach(child => {
-    const user = child.val();
-    if (user?.isAdmin !== true) return;
-    const tokenValue = user.fcmTokens;
-    const token =
-      typeof tokenValue === 'string' ? tokenValue : tokenValue?.token;
-    if (typeof token === 'string' && token.trim()) tokens.push(token.trim());
-  });
-  const uniqueTokens = [...new Set(tokens)];
+  const uniqueTokens = await tokensForAdmins(usersSnapshot.val());
   if (uniqueTokens.length === 0) return 0;
 
   const applicationRef = admin
@@ -324,8 +390,8 @@ const sendExpertApplicationNotificationToAdmins = async (
       const result = await admin.messaging().sendEachForMulticast({
         tokens: uniqueTokens.slice(offset, offset + 500),
         notification: {
-          title: 'New expert application',
-          body: `${applicantName} submitted an expert verification. Review and approve the application.`,
+          title: 'Nayi Expert Application',
+          body: `${applicantName} ne expert verification bheji hai. Application check karke approve karo.`,
         },
         data: {
           type: 'expert_application_submitted',
@@ -397,8 +463,8 @@ export const notifyAdminsOfExpertApplication = async (
       success: false,
       message:
         status === 400
-          ? 'Pending expert application not found'
-          : 'Unable to notify administrators',
+          ? 'Pending expert application nahi mili.'
+          : 'Admins ko notification nahi gayi.',
     });
   }
 };
@@ -415,21 +481,30 @@ export const settleExpertEarnings = async (req: Request, res: Response) => {
     if (!history || history.status !== 'Completed') {
       return res
         .status(404)
-        .json({ success: false, message: 'Completed call not found' });
+        .json({ success: false, message: 'Completed call nahi mili.' });
     }
     const callerUid = String(history.maleInfo?.uid || '');
     const expertUid = String(history.femaleInfo?.uid || '');
     if (uid !== callerUid && uid !== expertUid) {
       return res
         .status(403)
-        .json({ success: false, message: 'Call access denied' });
+        .json({ success: false, message: 'Call access nahi mila.' });
     }
     const callerRate = Number(history.callRatePerMinute);
     const chargedAmount = Number(history.amount);
-    if (!expertUid || !Number.isFinite(callerRate) || callerRate <= 0 || !Number.isFinite(chargedAmount) || chargedAmount <= 0) {
+    if (
+      !expertUid ||
+      !Number.isFinite(callerRate) ||
+      callerRate <= 0 ||
+      !Number.isFinite(chargedAmount) ||
+      chargedAmount <= 0
+    ) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid call billing data' });
+        .json({
+          success: false,
+          message: 'Call ki billing details sahi nahi hain.',
+        });
     }
     await creditExpertEarningsForCall(callId, history);
     return res.json({ success: true });
@@ -437,6 +512,6 @@ export const settleExpertEarnings = async (req: Request, res: Response) => {
     logger.error('Settle expert earnings failed', error);
     return res
       .status(error?.message === 'UNAUTHENTICATED' ? 401 : 500)
-      .json({ success: false, message: 'Unable to settle expert earnings' });
+      .json({ success: false, message: 'Expert ki kamai settle nahi hui.' });
   }
 };

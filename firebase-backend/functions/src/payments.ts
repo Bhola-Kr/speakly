@@ -1,23 +1,75 @@
-import {
-  createHash,
-  createHmac,
-  randomBytes,
-  timingSafeEqual,
-} from 'crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { Request, Response } from 'express';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { RECHARGE_PACKS } from './constants';
+import { runDataTransaction } from './databaseTransaction';
+
+export async function claimSignupOfferForUser(uid: string) {
+  const root = admin.database().ref('speakly');
+  let failure = 'Yeh signup offer pehle hi liya ja chuka hai.';
+  const result = await runDataTransaction(root, data => {
+    const user = data?.users?.[uid];
+    const config = data?.configs?.signupOffer || {};
+    const amount =
+      typeof config.amount === 'number' &&
+      Number.isFinite(config.amount) &&
+      config.amount >= 0
+        ? config.amount
+        : 10;
+    const active = config.active === undefined ? true : config.active === true;
+    if (!active || amount <= 0) {
+      failure = 'Yeh offer ab available nahi hai.';
+      return;
+    }
+    if (!user || user.isExpert === true || user.offers?.signupOffer?.claimedAt)
+      return;
+    const current = Number(user.wallet?.balance);
+    user.wallet = {
+      ...user.wallet,
+      balance: (Number.isFinite(current) ? Math.max(0, current) : 0) + amount,
+    };
+    user.offers = {
+      ...user.offers,
+      signupOffer: { amount, claimedAt: Date.now() },
+    };
+    return data;
+  });
+  if (!result.committed) throw new Error(failure);
+  return Number(
+    result.snapshot.child(`users/${uid}/offers/signupOffer/amount`).val(),
+  );
+}
+
+export async function claimSignupOffer(req: Request, res: Response) {
+  try {
+    return res.json({
+      success: true,
+      amount: await claimSignupOfferForUser(await getAuthenticatedUid(req)),
+    });
+  } catch (error: any) {
+    return res
+      .status(error?.message === 'UNAUTHENTICATED' ? 401 : 409)
+      .json({
+        success: false,
+        message:
+          error?.message === 'UNAUTHENTICATED'
+            ? 'Sign in zaroori hai.'
+            : error?.message || 'Offer nahi mila.',
+      });
+  }
+}
 
 // PayU live credentials. Keep the salt in backend code only; never return it
 // to the mobile client or include it in the React Native bundle.
 export const PAYU_MERCHANT_KEY = 'Rsdmix';
 export const PAYU_MERCHANT_SALT = 'MLzzjEiz2FCsqQqj0SUqXJ2gVn7u0RLp';
-const PAYU_ENVIRONMENT = 'production'
-const RAZORPAY_KEY_ID = 'rzp_live_TvMDKDtzbCyqkh'
-const RAZORPAY_KEY_SECRET = 'uRC4PD65JKygZ6gFdPQucd3h'
-const RAZORPAY_WEBHOOK_SECRET = 'dc48bc67e925117c28d68cd5a799e3f4180f4410e5caa69a9007dd8a1298c06a'
+const PAYU_ENVIRONMENT = 'production';
+const RAZORPAY_KEY_ID = 'rzp_live_TvMDKDtzbCyqkh';
+const RAZORPAY_KEY_SECRET = 'uRC4PD65JKygZ6gFdPQucd3h';
+const RAZORPAY_WEBHOOK_SECRET =
+  'dc48bc67e925117c28d68cd5a799e3f4180f4410e5caa69a9007dd8a1298c06a';
 
 const DATA_ROOT = 'speakly';
 const PAYMENT_ROOT = `${DATA_ROOT}/payments`;
@@ -141,12 +193,11 @@ const paymentCustomer = (
   const storedPhone = [user.phone, user.profile?.phone, authUser.phoneNumber]
     .map(normalizePhone)
     .find(candidate => candidate.length === 10);
-  const phone =
-    storedPhone
-      ? storedPhone
-      : providers.includes('google.com')
-        ? GOOGLE_DEFAULT_PAYMENT_PHONE
-        : '';
+  const phone = storedPhone
+    ? storedPhone
+    : providers.includes('google.com')
+    ? GOOGLE_DEFAULT_PAYMENT_PHONE
+    : '';
   const name = String(
     user.profile?.name ||
       user.profile?.tamilName ||
@@ -155,7 +206,9 @@ const paymentCustomer = (
   )
     .trim()
     .slice(0, 100);
-  const email = String(user.profile?.email || user.email || authUser.email || '')
+  const email = String(
+    user.profile?.email || user.email || authUser.email || '',
+  )
     .trim()
     .slice(0, 150);
 
@@ -276,7 +329,9 @@ const razorpayRequest = async (path: string, init?: RequestInit) => {
   const response = await fetch(`https://api.razorpay.com/v1${path}`, {
     ...init,
     headers: {
-      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`,
+      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString(
+        'base64',
+      )}`,
       'Content-Type': 'application/json',
       ...(init?.headers || {}),
     },
@@ -290,7 +345,8 @@ const razorpayRequest = async (path: string, init?: RequestInit) => {
   }
   if (!response.ok) {
     throw new Error(
-      data?.error?.description || `Razorpay request failed (${response.status})`,
+      data?.error?.description ||
+        `Razorpay request failed (${response.status})`,
     );
   }
   return data;
@@ -303,12 +359,17 @@ const creditVerifiedPayment = async (payment: PaymentRecord, detail: any) => {
     status: 'success',
     creditedAt: now,
     updatedAt: now,
-    payuId: String(detail?.mihpayid || detail?.mihpayId || payment.payuId || ''),
+    payuId: String(
+      detail?.mihpayid || detail?.mihpayId || payment.payuId || '',
+    ),
     razorpayOrderId: String(
       detail?.razorpayOrderId || payment.razorpayOrderId || '',
     ),
     razorpayPaymentId: String(
-      detail?.razorpayPaymentId || detail?.id || payment.razorpayPaymentId || '',
+      detail?.razorpayPaymentId ||
+        detail?.id ||
+        payment.razorpayPaymentId ||
+        '',
     ),
     bankReferenceNumber: String(
       detail?.bank_ref_num || detail?.bankReferenceNumber || '',
@@ -365,7 +426,8 @@ const verifyAndFinalize = async (transactionId: string) => {
   if (payment.status === 'success') return payment;
 
   if (payment.provider === 'razorpay') {
-    if (!payment.razorpayOrderId) throw new Error('Razorpay order was not found');
+    if (!payment.razorpayOrderId)
+      throw new Error('Razorpay order was not found');
     const payments = await razorpayRequest(
       `/orders/${encodeURIComponent(payment.razorpayOrderId)}/payments`,
     );
@@ -453,7 +515,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
     if (!(await isPaymentGatewayActive('payu'))) {
       return res.status(403).json({
         success: false,
-        message: 'PayU is not currently enabled',
+        message: 'PayU abhi chalu nahi hai.',
       });
     }
     const packId = Number(req.body?.packId);
@@ -461,7 +523,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
     if (!pack) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid recharge pack' });
+        .json({ success: false, message: 'Recharge pack sahi nahi hai.' });
     }
     const [userSnapshot, authUser] = await Promise.all([
       admin.database().ref(`${DATA_ROOT}/users/${uid}`).once('value'),
@@ -473,14 +535,13 @@ export const initiatePayment = async (req: Request, res: Response) => {
     if (phone.length !== 10) {
       return res.status(422).json({
         success: false,
-        message: 'A valid 10-digit phone number is required for payment',
+        message: 'Payment ke liye sahi 10-digit mobile number zaroori hai.',
       });
     }
     await persistGooglePaymentPhone(uid, user, customer);
     const firstName = customer.name.slice(0, 60);
     const email =
-      customer.email ||
-      `payments+${sha512(uid).slice(0, 16)}@joinspeakly.com`;
+      customer.email || `payments+${sha512(uid).slice(0, 16)}@joinspeakly.com`;
     const transactionId = createTransactionId(uid);
     const now = Date.now();
     const payment: PaymentRecord = {
@@ -552,8 +613,8 @@ export const initiatePayment = async (req: Request, res: Response) => {
     return res.status(unauthenticated ? 401 : 500).json({
       success: false,
       message: unauthenticated
-        ? 'Authentication required'
-        : 'Unable to start payment',
+        ? 'Sign in zaroori hai.'
+        : 'Payment shuru nahi hui.',
     });
   }
 };
@@ -564,7 +625,7 @@ export const initiateRazorpayPayment = async (req: Request, res: Response) => {
     if (!(await isPaymentGatewayActive('razorpay'))) {
       return res.status(403).json({
         success: false,
-        message: 'Razorpay is not currently enabled',
+        message: 'Razorpay abhi chalu nahi hai.',
       });
     }
     const packId = Number(req.body?.packId);
@@ -572,7 +633,7 @@ export const initiateRazorpayPayment = async (req: Request, res: Response) => {
     if (!pack) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid recharge pack' });
+        .json({ success: false, message: 'Recharge pack sahi nahi hai.' });
     }
     const [userSnapshot, authUser] = await Promise.all([
       admin.database().ref(`${DATA_ROOT}/users/${uid}`).once('value'),
@@ -584,7 +645,7 @@ export const initiateRazorpayPayment = async (req: Request, res: Response) => {
     if (phone.length !== 10) {
       return res.status(422).json({
         success: false,
-        message: 'A valid 10-digit phone number is required for payment',
+        message: 'Payment ke liye sahi 10-digit mobile number zaroori hai.',
       });
     }
     await persistGooglePaymentPhone(uid, user, customer);
@@ -666,10 +727,10 @@ export const initiateRazorpayPayment = async (req: Request, res: Response) => {
     return res.status(unauthenticated ? 401 : unconfigured ? 503 : 500).json({
       success: false,
       message: unauthenticated
-        ? 'Authentication required'
+        ? 'Sign in zaroori hai.'
         : unconfigured
-          ? 'Razorpay is not configured'
-          : 'Unable to start payment',
+        ? 'Razorpay abhi ready nahi hai.'
+        : 'Payment shuru nahi hui.',
     });
   }
 };
@@ -688,7 +749,9 @@ export const confirmRazorpayPayment = async (req: Request, res: Response) => {
       .once('value');
     const payment = snapshot.val() as PaymentRecord | null;
     if (!payment || payment.uid !== uid || payment.provider !== 'razorpay') {
-      return res.status(404).json({ success: false, message: 'Payment not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Payment nahi mili.' });
     }
     if (payment.status !== 'success') {
       const paymentId = String(req.body?.razorpay_payment_id || '');
@@ -704,7 +767,7 @@ export const confirmRazorpayPayment = async (req: Request, res: Response) => {
       ) {
         return res.status(400).json({
           success: false,
-          message: 'Razorpay payment response could not be verified',
+          message: 'Razorpay payment verify nahi hui.',
         });
       }
       await updatePaymentStatus(payment, {
@@ -727,8 +790,8 @@ export const confirmRazorpayPayment = async (req: Request, res: Response) => {
       success: false,
       message:
         error?.message === 'UNAUTHENTICATED'
-          ? 'Authentication required'
-          : 'Unable to confirm payment',
+          ? 'Sign in zaroori hai.'
+          : 'Payment confirm nahi hui.',
     });
   }
 };
@@ -747,7 +810,10 @@ export const generatePaymentHash = async (req: Request, res: Response) => {
     ) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid hash request' });
+        .json({
+          success: false,
+          message: 'Payment verification ki request sahi nahi hai.',
+        });
     }
     const snapshot = await admin
       .database()
@@ -757,7 +823,7 @@ export const generatePaymentHash = async (req: Request, res: Response) => {
     if (!payment || payment.uid !== uid || payment.status === 'success') {
       return res
         .status(403)
-        .json({ success: false, message: 'Payment is not available' });
+        .json({ success: false, message: 'Payment available nahi hai.' });
     }
     return res.json({
       success: true,
@@ -767,7 +833,7 @@ export const generatePaymentHash = async (req: Request, res: Response) => {
     logger.error('Generate PayU hash failed', error);
     return res.status(error?.message === 'UNAUTHENTICATED' ? 401 : 500).json({
       success: false,
-      message: 'Unable to generate payment hash',
+      message: 'Payment verification nahi bani.',
     });
   }
 };
@@ -784,7 +850,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
     if (!payment || payment.uid !== uid) {
       return res
         .status(404)
-        .json({ success: false, message: 'Payment not found' });
+        .json({ success: false, message: 'Payment nahi mili.' });
     }
     const finalPayment = await verifyAndFinalize(transactionId);
     return res.json({ success: true, data: publicPayment(finalPayment) });
@@ -794,8 +860,8 @@ export const verifyPayment = async (req: Request, res: Response) => {
     return res.status(unauthenticated ? 401 : 502).json({
       success: false,
       message: unauthenticated
-        ? 'Authentication required'
-        : 'Unable to verify payment',
+        ? 'Sign in zaroori hai.'
+        : 'Payment verify nahi hui.',
     });
   }
 };
@@ -814,7 +880,7 @@ export const listPayments = async (req: Request, res: Response) => {
     logger.error('List payments failed', error);
     return res.status(error?.message === 'UNAUTHENTICATED' ? 401 : 500).json({
       success: false,
-      message: 'Unable to load payment history',
+      message: 'Payment ki history load nahi hui.',
     });
   }
 };
@@ -906,14 +972,14 @@ export const confirmPayment = async (req: Request, res: Response) => {
     if (!payment || payment.uid !== uid) {
       return res
         .status(404)
-        .json({ success: false, message: 'Payment not found' });
+        .json({ success: false, message: 'Payment nahi mili.' });
     }
     if (payment.status !== 'success') {
       const payuResponse = parsePayuResponse(req.body?.payuResponse);
       if (!payuResponse) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid PayU payment response',
+          message: 'PayU payment ka jawaab sahi nahi hai.',
         });
       }
       await finalizeSignedPayuResponse(payment, payuResponse);
@@ -933,10 +999,10 @@ export const confirmPayment = async (req: Request, res: Response) => {
     return res.status(unauthenticated ? 401 : invalid ? 400 : 500).json({
       success: false,
       message: unauthenticated
-        ? 'Authentication required'
+        ? 'Sign in zaroori hai.'
         : invalid
-        ? 'PayU payment response could not be verified'
-        : 'Unable to confirm payment',
+        ? 'PayU payment verify nahi hui.'
+        : 'Payment confirm nahi hui.',
     });
   }
 };
@@ -952,7 +1018,7 @@ export const payuWebhook = async (req: Request, res: Response) => {
       .ref(`${PAYMENT_ROOT}/${transactionId}`)
       .once('value');
     const payment = snapshot.val() as PaymentRecord | null;
-    if (!payment) return res.status(404).send('Payment not found');
+    if (!payment) return res.status(404).send('Payment nahi mili.');
     await finalizeSignedPayuResponse(payment, req.body);
     return res.status(200).send('OK');
   } catch (error) {
@@ -963,7 +1029,7 @@ export const payuWebhook = async (req: Request, res: Response) => {
 
 export const razorpayWebhook = async (req: Request, res: Response) => {
   try {
-    const secret = RAZORPAY_WEBHOOK_SECRET
+    const secret = RAZORPAY_WEBHOOK_SECRET;
     const signature = String(req.headers['x-razorpay-signature'] || '');
     const rawBody = (req as any).rawBody as Buffer | undefined;
     if (!secret || !signature || !rawBody) {
@@ -982,7 +1048,7 @@ export const razorpayWebhook = async (req: Request, res: Response) => {
       .once('value');
     const payment = snapshot.val() as PaymentRecord | null;
     if (!payment || payment.provider !== 'razorpay') {
-      return res.status(404).send('Payment not found');
+      return res.status(404).send('Payment nahi mili.');
     }
     if (entity?.id && !payment.razorpayPaymentId) {
       await updatePaymentStatus(payment, {

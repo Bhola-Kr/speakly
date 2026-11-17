@@ -21,10 +21,10 @@ const FAQScreen = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Frequently Asked Questions</Text>
+        <Text style={styles.title}>Aam Sawaalon Ke Jawaab</Text>
 
         <Text style={styles.subtitle}>
-          Find answers to the most commonly asked questions about Speakly 121.
+          Speakly 121 ke aam sawaalon ke jawaab yahan dekho.
         </Text>
 
         {faqs.map(item => {
@@ -58,11 +58,10 @@ const FAQScreen = () => {
             color={Colors.secondary}
           />
 
-          <Text style={styles.helpTitle}>Still need help?</Text>
+          <Text style={styles.helpTitle}>Abhi Bhi Madad Chahiye?</Text>
 
           <Text style={styles.helpText}>
-            If you couldn't find the answer you're looking for, please contact
-            our support team.
+            Apna jawaab nahi mila? Hamari support team se baat karo.
           </Text>
 
           <Text style={styles.email}>{SUPPORT_EMAIL}</Text>

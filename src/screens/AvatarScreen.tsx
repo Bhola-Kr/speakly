@@ -72,11 +72,11 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
 
       {/* Header */}
 
-      <Text style={styles.smallTitle}>Select your Avatar</Text>
+      <Text style={styles.smallTitle}>Apna Avatar Chuno</Text>
 
       <Text style={styles.title}>
-        This will be displayed as your profile{'\n'}
-        during calls.
+        Yeh aapki profile par dikhega{'\n'}
+        call ke dauraan.
       </Text>
 
       {/* Grid */}
@@ -93,7 +93,9 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
 
       <GradientButton
         style={styles.actionButton}
-        title={loading ? 'Please wait...' : isEditMode ? 'Save' : 'Proceed'}
+        title={
+          loading ? 'Thoda intezaar karo…' : isEditMode ? 'Save' : 'Proceed'
+        }
         disabled={!selectedAvatar || loading}
         onPress={async () => {
           if (!selectedAvatar || loading) {
@@ -120,7 +122,7 @@ const AvatarScreen: React.FC<Props> = ({ navigation, route }) => {
               });
             }
           } catch (e: any) {
-            Alert.alert('Error', e?.message || 'Unable to update avatar.');
+            Alert.alert('Error', e?.message || 'Avatar update nahi hua.');
           } finally {
             setLoading(false);
           }

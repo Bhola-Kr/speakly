@@ -74,7 +74,7 @@ const GuestLoginModal = ({
       setAuthMethod('phone');
       const response = await sendOtp(`91${phone}`);
       if (!response?.success || !response.reqId) {
-        throw new Error(response?.message || 'Unable to send OTP.');
+        throw new Error(response?.message || 'OTP nahi gaya.');
       }
       setRequestId(response.reqId);
       setStep('otp');
@@ -82,7 +82,7 @@ const GuestLoginModal = ({
       requestAnimationFrame(() => otpRef.current?.focus());
     } catch (error: any) {
       trackLoginModalEvent('LoginOtpRequestFailed', { method: 'phone_otp' });
-      Alert.alert('Unable to send OTP', error?.message || 'Please try again.');
+      Alert.alert('OTP nahi gaya', error?.message || 'Dobara try karo.');
     } finally {
       setLoading(false);
       setAuthMethod(null);
@@ -96,7 +96,7 @@ const GuestLoginModal = ({
       setAuthMethod('phone');
       const response = await verifyMSGOtp(`91${phone}`, otp, requestId);
       if (!response?.success || !response.token) {
-        throw new Error(response?.message || 'Invalid OTP.');
+        throw new Error(response?.message || 'OTP sahi nahi hai.');
       }
       const firebaseUser = await authData.loginWithCustomToken(response.token);
       const existing = await authData.getUser(firebaseUser.uid);
@@ -127,7 +127,7 @@ const GuestLoginModal = ({
       trackLoginModalEvent('LoginOtpVerificationFailed', {
         method: 'phone_otp',
       });
-      Alert.alert('Login failed', error?.message || 'Please try again.');
+      Alert.alert('Sign In Nahi Hua', error?.message || 'Dobara try karo.');
     } finally {
       setLoading(false);
       setAuthMethod(null);
@@ -169,7 +169,10 @@ const GuestLoginModal = ({
       await onAuthenticated(existing?.isExpert === true);
     } catch (error: any) {
       trackLoginModalEvent('LoginGoogleFailed', { method: 'google' });
-      Alert.alert('Google login failed', error?.message || 'Please try again.');
+      Alert.alert(
+        'Google Se Sign In Nahi Hua',
+        error?.message || 'Dobara try karo.',
+      );
     } finally {
       setLoading(false);
       setAuthMethod(null);
@@ -214,16 +217,16 @@ const GuestLoginModal = ({
           <Text style={styles.title}>
             {step === 'phone'
               ? hostName
-                ? `Sign in to call ${hostName}`
-                : 'Sign in to start your free call'
-              : 'Enter your OTP'}
+                ? `Call Karne Ke Liye Sign In Karo ${hostName}`
+                : 'Free Call Ke Liye Sign In Karo'
+              : 'Apna OTP Likho'}
           </Text>
           <Text style={styles.subtitle}>
             {step === 'phone'
               ? offerActive && offerAmount > 0
-                ? `Claim ₹${offerAmount} free · Talk for ${offerFreeMinutes} minutes · No subscription`
-                : 'Sign in to start talking · No subscription'
-              : `We sent a 4-digit code to +91 ${phone}.`}
+                ? `Lo ₹${offerAmount} free · Baat karo ${offerFreeMinutes} minutes · Subscription nahi chahiye`
+                : 'Baat karne ke liye sign in karo · Subscription nahi chahiye'
+              : `4-digit code bhej diya hai: +91 ${phone}.`}
           </Text>
           <View style={styles.privacyNote}>
             <MaterialCommunityIcons
@@ -232,7 +235,7 @@ const GuestLoginModal = ({
               color={Colors.primary}
             />
             <Text style={styles.privacyText}>
-              Your number stays private and is never shared during calls.
+              Aapka number private rehta hai aur call par kabhi share nahi hota.
             </Text>
           </View>
 
@@ -244,7 +247,7 @@ const GuestLoginModal = ({
                 onChangeText={value =>
                   setPhone(value.replace(/\D/g, '').slice(0, 10))
                 }
-                placeholder="Mobile number"
+                placeholder="Mobile Number"
                 placeholderTextColor={Colors.placeholder}
                 keyboardType="number-pad"
                 autoFocus
@@ -283,7 +286,7 @@ const GuestLoginModal = ({
               <ActivityIndicator color={Colors.white} />
             ) : (
               <Text style={styles.primaryText}>
-                {step === 'phone' ? 'Get OTP' : 'Verify & Start Call'}
+                {step === 'phone' ? 'OTP Bhejo' : 'Verify Karke Connect Karo'}
               </Text>
             )}
           </TouchableOpacity>
@@ -297,7 +300,7 @@ const GuestLoginModal = ({
               </View>
               <TouchableOpacity
                 accessibilityRole="button"
-                accessibilityLabel="Sign in with Google"
+                accessibilityLabel="Google Se Sign In Karo"
                 disabled={loading}
                 onPress={loginWithGoogle}
                 activeOpacity={0.82}
@@ -318,7 +321,7 @@ const GuestLoginModal = ({
                   )}
                 </View>
                 <Text style={styles.googleButtonText}>
-                  Continue with Google
+                  Google Se Aage Badho
                 </Text>
                 <View style={styles.googleButtonSpacer} />
               </TouchableOpacity>
@@ -327,11 +330,11 @@ const GuestLoginModal = ({
 
           {step === 'otp' && (
             <TouchableOpacity onPress={() => setStep('phone')}>
-              <Text style={styles.changeNumber}>Change number</Text>
+              <Text style={styles.changeNumber}>Number Badlo</Text>
             </TouchableOpacity>
           )}
           <Text style={styles.legal}>
-            By continuing, you agree to Speakly 121’s
+            Aage badhkar aap Speakly 121 ke in niyamon se sehmat ho:
           </Text>
           <View style={styles.legalLinks}>
             <TouchableOpacity accessibilityRole="link" onPress={onOpenTerms}>

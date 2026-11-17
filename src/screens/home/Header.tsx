@@ -40,7 +40,7 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
       <View style={styles.actions}>
         <TouchableOpacity
           onPress={walletPress}
-          accessibilityLabel="Open Speakly balance"
+          accessibilityLabel="Speakly Balance Kholo"
           style={styles.wallet}
         >
           <View style={styles.rupeeIcon}>
@@ -60,7 +60,7 @@ const Header = ({ userProfilePress, walletPress }: Props) => {
 
         <TouchableOpacity
           onPress={userProfilePress}
-          accessibilityLabel="Open profile"
+          accessibilityLabel="Profile Kholo"
         >
           <Image source={getUserAvatar(user)} style={styles.avatar} />
         </TouchableOpacity>

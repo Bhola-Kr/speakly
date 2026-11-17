@@ -111,12 +111,12 @@ const LanguageScreen: React.FC<Props> = ({ navigation, route }) => {
       <StatusBar backgroundColor={Colors.background} barStyle="dark-content" />
 
       <View style={styles.header}>
-        <Text style={styles.smallTitle}>How would you like to connect?</Text>
+        <Text style={styles.smallTitle}>Kaise Connect Karna Chahoge?</Text>
 
-        <Text style={styles.title}>Conversation language</Text>
+        <Text style={styles.title}>Baat Karne Ki Bhasha</Text>
 
         <Text style={styles.note}>
-          You can update this later from your profile.
+          Baad mein profile se ise badal sakte ho.
         </Text>
       </View>
 
@@ -130,7 +130,7 @@ const LanguageScreen: React.FC<Props> = ({ navigation, route }) => {
 
       <GradientButton
         style={styles.continueButton}
-        title={loading ? 'Please wait...' : copy.common.continue}
+        title={loading ? 'Thoda intezaar karo…' : copy.common.continue}
         disabled={loading}
         onPress={async () => {
           try {

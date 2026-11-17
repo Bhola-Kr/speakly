@@ -41,6 +41,15 @@ const themedAlert = (
   buttons?: AlertButton[],
   options?: AlertOptions,
 ) => {
+  if (message && /permission[-_ ]denied/i.test(message))
+    message = 'Is action ka access nahi mila.';
+  else if (
+    message &&
+    /network[-_ ](?:request[-_ ])?(?:failed|error)/i.test(message)
+  )
+    message = 'Internet check karo aur dobara try karo.';
+  else if (message && /^\[(auth|database|storage)\//.test(message))
+    message = 'Request poori nahi hui. Dobara try karo.';
   publish({
     id: nextId++,
     title,
@@ -84,9 +93,17 @@ const AppAlert = () => {
     >
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
-        <View style={styles.card} accessibilityRole="alert" accessibilityViewIsModal>
+        <View
+          style={styles.card}
+          accessibilityRole="alert"
+          accessibilityViewIsModal
+        >
           <LinearGradient
-            colors={destructive ? [Colors.errorSurface, Colors.white] : [Colors.primaryLight, Colors.surfaceSecondary, Colors.white]}
+            colors={
+              destructive
+                ? [Colors.errorSurface, Colors.white]
+                : [Colors.primaryLight, Colors.surfaceSecondary, Colors.white]
+            }
             style={styles.hero}
           >
             <View style={[styles.icon, destructive && styles.dangerIcon]}>
@@ -126,19 +143,29 @@ const AppAlert = () => {
                 >
                   {primary && (
                     <LinearGradient
-                      colors={isDestructive ? [Colors.danger, '#B91C1C'] : Colors.buttonGradient}
+                      colors={
+                        isDestructive
+                          ? [Colors.danger, '#B91C1C']
+                          : Colors.buttonGradient
+                      }
                       style={styles.primaryButtonContent}
                     >
-                      <Text style={styles.primaryButtonText}>{buttonLabel}</Text>
+                      <Text style={styles.primaryButtonText}>
+                        {buttonLabel}
+                      </Text>
                       <MaterialCommunityIcons
-                        name={isDestructive ? 'alert-circle-outline' : 'arrow-right'}
+                        name={
+                          isDestructive ? 'alert-circle-outline' : 'arrow-right'
+                        }
                         size={19}
                         color={Colors.white}
                       />
                     </LinearGradient>
                   )}
                   {!primary && (
-                    <Text style={styles.secondaryButtonText}>{buttonLabel}</Text>
+                    <Text style={styles.secondaryButtonText}>
+                      {buttonLabel}
+                    </Text>
                   )}
                 </TouchableOpacity>
               );
@@ -189,7 +216,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dangerIcon: { backgroundColor: Colors.white, borderColor: Colors.errorSurface },
+  dangerIcon: {
+    backgroundColor: Colors.white,
+    borderColor: Colors.errorSurface,
+  },
   title: {
     marginTop: UI.spacing.lg,
     color: Colors.text,

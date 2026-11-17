@@ -18,6 +18,7 @@ import GradientButton from '../../components/GradientButton';
 import { getUserAvatar } from '../../constants/constants';
 import { useUser } from '../../hooks/UserContext';
 import { expertTopics } from '../../constants/dummyData';
+import { topicLabel } from '../../constants/strings';
 
 export const EditProfileScreen = ({ navigation }: any) => {
   const { user, updateProfile } = useUser();
@@ -35,8 +36,8 @@ export const EditProfileScreen = ({ navigation }: any) => {
         .map((topic: unknown) => String(topic).trim())
         .filter((topic: string) => expertTopics.includes(topic))
     : expertTopics.includes(profile?.category)
-      ? [profile.category]
-      : [];
+    ? [profile.category]
+    : [];
   const [topics, setTopics] = useState<string[]>(existingTopics);
   const [topicsOpen, setTopicsOpen] = useState(false);
 
@@ -50,20 +51,17 @@ export const EditProfileScreen = ({ navigation }: any) => {
 
   const validate = () => {
     if (!nickname.trim()) {
-      Alert.alert('Validation', 'Please enter nickname.');
+      Alert.alert('Validation', 'Apna naam likho.');
       return false;
     }
 
     if (nickname.trim().length < 2) {
-      Alert.alert(
-        'Validation',
-        'Nickname should contain at least 2 characters.',
-      );
+      Alert.alert('Validation', 'Naam mein kam se kam 2 letters likho.');
       return false;
     }
 
     if (isExpert && topics.length === 0) {
-      Alert.alert('Choose Topics', 'Select at least one conversation topic.');
+      Alert.alert('Topics Chuno', 'Kam se kam ek topic chuno.');
       return false;
     }
 
@@ -88,14 +86,14 @@ export const EditProfileScreen = ({ navigation }: any) => {
           : {}),
       });
 
-      Alert.alert('Success', 'Profile updated successfully.', [
+      Alert.alert('Success', 'Profile update ho gayi.', [
         {
           text: 'OK',
           onPress: () => navigation.goBack(),
         },
       ]);
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Something went wrong.');
+      Alert.alert('Error', e?.message || 'Kuch dikkat aa gayi.');
     } finally {
       setLoading(false);
     }
@@ -112,7 +110,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
           <TouchableOpacity
             activeOpacity={0.82}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel="Wapas Jao"
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -122,7 +120,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
               color={Colors.text}
             />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={styles.headerTitle}>Profile Badlo</Text>
         </View>
 
         <View style={styles.profileCard}>
@@ -148,7 +146,9 @@ export const EditProfileScreen = ({ navigation }: any) => {
             </View>
           </TouchableOpacity>
 
-          <Text style={styles.changePhoto}>Tap to Change Avatar</Text>
+          <Text style={styles.changePhoto}>
+            Avatar badalne ke liye tap karo
+          </Text>
         </View>
 
         <View style={styles.formCard}>
@@ -165,9 +165,9 @@ export const EditProfileScreen = ({ navigation }: any) => {
 
           {isExpert && (
             <>
-              <Text style={styles.label}>Conversation Topics</Text>
+              <Text style={styles.label}>Baat Karne Ke Topics</Text>
               <Text style={styles.helperText}>
-                Choose every topic you are comfortable discussing.
+                Jin topics par aaram se baat kar sakte ho, unhe chuno.
               </Text>
               <TouchableOpacity
                 activeOpacity={0.82}
@@ -192,10 +192,10 @@ export const EditProfileScreen = ({ navigation }: any) => {
                   ]}
                 >
                   {topics.length === 0
-                    ? 'Select topics'
+                    ? 'Topics Chuno'
                     : topics.length === 1
-                      ? topics[0]
-                      : `${topics.length} topics selected`}
+                    ? topicLabel(topics[0])
+                    : `${topics.length} topics chune gaye`}
                 </Text>
                 <MaterialCommunityIcons
                   name={topicsOpen ? 'chevron-up' : 'chevron-down'}
@@ -222,7 +222,9 @@ export const EditProfileScreen = ({ navigation }: any) => {
                             styles.topicOptionBorder,
                         ]}
                       >
-                        <Text style={styles.topicOptionText}>{topic}</Text>
+                        <Text style={styles.topicOptionText}>
+                          {topicLabel(topic)}
+                        </Text>
                         <MaterialCommunityIcons
                           name={
                             selected
@@ -244,11 +246,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
         </View>
         <View style={styles.spacer} />
 
-        <GradientButton
-          title="Save Changes"
-          loading={loading}
-          onPress={onSave}
-        />
+        <GradientButton title="Save Karo" loading={loading} onPress={onSave} />
 
         <View style={styles.spacer} />
       </ScrollView>

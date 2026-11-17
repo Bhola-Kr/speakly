@@ -13,31 +13,34 @@ export const useCallBalanceGuard = (navigation: any) => {
   const { user } = useUser();
   const { activeCall, showCall } = useActiveCall();
 
-  return useCallback((requestedRate?: number) => {
-    if (activeCall) {
-      showCall();
+  return useCallback(
+    (requestedRate?: number) => {
+      if (activeCall) {
+        showCall();
+        return false;
+      }
+      const isRegularUser = user?.isExpert !== true;
+      const balance = Number(user?.wallet?.balance || 0);
+      const callRate = normalizeCallRate(requestedRate);
+
+      if (!isRegularUser || balance >= callRate) {
+        return true;
+      }
+
+      Alert.alert(
+        copy.wallet.lowBalanceTitle,
+        `Call shuru karne ke liye kam se kam ${callRate} coins chahiye.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: copy.wallet.addCoins,
+            onPress: () => navigation.navigate('Wallet'),
+          },
+        ],
+      );
+
       return false;
-    }
-    const isRegularUser = user?.isExpert !== true;
-    const balance = Number(user?.wallet?.balance || 0);
-    const callRate = normalizeCallRate(requestedRate);
-
-    if (!isRegularUser || balance >= callRate) {
-      return true;
-    }
-
-    Alert.alert(
-      copy.wallet.lowBalanceTitle,
-      `You need at least ${callRate} coins to start a call.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: copy.wallet.addCoins,
-          onPress: () => navigation.navigate('Wallet'),
-        },
-      ],
-    );
-
-    return false;
-  }, [activeCall, showCall, navigation, user?.isExpert, user?.wallet?.balance]);
+    },
+    [activeCall, showCall, navigation, user?.isExpert, user?.wallet?.balance],
+  );
 };

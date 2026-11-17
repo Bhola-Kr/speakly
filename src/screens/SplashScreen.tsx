@@ -117,7 +117,7 @@ const SplashScreen = ({ navigation }: any) => {
         <View style={styles.bottom}>
           <ActivityIndicator color={Colors.secondary} size="large" />
 
-          <Text style={styles.loading}>Loading...</Text>
+          <Text style={styles.loading}>Load ho raha hai…</Text>
 
           <Text style={styles.version}>Version {DeviceInfo.getVersion()}</Text>
         </View>

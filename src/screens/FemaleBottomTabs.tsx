@@ -127,7 +127,7 @@ const FemaleBottomTabs = () => {
         name="History"
         component={FemaleHistoryScreen}
         options={{
-          tabBarLabel: 'Recents',
+          tabBarLabel: 'Pichhli Calls',
           tabBarIcon: HistoryTabIcon,
         }}
       />

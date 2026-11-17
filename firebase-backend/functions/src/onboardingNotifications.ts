@@ -1,3 +1,4 @@
+import { notificationAudience, tokensForAdmins } from './pushTokenOwnership';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
 import { onValueWritten } from 'firebase-functions/v2/database';
@@ -20,20 +21,6 @@ const completedOnboarding = (user: any) => {
     (gender === 'male' || gender === 'female') &&
     (role === 'learner' || role === 'expert')
   );
-};
-
-const adminTokens = (usersSnapshot: admin.database.DataSnapshot) => {
-  const tokens: string[] = [];
-  usersSnapshot.forEach(child => {
-    const user = child.val();
-    if (user?.isAdmin !== true) return;
-
-    const tokenValue = user.fcmTokens;
-    const token =
-      typeof tokenValue === 'string' ? tokenValue : tokenValue?.token;
-    if (typeof token === 'string' && token.trim()) tokens.push(token.trim());
-  });
-  return [...new Set(tokens)];
 };
 
 export const notifyAdminsOnUserOnboarded = onValueWritten(
@@ -69,15 +56,54 @@ export const notifyAdminsOnUserOnboarded = onValueWritten(
         .database()
         .ref(`${DATA_ROOT}/users`)
         .once('value');
-      const tokens = adminTokens(usersSnapshot);
+      const tokens = await tokensForAdmins(usersSnapshot.val());
+      if (role === 'learner' && user.isExpert !== true) {
+        const registrations = await admin
+          .database()
+          .ref(`${DATA_ROOT}/pushTokenOwners`)
+          .once('value');
+        const hostTokens = notificationAudience(
+          usersSnapshot.val(),
+          registrations.val(),
+          'host',
+        );
+        const hostClaim = await admin
+          .database()
+          .ref(`${DATA_ROOT}/newCustomerHostNotifications/${uid}`)
+          .transaction(current => {
+            if (current) return;
+            return { claimedAt: Date.now() };
+          });
+        if (hostClaim.committed) {
+          const recipients = [...hostTokens];
+          for (let offset = 0; offset < recipients.length; offset += 500) {
+            await admin.messaging().sendEachForMulticast({
+              tokens: recipients.slice(offset, offset + 500),
+              notification: {
+                title: 'Speakly par Naya User Aaya Hai! 🎉',
+                body: 'Naya user connect hone ke liye ready hai. Online aao aur connect ho jao!',
+              },
+              data: { type: 'new_customer', uid },
+              android: {
+                priority: 'high',
+                notification: {
+                  channelId: GENERAL_NOTIFICATION_CHANNEL_ID,
+                  sound: 'default',
+                },
+              },
+              apns: { payload: { aps: { sound: 'default' } } },
+            });
+          }
+        }
+      }
       let delivered = 0;
 
       for (let offset = 0; offset < tokens.length; offset += 500) {
         const result = await admin.messaging().sendEachForMulticast({
           tokens: tokens.slice(offset, offset + 500),
           notification: {
-            title: 'New user onboarded',
-            body: `${name} joined Speakly as a ${role}.`,
+            title: 'Naya User Join Hua',
+            body: `${name} Speakly par jude hain: ${role}.`,
           },
           data: {
             type: 'user_onboarded',

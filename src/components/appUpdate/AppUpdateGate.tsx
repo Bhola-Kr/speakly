@@ -128,15 +128,13 @@ export default function AppUpdateGate({
           : /^https:\/\/play\.google\.com\/store\/apps\/details\?/.test(url));
       if (!validUrl) {
         setError(
-          'The update link is not available yet. Please try again shortly.',
+          'Update link abhi available nahi hai. Thodi der baad try karo.',
         );
         return;
       }
       await Linking.openURL(url!);
     } catch {
-      setError(
-        'Unable to open the store. Please check your connection and try again.',
-      );
+      setError('Store nahi khula. Internet check karke dobara try karo.');
     } finally {
       setOpening(false);
     }

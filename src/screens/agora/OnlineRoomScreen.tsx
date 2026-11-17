@@ -162,7 +162,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
 
   const acceptCall = async () => {
     if (!incomingRoom) {
-      Alert.alert('Error', 'No incoming call found.');
+      Alert.alert('Error', 'Koi incoming call nahi mili.');
       return;
     }
 
@@ -170,7 +170,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     trackCallLifecycle('IncomingCallAccepted', {
       ...(incomingRoom?.roomId ? { call_id: incomingRoom.roomId } : {}),
     });
-    await RoomService.acceptCall(myUid);
+    await RoomService.acceptCall(myUid, incomingRoom.currentCallId);
     isJoiningCall.current = true;
     navigation.replace('Call', {
       gender: 'female',
@@ -192,18 +192,18 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
     });
 
     try {
-      await RoomService.rejectCall(myUid);
+      await RoomService.rejectCall(myUid, incomingRoom?.currentCallId);
     } catch (e) {
       console.log('goOffline ->', e);
 
-      Alert.alert('Error', 'Unable to update your status. Please try again.');
+      Alert.alert('Error', 'Status update nahi hua. Dobara try karo.');
     }
   };
 
   const goOffline = () => {
     Alert.alert(
       copy.host.goOffline,
-      'Are you sure you want to go offline? You will not receive incoming calls while you are offline.',
+      'Offline jaana hai? Offline hone par nayi calls nahi aayengi.',
       [
         {
           text: 'Cancel',
@@ -220,10 +220,7 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
             } catch (e) {
               console.log('goOffline ->', e);
 
-              Alert.alert(
-                'Error',
-                'Unable to update your status. Please try again.',
-              );
+              Alert.alert('Error', 'Status update nahi hua. Dobara try karo.');
             }
           },
         },
@@ -314,9 +311,9 @@ const OnlineRoomScreen = ({ navigation }: Props) => {
               </View>
             </View>
 
-            <Text style={styles.availableTitle}>You’re available</Text>
+            <Text style={styles.availableTitle}>Aap Available Ho</Text>
             <Text style={styles.availableSubtitle}>
-              Waiting for incoming voice calls
+              Nayi calls ka intezaar hai
             </Text>
 
             <View style={styles.listeningBadge}>

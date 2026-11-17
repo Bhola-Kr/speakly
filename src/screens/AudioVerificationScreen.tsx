@@ -27,7 +27,7 @@ const REVIEW_WINDOW_MS = 30 * 60 * 1000;
 const MIN_RECORDING_SECONDS = 5;
 const MAX_RECORDING_SECONDS = 10;
 const HOST_VERIFICATION_PROMPT =
-  'Hello, I am joining Speakly 121 as a conversation host. I will welcome callers with respect and keep every conversation safe and genuine.';
+  'Namaste, main Speakly 121 par expert ki tarah jud raha hoon. Callers ka izzat se swagat karna aur har baatcheet ko safe aur sachcha rakhna meri zimmedari hai.';
 const PROMPTS: Record<string, string> = {
   English: HOST_VERIFICATION_PROMPT,
   Hindi: HOST_VERIFICATION_PROMPT,
@@ -90,12 +90,13 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
   }, [navigation]);
 
   const reviewMessage = useMemo(() => {
-    if (!reviewDueAt) return 'Your host application is waiting for review.';
+    if (!reviewDueAt)
+      return 'Aapki expert application review ka intezaar kar rahi hai.';
     const due = new Date(reviewDueAt).toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
     });
-    return `Expected review by ${due}. You will receive host access after your application is approved.`;
+    return `Review ka expected time: ${due}. Application approve hone ke baad expert access milega.`;
   }, [reviewDueAt]);
 
   const requestPermission = async () => {
@@ -109,15 +110,14 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
 
   const submitRecording = async (result: VoiceResult) => {
     const currentUser = auth().currentUser;
-    if (!currentUser) throw new Error('Please sign in again.');
+    if (!currentUser) throw new Error('Dobara sign in karo.');
     if (!contactConsent) {
-      throw new Error('Please provide onboarding contact consent.');
+      throw new Error('Onboarding ke liye contact karne ki sehmati do.');
     }
-    if (!result.localUri)
-      throw new Error('The recording file was not created.');
+    if (!result.localUri) throw new Error('Recording file nahi bani.');
     if (Number(result.durationMs || 0) < MIN_RECORDING_SECONDS * 1000) {
       throw new Error(
-        `Please record for at least ${MIN_RECORDING_SECONDS} seconds.`,
+        `Kam se kam itni der record karo: ${MIN_RECORDING_SECONDS} seconds.`,
       );
     }
 
@@ -177,10 +177,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
       await submitRecording(result);
     } catch (error: any) {
       setStatus('idle');
-      Alert.alert(
-        'Unable to submit recording',
-        error?.message || 'Please try again.',
-      );
+      Alert.alert('Recording Nahi Gayi', error?.message || 'Dobara try karo.');
     } finally {
       isStoppingRef.current = false;
     }
@@ -196,15 +193,15 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
     if (status !== 'idle') return;
     if (!contactConsent) {
       Alert.alert(
-        'Consent Required',
-        'Please confirm that the Speakly 121 team may contact you for onboarding assistance.',
+        'Sehmati Zaroori Hai',
+        'Onboarding mein madad ke liye Speakly 121 team aapse contact kar sakti hai, iski sehmati do.',
       );
       return;
     }
 
     try {
       if (!(await requestPermission()))
-        throw new Error('Microphone permission is required.');
+        throw new Error('Mic ki permission zaroori hai.');
       await VoiceDetector.startRecording();
       recordingStartedAtRef.current = Date.now();
       isStoppingRef.current = false;
@@ -213,8 +210,8 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
     } catch (error: any) {
       setStatus('idle');
       Alert.alert(
-        'Unable to start recording',
-        error?.message || 'Please try again.',
+        'Recording Shuru Nahi Hui',
+        error?.message || 'Dobara try karo.',
       );
     }
   };
@@ -276,7 +273,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
 
           <Text style={styles.pendingTitle}>{copy.host.pending}</Text>
           <Text style={styles.pendingSubtitle}>
-            Your host application has been submitted successfully.
+            Expert banne ki application bhej di gayi hai.
           </Text>
 
           <View style={styles.progressCard}>
@@ -286,7 +283,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
                 size={27}
                 color={Colors.successStrong}
               />
-              <Text style={styles.progressText}>Voice sample submitted</Text>
+              <Text style={styles.progressText}>Voice Sample Bhej Diya</Text>
             </View>
             <View style={styles.progressLineActive} />
             <View style={styles.progressRow}>
@@ -298,7 +295,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
                 />
               </View>
               <Text style={styles.progressText}>
-                Team reviewing your profile
+                Team Aapki Profile Check Kar Rahi Hai
               </Text>
             </View>
             <View style={styles.progressLine} />
@@ -309,7 +306,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
                 color={Colors.placeholder}
               />
               <Text style={[styles.progressText, styles.progressTextPending]}>
-                Host account activation
+                Expert Account Chalu Karo
               </Text>
             </View>
           </View>
@@ -323,11 +320,10 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
               />
             </View>
             <Text style={styles.notificationTitle}>
-              We’ll notify you once approved!
+              Approval milte hi bata denge!
             </Text>
             <Text style={styles.notificationText}>
-              Once approved, you can go online, receive calls, and start
-              earning.
+              Approval ke baad online aao, calls lo aur kamai shuru karo.
             </Text>
           </View>
 
@@ -347,10 +343,10 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
         <Text style={styles.eyebrow}>
           {copy.host.verification.toUpperCase()}
         </Text>
-        <Text style={styles.title}>Record in {language}</Text>
+        <Text style={styles.title}>Is Bhasha Mein Record Karo: {language}</Text>
         <Text style={styles.subtitle}>
-          Read the text naturally. An admin will listen and normally review it
-          within 30 minutes.
+          Text ko aaram se padho. Admin recording sunega aur aam taur par 30
+          minutes mein review karega.
         </Text>
 
         <View style={styles.promptCard}>
@@ -383,9 +379,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
             color={contactConsent ? Colors.secondary : Colors.placeholder}
           />
           <Text style={styles.consentText}>
-            I choose to be contacted by the Speakly 121 team for assistance in
-            onboarding. The team may contact opted-in Experts with setup
-            guidance and early-host updates.
+            Onboarding mein madad ke liye Speakly 121 team mujhse contact kar
+            sakti hai. Sehmati dene wale experts ko setup ki madad aur naye
+            updates mil sakte hain.
           </Text>
         </TouchableOpacity>
 
@@ -393,7 +389,9 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
           {status === 'uploading' ? (
             <>
               <ActivityIndicator size="large" color={Colors.secondary} />
-              <Text style={styles.recordHint}>Saving recording securely…</Text>
+              <Text style={styles.recordHint}>
+                Recording safely save ho rahi hai…
+              </Text>
             </>
           ) : (
             <>
@@ -417,7 +415,7 @@ const AudioVerificationScreen = ({ navigation, route }: any) => {
               </Text>
               <Text style={styles.recordHint}>
                 {status === 'recording'
-                  ? `Recording stops automatically at ${MAX_RECORDING_SECONDS} seconds`
+                  ? `Recording apne aap rukegi: ${MAX_RECORDING_SECONDS} seconds`
                   : `Record ${MIN_RECORDING_SECONDS}–${MAX_RECORDING_SECONDS} seconds`}
               </Text>
             </>

@@ -68,10 +68,10 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const profile = user?.profile;
   const gender = profile?.gender || 'male';
   const isExpert = user?.isExpert === true;
-  const phoneNumber = user?.phone || profile?.phone || 'Not available';
+  const phoneNumber = user?.phone || profile?.phone || 'Abhi Available Nahi';
   const phoneDigits = String(phoneNumber).replace(/\D/g, '');
   const displayPhoneNumber =
-    phoneNumber === 'Not available'
+    phoneNumber === 'Abhi Available Nahi'
       ? phoneNumber
       : phoneDigits.startsWith('91') && phoneDigits.length === 12
       ? `+91 ${phoneDigits.slice(2)}`
@@ -147,16 +147,13 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const handleLogout = () => {
     if (loggingOut) return;
     if (activeCall) {
-      Alert.alert(
-        'Call in progress',
-        'Please end your call before logging out.',
-      );
+      Alert.alert('Call Chal Rahi Hai', 'Logout se pehle call khatam karo.');
       showCall();
       return;
     }
     Alert.alert(
       'Logout',
-      'Are you sure you want to logout?',
+      'Kya aap logout karna chahte ho?',
       [
         {
           text: 'Cancel',
@@ -177,8 +174,8 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
               });
             } catch (error: any) {
               Alert.alert(
-                'Unable to Logout',
-                error?.message || 'Please try again.',
+                'Logout Nahi Hua',
+                error?.message || 'Dobara try karo.',
               );
             } finally {
               setLoggingOut(false);
@@ -192,8 +189,8 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'Your account will be marked for deletion. Your data will not be deleted immediately and the request will be reviewed within 15 days.\n\nYou can contact the admin during this period. Do you want to continue?',
+      'Account Delete Karo',
+      'Account ko deletion ke liye mark kiya jayega. Data turant delete nahi hoga. Request ka 15 din ke andar review hoga. Is dauraan admin se contact kar sakte ho. Kya aage badhna chahte ho?',
       [
         {
           text: 'Cancel',
@@ -206,13 +203,13 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
             try {
               await authData.requestAccountDeletion();
               Alert.alert(
-                'Deletion Request Submitted',
-                'Your account is under deletion review and is scheduled to be deleted within 15 days. Your current data has not been deleted. Contact the admin if you need help or want to discuss this request.',
+                'Delete Karne Ki Request Bhej Di',
+                'Aapka account deletion review mein hai aur 15 din ke andar delete hona scheduled hai. Abhi ka data delete nahi hua hai. Madad ya request par baat karne ke liye admin se contact karo.',
               );
             } catch (error: any) {
               Alert.alert(
-                'Unable to Submit Request',
-                error?.message || 'Please try again.',
+                'Request Nahi Gayi',
+                error?.message || 'Dobara try karo.',
               );
             }
           },
@@ -227,16 +224,8 @@ const ProfileSettingScreen = ({ navigation }: Props) => {
   const handleContactUs = async () => {
     const subject = encodeURIComponent('Speakly 121 Support');
 
-    const body = encodeURIComponent(`Hello Speakly 121 Support Team,
-
-Please describe your issue below:
-
-----------------------------
-
-
-----------------------------
-
-Thank you.
+    const body =
+      encodeURIComponent(`Namaste Speakly 121 Support Team, Meri dikkat: ---------------------------- ---------------------------- Dhanyavaad.
 `);
 
     const url = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
@@ -247,13 +236,10 @@ Thank you.
       if (supported) {
         await Linking.openURL(url);
       } else {
-        Alert.alert(
-          'Email App Not Found',
-          'No email application is installed on this device.',
-        );
+        Alert.alert('Email App Nahi Mili', 'Is device par email app nahi hai.');
       }
     } catch {
-      Alert.alert('Error', 'Unable to open the email application.');
+      Alert.alert('Error', 'Email app nahi khuli.');
     }
   };
 
@@ -261,9 +247,7 @@ Thank you.
     try {
       await Share.share({
         title: 'Speakly 121',
-        message: `Baat Ho Jaaye? Discover people and start live one-to-one voice conversations on Speakly 121.
-
-Download now:
+        message: `Baat Ho Jaaye? Speakly 121 par logon se milo aur live baat karo. Abhi download karo:
 ${PLAY_STORE_URL}`,
       });
     } catch (error) {
@@ -275,23 +259,23 @@ ${PLAY_STORE_URL}`,
     try {
       await openAppReview(auth().currentUser?.uid);
     } catch {
-      Alert.alert('Error', 'Unable to open the Play Store.');
+      Alert.alert('Error', 'Play Store nahi khula.');
     }
   };
 
   const handleMenuItemPress = (item: any) => {
-    if (item.title === 'Contact Us') {
+    if (item.title === 'Humse Baat Karo') {
       handleContactUs();
-    } else if (item.title === 'Share App') {
+    } else if (item.title === 'App Share Karo') {
       handleShareApp();
-    } else if (item.title === 'Rate App') {
+    } else if (item.title === 'App Ko Rating Do') {
       handleRateApp();
     } else if (item.action === 'logout') {
       handleLogout();
     } else if (item.action === 'deleteAccount') {
       handleDeleteAccount();
     } else if (item.screen) {
-      if (item.screen === 'Recents') {
+      if (item.screen === 'Pichhli Calls') {
         navigation.navigate(isExpert ? 'FemaleHistory' : 'ManHistory', {
           showBack: true,
         });
@@ -334,7 +318,7 @@ ${PLAY_STORE_URL}`,
                   ]}
                 >
                   {item.action === 'logout' && loggingOut
-                    ? 'Logging out…'
+                    ? 'Logout Ho Raha Hai…'
                     : item.title}
                 </Text>
                 {item.value && (
@@ -385,7 +369,7 @@ ${PLAY_STORE_URL}`,
           <TouchableOpacity
             activeOpacity={0.82}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel="Wapas Jao"
             style={expertStyles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -446,7 +430,7 @@ ${PLAY_STORE_URL}`,
               color={EXPERT_COLORS.tealDark}
             />
             <Text style={expertStyles.detailText}>
-              Member since {formatDate(user?.createdAt)}
+              Kab Se Jude Hain {formatDate(user?.createdAt)}
             </Text>
           </View>
 
@@ -458,7 +442,7 @@ ${PLAY_STORE_URL}`,
                 color={EXPERT_COLORS.tealDark}
               />
               <Text style={expertStyles.detailText}>
-                Your earning rate: ₹{expertCallRate} per minute
+                Aapki Kamai Ka Rate: ₹{expertCallRate} per minute
               </Text>
             </View>
           )}
@@ -473,7 +457,7 @@ ${PLAY_STORE_URL}`,
               size={25}
               color={EXPERT_COLORS.tealDark}
             />
-            <Text style={expertStyles.editButtonText}>Edit Profile</Text>
+            <Text style={expertStyles.editButtonText}>Profile Badlo</Text>
             <MaterialCommunityIcons
               name="chevron-right"
               size={25}
@@ -494,13 +478,13 @@ ${PLAY_STORE_URL}`,
             </View>
             <View style={expertStyles.callTimeDivider} />
             <View style={expertStyles.callTimeContent}>
-              <Text style={expertStyles.callTimeLabel}>Total call time</Text>
+              <Text style={expertStyles.callTimeLabel}>Kul Call Samay</Text>
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 style={expertStyles.callTimeDescription}
               >
-                Across all completed calls
+                Sabhi completed calls ka total
               </Text>
             </View>
             <Text style={expertStyles.callTimeValue}>
@@ -518,9 +502,9 @@ ${PLAY_STORE_URL}`,
             </View>
             <View style={expertStyles.callTimeDivider} />
             <View style={expertStyles.callTimeContent}>
-              <Text style={expertStyles.callTimeLabel}>My Balance</Text>
+              <Text style={expertStyles.callTimeLabel}>Mera Balance</Text>
               <Text style={expertStyles.callTimeDescription}>
-                Tap to recharge
+                Recharge ke liye tap karo
               </Text>
             </View>
             <Text style={expertStyles.walletValue}>
@@ -545,7 +529,7 @@ ${PLAY_STORE_URL}`,
           renderExpertSection('Administration', [
             {
               id: 'admin-users',
-              title: 'Manage Users',
+              title: 'Users Manage Karo',
               icon: 'account-cog-outline',
               screen: 'AdminUsers',
             },

@@ -48,11 +48,11 @@ export default function AppUpdateNotice({
           />
           <View style={styles.bannerCopy}>
             <Text style={styles.bannerTitle}>
-              A smoother Speakly 121 is here
+              Speakly 121 Ab Aur Behtar Hai
             </Text>
             <Text style={styles.bannerMessage}>
-              Version {latestVersion} is available. Install for better
-              performance.
+              Version {latestVersion} available hai. Behtar performance ke liye
+              install karo.
             </Text>
             {error && <Text style={styles.error}>{error}</Text>}
             <TouchableOpacity
@@ -61,12 +61,12 @@ export default function AppUpdateNotice({
               disabled={opening}
             >
               <Text style={styles.bannerAction}>
-                {opening ? 'Opening store…' : 'Install update →'}
+                {opening ? 'Store Khul Raha Hai…' : 'Update Install Karo →'}
               </Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity
-            accessibilityLabel="Dismiss update message"
+            accessibilityLabel="Update Message Band Karo"
             accessibilityRole="button"
             onPress={onDismiss}
             style={styles.close}
@@ -109,27 +109,25 @@ export default function AppUpdateNotice({
                   color={Colors.secondary}
                 />
                 <Text style={styles.badgeText}>
-                  {required ? 'ESSENTIAL UPDATE' : 'SOMETHING NEW FOR YOU'}
+                  {required ? 'Zaroori Update' : 'Aapke Liye Naya Update'}
                 </Text>
               </View>
               <Text style={styles.heroTitle}>
-                {required
-                  ? 'Let’s keep you connected'
-                  : 'Your next upgrade is here'}
+                {required ? 'Baat Jaari Rakho' : 'Naya Update Aa Gaya'}
               </Text>
               <Text style={styles.heroSubtitle}>
-                Better conversations start with Speakly 121.
+                Speakly 121 Par Baat Ho Jaaye!
               </Text>
             </View>
             <View style={styles.body}>
               <Text style={styles.title}>
                 {required
-                  ? 'Update to continue'
-                  : 'Meet the latest Speakly 121'}
+                  ? 'Aage Badhne Ke Liye Update Karo'
+                  : 'Naya Speakly 121 Dekho'}
               </Text>
               <Text style={styles.description}>
                 {required
-                  ? 'A new version is ready. Please update Speakly 121 to continue enjoying your conversations.'
+                  ? 'Naya version ready hai. Baat jaari rakhne ke liye Speakly 121 update karo.'
                   : 'Enjoy the latest improvements and a better calling experience. Update now, or keep chatting and do it later.'}
               </Text>
               {error && (
@@ -139,7 +137,7 @@ export default function AppUpdateNotice({
               )}
               <TouchableOpacity
                 accessibilityRole="button"
-                accessibilityLabel="Update Speakly 121"
+                accessibilityLabel="Speakly 121 Update Karo"
                 onPress={onUpdate}
                 disabled={opening}
                 activeOpacity={0.85}
@@ -158,13 +156,13 @@ export default function AppUpdateNotice({
                     />
                   )}
                   <Text style={styles.updateText}>
-                    {opening ? 'Opening store…' : 'Update now'}
+                    {opening ? 'Store Khul Raha Hai…' : 'Abhi Update Karo'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
               {required ? (
                 <Text style={styles.footnote}>
-                  This update is required to use Speakly 121.
+                  Speakly 121 chalane ke liye yeh update zaroori hai.
                 </Text>
               ) : (
                 <TouchableOpacity
@@ -172,7 +170,7 @@ export default function AppUpdateNotice({
                   onPress={onDismiss}
                   style={styles.laterButton}
                 >
-                  <Text style={styles.laterText}>Maybe later</Text>
+                  <Text style={styles.laterText}>Baad Mein</Text>
                 </TouchableOpacity>
               )}
             </View>

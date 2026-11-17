@@ -40,7 +40,7 @@ export function useFirstCallRechargePrompt(navigation: any) {
                 '',
             ).trim();
             const title = hostName
-              ? `Keep talking with ${hostName}?`
+              ? `Baat jaari rakho: ${hostName}?`
               : copy.postCall.title;
 
             Alert.alert(title, copy.postCall.message, [
