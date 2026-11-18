@@ -125,16 +125,27 @@ test('wallet/history transaction reconciles partial minutes and repeated settlem
         : name.includes('firebase-admin')
         ? {
             database: () => ({
-              ref: () => ({
-                transaction: async callback => {
-                  const next = callback(structuredClone(data));
-                  if (next) data = next;
-                  return {
-                    committed: !!next,
-                    snapshot: { val: () => structuredClone(data) },
-                  };
-                },
-              }),
+              ref: path => {
+                const keys = path.split('/').slice(1);
+                const read = () =>
+                  keys.reduce((value, key) => value?.[key], data);
+                return {
+                  once: async () => ({ val: read }),
+                  transaction: async callback => {
+                    const next = callback(structuredClone(read()));
+                    if (next && keys.length) {
+                      const parent = keys
+                        .slice(0, -1)
+                        .reduce((value, key) => value[key], data);
+                      parent[keys.at(-1)] = next;
+                    } else if (next) data = next;
+                    return {
+                      committed: !!next,
+                      snapshot: { val: () => structuredClone(read()) },
+                    };
+                  },
+                };
+              },
             }),
           }
         : name.includes('expertCompensation')
@@ -196,16 +207,20 @@ test('wallet/history transaction reconciles partial minutes and repeated settlem
       },
       users: { user: { wallet: { balance: 10 } } },
     };
-    await event('user', 'connected');
-    await event('host', 'connected');
+    const report = (uid, action) =>
+      mock.exports.reportCallEvent('host', 'one', uid, action);
+    await assert.rejects(() => report('intruder', 'connected'));
+    await report('user', 'connected');
+    await report('host', 'connected');
     for (let elapsed = 5000; elapsed < duration; elapsed += 5000) {
       now = 200000 + elapsed;
-      await event('user', 'heartbeat');
-      await event('host', 'heartbeat');
+      await report('user', 'heartbeat');
+      await report('host', 'heartbeat');
     }
     now = 200000 + duration;
-    await event('user', 'end');
-    await event('host', 'end');
+    assert.equal(data.users.user.wallet.balance, 10);
+    await report('user', 'end');
+    await report('host', 'end');
     const seconds = Math.ceil(duration / 1000);
     const charge = Math.round((seconds * 5 * 100) / 60) / 100;
     assert.equal(data.callHistory.host.one.duration, duration);

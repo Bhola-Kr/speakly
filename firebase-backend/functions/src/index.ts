@@ -68,22 +68,11 @@ const FIREBASE_PROJECT_ID = 'recent-chat-7fd34';
 const FIREBASE_DATA_ROOT = 'speakly';
 
 if (!admin.apps.length) {
-  const localProject = process.env.GCLOUD_PROJECT || '';
-  if (process.env.FUNCTIONS_EMULATOR === 'true') {
-    admin.initializeApp({
-      projectId: localProject || FIREBASE_PROJECT_ID,
-      databaseURL: `https://${
-        localProject || FIREBASE_PROJECT_ID
-      }-default-rtdb.firebaseio.com`,
-    });
-  } else {
-    const serviceAccount = require('../adminsdk.json');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: FIREBASE_PROJECT_ID,
-      databaseURL: 'https://recent-chat-7fd34-default-rtdb.firebaseio.com',
-    });
-  }
+  const projectId = process.env.GCLOUD_PROJECT || FIREBASE_PROJECT_ID;
+  admin.initializeApp({
+    projectId,
+    databaseURL: `https://${projectId}-default-rtdb.firebaseio.com`,
+  });
 }
 
 const MSG91_WIDGET_ID = '3668716f3732343639373333';

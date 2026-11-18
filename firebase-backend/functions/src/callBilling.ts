@@ -171,7 +171,7 @@ export async function claimCall(req: Request, res: Response) {
     });
   }
 }
-// Pure transition, used inside one atomic RTDB transaction with the wallet.
+// Pure transition shared by room updates and final wallet settlement.
 export function advanceBilling(
   room: any,
   uid: string,
@@ -368,7 +368,9 @@ export async function callSessionEvent(req: Request, res: Response) {
     const user = await admin.auth().verifyIdToken(token);
     const { hostUid, callId, event } = req.body || {};
     if (
+      typeof hostUid !== 'string' ||
       !hostUid ||
+      /[.#$\[\]\/]/.test(hostUid) ||
       !callId ||
       !['connected', 'heartbeat', 'disconnected', 'end'].includes(event)
     ) {
@@ -376,13 +378,74 @@ export async function callSessionEvent(req: Request, res: Response) {
         .status(400)
         .json({ success: false, message: 'Call ka event sahi nahi hai.' });
     }
-    return res.json(await applyCallEvent(hostUid, callId, user.uid, event));
+    return res.json(await reportCallEvent(hostUid, callId, user.uid, event));
   } catch {
     return res.status(403).json({
       success: false,
       message: 'Call verify nahi hui. Dobara try karo.',
     });
   }
+}
+
+export async function reportCallEvent(
+  hostUid: string,
+  callId: string,
+  uid: string,
+  event: string,
+) {
+  if (event === 'end') return applyCallEvent(hostUid, callId, uid, event);
+
+  const database = admin.database();
+  const now = Date.now();
+  let legacy = false;
+  const result = await runDataTransaction(
+    database.ref(`speakly/rooms/${hostUid}`),
+    room => {
+      legacy = false;
+      if (
+        !room ||
+        room.currentCallId !== callId ||
+        ![room.male?.uid, room.female?.uid].includes(uid)
+      )
+        return;
+      legacy = room.billingMode !== 'prorated';
+      if (legacy) return;
+      if (room.status === 'ended' || advanceBilling(room, uid, event, now))
+        return room;
+    },
+  );
+  if (legacy) return applyCallEvent(hostUid, callId, uid, event);
+  if (!result.committed) throw new Error('Call ab active nahi hai.');
+
+  const room = result.snapshot.val();
+  if (
+    room.status === 'active' &&
+    event === 'heartbeat' &&
+    room.male.uid === uid
+  ) {
+    const balance = Number(
+      (
+        await database.ref(`speakly/users/${uid}/wallet/balance`).once('value')
+      ).val() || 0,
+    );
+    const billedSeconds = Math.ceil(Number(room.billableMs || 0) / 1000);
+    const due =
+      Math.round((billedSeconds * room.callRatePerMinute * 100) / 60) -
+      Math.round(Number(room.chargedAmount || 0) * 100);
+    if (due > 0 && due >= Math.round(balance * 100)) {
+      const settled = await applyCallEvent(hostUid, callId, uid, 'end');
+      return { ...settled, insufficient: true };
+    }
+  }
+
+  return {
+    success: true,
+    active: room.status === 'active',
+    ended: room.status === 'ended',
+    insufficient: false,
+    startedAt: room.callStartedAt || now,
+    duration: Number(room.billableMs || 0),
+  };
 }
 
 // Host answer/reject and caller cancellation use a warm server transaction.

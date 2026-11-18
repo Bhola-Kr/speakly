@@ -1336,7 +1336,9 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                   {gender === 'male' ? 'Aapka Balance' : 'Customer Ka Balance'}
                 </Text>
                 <Text style={styles.callerBalanceValue}>
-                  ₹{Math.floor(displayedBalance).toLocaleString()}
+                  ₹{displayedBalance.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })}
                 </Text>
               </View>
             )}
