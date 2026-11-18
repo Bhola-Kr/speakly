@@ -26,6 +26,7 @@ export interface CallHistory {
   endedAt: number;
   duration: number; // milliseconds
   amount: number; // amount charged
+  expertAmount?: number; // earnings credited to the expert
   callRatePerMinute?: number;
   status: CallStatus;
   maleInfo: UserInfo;
@@ -420,26 +421,47 @@ class RoomService {
     }
 
     const ref = database().ref(`callHistory/${uid}`);
+    const earningsRef = database().ref(`users/${uid}/expertEarnings/creditedCalls`);
+    let currentHistory: CallHistory[] = [];
+    let creditedCalls: Record<string, { amount?: number }> = {};
+
+    const publish = () => {
+      const history = currentHistory
+        .map(item => ({
+          ...item,
+          expertAmount:
+            item.expertAmount ??
+            Number(creditedCalls[item.callId]?.amount || 0),
+        }))
+        .sort((a, b) => b.startedAt - a.startedAt);
+      callback(history);
+    };
 
     const listener = ref.on('value', snapshot => {
-      const history: CallHistory[] = [];
+      currentHistory = [];
 
       snapshot.forEach(child => {
         const item = child.val() as CallHistory;
 
         if (includeArchived || !item.archivedAt) {
-          history.push(item);
+          currentHistory.push(item);
         }
 
         return false;
       });
 
-      history.sort((a, b) => b.startedAt - a.startedAt);
-
-      callback(history);
+      publish();
     });
 
-    return () => ref.off('value', listener);
+    const earningsListener = earningsRef.on('value', snapshot => {
+      creditedCalls = snapshot.val() || {};
+      publish();
+    });
+
+    return () => {
+      ref.off('value', listener);
+      earningsRef.off('value', earningsListener);
+    };
   }
 
   listenTotalCallDuration(callback: (duration: number) => void) {

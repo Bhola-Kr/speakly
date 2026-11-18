@@ -368,7 +368,19 @@ export async function applyCallEvent(
   const room = data.rooms[hostUid];
   if (room.status === 'ended') {
     const history = data.callHistory?.[hostUid]?.[callId];
-    if (history) await creditExpertEarningsForCall(callId, history);
+    if (history) {
+      const expertAmount = await creditExpertEarningsForCall(callId, history);
+      if (expertAmount > 0) {
+        await Promise.all([
+          root.child(`callHistory/${hostUid}/${callId}`).update({
+            expertAmount,
+          }),
+          root.child(`callHistory/${room.male.uid}/${callId}`).update({
+            expertAmount,
+          }),
+        ]);
+      }
+    }
   }
   return {
     success: true,

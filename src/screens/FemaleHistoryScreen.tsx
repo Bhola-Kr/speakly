@@ -148,7 +148,9 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
               size={18}
               color={COLORS.teal}
             />
-            <Text style={styles.amount}>{item.amount}</Text>
+            <Text style={styles.amount}>
+              ₹{item.expertAmount ?? 0}
+            </Text>
           </View>
         </View>
 

@@ -124,7 +124,7 @@ const publicRate = (value: any, fallback: number) => {
 export const creditExpertEarningsForCall = async (
   callId: string,
   history: any,
-) => {
+): Promise<number> => {
   const callerRate = Number(history.callRatePerMinute);
   const chargedAmount = Number(history.amount);
   const expertUid = String(history.femaleInfo?.uid || '');
@@ -137,7 +137,7 @@ export const creditExpertEarningsForCall = async (
     !Number.isFinite(chargedAmount) ||
     chargedAmount <= 0
   ) {
-    return;
+    return 0;
   }
 
   const expertRateSnapshot = await admin
@@ -162,16 +162,16 @@ export const creditExpertEarningsForCall = async (
           ),
         )
       : Math.floor(chargedAmount / callerRate);
-  if (!Number.isFinite(paidMinutes) || paidMinutes <= 0) return;
+  if (!Number.isFinite(paidMinutes) || paidMinutes <= 0) return 0;
   const expertAmount = Math.round(paidMinutes * expertRate * 100) / 100;
-  if (expertAmount <= 0) return;
-  await admin
+  if (expertAmount <= 0) return 0;
+  const result = await admin
     .database()
     .ref(`${DATA_ROOT}/users/${expertUid}/expertEarnings`)
     .transaction((value: any) => {
       const earnings = value && typeof value === 'object' ? value : {};
       const creditedCalls = earnings.creditedCalls || {};
-      if (creditedCalls[callId]) return;
+      if (creditedCalls[callId]) return earnings;
       return {
         ...earnings,
         total:
@@ -192,6 +192,8 @@ export const creditExpertEarningsForCall = async (
         updatedAt: Date.now(),
       };
     });
+  const credited = result.snapshot.val()?.creditedCalls?.[callId]?.amount;
+  return Number(credited || 0);
 };
 
 export const getMyExpertCompensation = async (req: Request, res: Response) => {
