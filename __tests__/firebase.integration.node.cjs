@@ -18,6 +18,7 @@ admin.initializeApp({
 const {
   claimCallForUser,
   applyCallEvent,
+  reportCallEvent,
 } = require('../firebase-backend/functions/lib/callBilling');
 const {
   registerPushToken,
@@ -286,7 +287,7 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
       );
       assert.equal(
         (await root.child(`users/${customer.uid}/wallet/balance`).get()).val(),
-        45,
+        50,
       );
       await applyCallEvent(
         host.uid,
@@ -406,6 +407,9 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
     'real transaction rounding and reconnect exclude disconnected intervals and settle once',
     async () => {
       await root.set(fixture());
+      await root.child(`expertCompensation/${host.uid}`).set({
+        callRatePerMinute: 2,
+      });
       const call = await claimCallForUser(host.uid, customer.uid);
       await root.child(`rooms/${host.uid}/status`).set('accepted');
       const clock = Date.now,
@@ -414,7 +418,7 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
       Date.now = () => now;
       try {
         const event = (who, kind) =>
-          applyCallEvent(host.uid, call.currentCallId, who.uid, kind);
+          reportCallEvent(host.uid, call.currentCallId, who.uid, kind);
         await event(customer, 'connected');
         await event(host, 'connected');
         for (let offset = 5000; offset <= 60000; offset += 5000) {
@@ -430,7 +434,7 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
           (
             await root.child(`users/${customer.uid}/wallet/balance`).get()
           ).val(),
-          45,
+          50,
         );
         await event(customer, 'disconnected');
         now = base + 80000;
@@ -457,6 +461,7 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
             .get()
         ).val();
         assert.equal(history.duration, 65000);
+        assert.equal(history.billedMinutes, 2);
         assert.equal(history.amount, 10);
         assert.equal(
           (
@@ -465,6 +470,12 @@ test('Firebase Auth/RTDB integration (local demo only)', async t => {
           40,
         );
         await event(host, 'end');
+        assert.equal(
+          (
+            await root.child(`users/${host.uid}/expertEarnings/available`).get()
+          ).val(),
+          4,
+        );
         assert.equal(
           (
             await root.child(`users/${customer.uid}/wallet/balance`).get()

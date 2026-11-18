@@ -150,11 +150,35 @@ test('wallet/history transaction reconciles partial minutes and repeated settlem
           }
         : name.includes('expertCompensation')
         ? {
-            creditExpertEarningsForCall: async (id, history) =>
-              credits.set(id, history.amount),
+            creditExpertEarningsForCall: async (id, history) => {
+              credits.set(id, history.amount);
+              if (history.billingMode === 'started-minute') {
+                await compensation.exports.creditExpertEarningsForCall(
+                  id,
+                  history,
+                );
+              }
+            },
           }
         : {},
   };
+  const compensation = {
+    exports: {},
+    require: name =>
+      name === 'firebase-functions/v2/database'
+        ? { onValueWritten: () => {} }
+        : mock.require(name),
+  };
+  vm.runInNewContext(
+    ts.transpileModule(
+      fs.readFileSync(
+        'firebase-backend/functions/src/expertCompensation.ts',
+        'utf8',
+      ),
+      { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+    ).outputText,
+    compensation,
+  );
   vm.runInNewContext(
     ts.transpileModule(
       fs.readFileSync('firebase-backend/functions/src/callBilling.ts', 'utf8'),
@@ -228,5 +252,48 @@ test('wallet/history transaction reconciles partial minutes and repeated settlem
     assert.equal(data.callHistory.host.one.billableSeconds, seconds);
     assert.equal(data.callHistory.user.one.amount, charge);
     assert.equal(data.users.user.wallet.balance, (1000 - charge * 100) / 100);
+  }
+
+  for (const [duration, minutes, balance] of [
+    [0, 1, 20],
+    [1, 1, 20],
+    [30000, 1, 20],
+    [60000, 1, 20],
+    [60001, 2, 20],
+    [120000, 2, 20],
+    [120001, 3, 20],
+    [65000, 1, 7],
+  ]) {
+    now = 200000;
+    data = {
+      rooms: {
+        host: {
+          ...room(),
+          currentCallId: 'one',
+          callRatePerMinute: 5,
+          billingMode: 'started-minute',
+        },
+      },
+      users: { user: { wallet: { balance } }, host: {} },
+      expertCompensation: { host: { callRatePerMinute: 2 } },
+    };
+    const report = (uid, action) =>
+      mock.exports.reportCallEvent('host', 'one', uid, action);
+    await report('user', 'connected');
+    await report('host', 'connected');
+    for (let elapsed = 5000; elapsed < duration; elapsed += 5000) {
+      now = 200000 + elapsed;
+      await report('user', 'heartbeat');
+      await report('host', 'heartbeat');
+    }
+    now = 200000 + duration;
+    await report('user', 'end');
+    await report('host', 'end');
+    assert.equal(data.callHistory.host.one.duration, duration);
+    assert.equal(data.callHistory.user.one.duration, duration);
+    assert.equal(data.callHistory.host.one.billedMinutes, minutes);
+    assert.equal(data.callHistory.user.one.amount, minutes * 5);
+    assert.equal(data.users.user.wallet.balance, balance - minutes * 5);
+    assert.equal(data.users.host.expertEarnings.available, minutes * 2);
   }
 });

@@ -154,8 +154,15 @@ export const creditExpertEarningsForCall = async (
           Math.ceil(Number(history.duration || 0) / 1000) / 60,
           chargedAmount / callerRate,
         )
+      : history.billingMode === 'started-minute'
+      ? Math.min(
+          Number(history.billedMinutes || 0),
+          Math.floor(
+            Math.round(chargedAmount * 100) / Math.round(callerRate * 100),
+          ),
+        )
       : Math.floor(chargedAmount / callerRate);
-  if (paidMinutes <= 0) return;
+  if (!Number.isFinite(paidMinutes) || paidMinutes <= 0) return;
   const expertAmount = Math.round(paidMinutes * expertRate * 100) / 100;
   if (expertAmount <= 0) return;
   await admin

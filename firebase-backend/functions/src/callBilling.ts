@@ -10,6 +10,8 @@ export class CallError extends Error {
   }
 }
 const reserved = ['calling', 'ringing', 'accepted', 'active'];
+const MINUTE_MS = 60_000;
+const roundToPaise = (rupees: number) => Math.round(rupees * 100);
 
 export async function claimCallForUser(
   hostUid: string,
@@ -112,7 +114,7 @@ export async function claimCallForUser(
       billingSince: null,
       billingConfirmedAt: 0,
       billableMs: 0,
-      billingMode: 'prorated',
+      billingMode: 'started-minute',
       updatedAt: now,
       callRatePerMinute: rate,
       male: {
@@ -204,11 +206,14 @@ export function advanceBilling(
     b?.connected &&
     now - a.seenAt <= LEASE_MS &&
     now - b.seenAt <= LEASE_MS;
-  // An explicit hangup closes the tail after the last heartbeat while both
-  // peers still have a live lease. Cleanup of an abandoned call cannot bill
-  // time after those leases expired.
+  // Close the tail between the last heartbeat and an explicit hangup or
+  // disconnect while both leases are still live.
+  const closesConnectedInterval =
+    (room.billingMode === 'started-minute' &&
+      (event === 'end' || event === 'disconnected')) ||
+    (room.billingMode === 'prorated' && event === 'end');
   const confirmedUntil = both
-    ? event === 'end' && room.billingMode === 'prorated'
+    ? closesConnectedInterval
       ? now
       : Math.min(a.seenAt, b.seenAt)
     : Number(room.billingConfirmedAt || 0);
@@ -272,8 +277,22 @@ export async function applyCallEvent(
     if (room.status === 'active' && data.users?.[hostUid]?.profile)
       data.users[hostUid].profile.status = 'busy';
     const prorated = room.billingMode === 'prorated';
-    const billedMinutes = Number(room.billableMs || 0) / 60000;
-    if (prorated) {
+    const startedMinute = room.billingMode === 'started-minute';
+    const elapsedMinutes = Number(room.billableMs || 0) / MINUTE_MS;
+    let billedMinutes = 0;
+    if (startedMinute && event === 'end') {
+      const ratePaise = roundToPaise(rate);
+      if (ratePaise <= 0) return;
+      const minutesStarted = room.callStartedAt
+        ? Math.max(1, Math.ceil(elapsedMinutes))
+        : 0;
+      const balance = Math.max(0, roundToPaise(Number(wallet?.balance) || 0));
+      billedMinutes = Math.min(minutesStarted, Math.floor(balance / ratePaise));
+      const payment = billedMinutes * ratePaise;
+      insufficient = billedMinutes < minutesStarted;
+      if (payment && wallet) wallet.balance = (balance - payment) / 100;
+      room.chargedAmount = payment / 100;
+    } else if (prorated) {
       const billableSeconds = Math.ceil(Number(room.billableMs || 0) / 1000);
       const targetPaise = Math.round((billableSeconds * rate * 100) / 60);
       const alreadyPaid = Math.round(Number(room.chargedAmount || 0) * 100);
@@ -288,9 +307,9 @@ export async function applyCallEvent(
         wallet.balance = (balance - payment) / 100;
         room.chargedAmount = (alreadyPaid + payment) / 100;
       }
-    } else {
+    } else if (!startedMinute) {
       const target = room.callStartedAt
-        ? Math.max(1, Math.ceil(billedMinutes)) * rate
+        ? Math.max(1, Math.ceil(elapsedMinutes)) * rate
         : 0;
       const due = Math.max(0, target - Number(room.chargedAmount || 0));
       if (due && (!wallet || Number(wallet.balance || 0) < due))
@@ -301,7 +320,7 @@ export async function applyCallEvent(
       }
     }
     if (event === 'end' || insufficient) {
-      if (insufficient && !prorated)
+      if (insufficient && !prorated && !startedMinute)
         room.billableMs = Math.min(
           Number(room.billableMs || 0),
           (Number(room.chargedAmount || 0) / rate) * 60000,
@@ -323,6 +342,8 @@ export async function applyCallEvent(
               billingMode: 'prorated',
               billableSeconds: Math.ceil(Number(room.billableMs || 0) / 1000),
             }
+          : startedMinute
+          ? { billingMode: 'started-minute', billedMinutes }
           : {}),
         amount: Number(room.chargedAmount || 0),
         callRatePerMinute: rate,
@@ -408,7 +429,8 @@ export async function reportCallEvent(
         ![room.male?.uid, room.female?.uid].includes(uid)
       )
         return;
-      legacy = room.billingMode !== 'prorated';
+      legacy =
+        room.billingMode !== 'prorated' && room.billingMode !== 'started-minute';
       if (legacy) return;
       if (room.status === 'ended' || advanceBilling(room, uid, event, now))
         return room;
@@ -428,11 +450,20 @@ export async function reportCallEvent(
         await database.ref(`speakly/users/${uid}/wallet/balance`).once('value')
       ).val() || 0,
     );
-    const billedSeconds = Math.ceil(Number(room.billableMs || 0) / 1000);
+    const ratePaise = roundToPaise(Number(room.callRatePerMinute));
+    const balancePaise = roundToPaise(balance);
+    const durationMs = Number(room.billableMs || 0);
+    const billedSeconds = Math.ceil(durationMs / 1000);
     const due =
       Math.round((billedSeconds * room.callRatePerMinute * 100) / 60) -
-      Math.round(Number(room.chargedAmount || 0) * 100);
-    if (due > 0 && due >= Math.round(balance * 100)) {
+      roundToPaise(Number(room.chargedAmount || 0));
+    const outOfCredit =
+      room.billingMode === 'started-minute'
+        ? ratePaise > 0 &&
+          (balancePaise < ratePaise ||
+            durationMs >= Math.floor(balancePaise / ratePaise) * MINUTE_MS)
+        : due > 0 && due >= balancePaise;
+    if (outOfCredit) {
       const settled = await applyCallEvent(hostUid, callId, uid, 'end');
       return { ...settled, insufficient: true };
     }
