@@ -26,6 +26,7 @@ import {
 } from '../../../utils/outgoingRingback';
 import { trackCallLifecycle } from '../../../firebase/analytics';
 import { useCallBalanceGuard } from '../../../hooks/useCallBalanceGuard';
+import { prepareAgoraToken } from '../../../api/calls';
 
 interface Props {
   navigation: any;
@@ -38,6 +39,10 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
   const data = route?.params?.user;
   const [claimedRoom, setClaimedRoom] = useState(route?.params?.room);
   const expectedCallId = claimedRoom?.currentCallId;
+  const channelName = claimedRoom?.agora?.channelName;
+  useEffect(() => {
+    if (channelName) void prepareAgoraToken(channelName).catch(() => {});
+  }, [channelName]);
   const pendingClaim = useRef(false);
   const femaleUid = data.uid;
   const tamilName = String(data?.tamilName || '').trim();
@@ -293,6 +298,7 @@ export const OutgoingCallScreen: React.FC<Props> = ({ navigation, route }) => {
             break;
 
           case 'accepted':
+          case 'active':
             if (callResolved.current) {
               return;
             }

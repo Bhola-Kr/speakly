@@ -179,7 +179,7 @@ export const normalizeCallRate = (value: unknown): number => {
 
 /**
  * Calculates call amount using the host's snapshotted per-minute rate.
- * With the ₹5 default: up to 1 minute = ₹5, and 1 min 1 sec = ₹10.
+ * Billable duration rounds up to the next whole second.
  */
 export const calculateCallAmount = (
   callStartedAt: number,
@@ -188,8 +188,8 @@ export const calculateCallAmount = (
 ): number => {
   const durationMs = Math.max(0, callEndedAt - callStartedAt);
 
-  const durationMinutes = Math.ceil(durationMs / (60 * 1000));
-
-  // Minimum charge is 1 minute
-  return Math.max(1, durationMinutes) * normalizeCallRate(ratePerMinute);
+  const seconds = Math.ceil(durationMs / 1000);
+  return (
+    Math.round((seconds * normalizeCallRate(ratePerMinute) * 100) / 60) / 100
+  );
 };

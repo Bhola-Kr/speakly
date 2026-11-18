@@ -46,7 +46,7 @@ import {
   callDisplayMilliseconds,
   CallTimerSnapshot,
 } from '../../utils/callDisplayTime';
-import { fetchAgoraToken } from '../../api/calls';
+import { prepareAgoraToken } from '../../api/calls';
 import {
   getFemaleAvatar,
   getMaleAvatar,
@@ -134,9 +134,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   const rtcGeneration = useRef(0);
 
   const timerRef = useRef<(() => void) | null>(null);
-  const billingTimerRef = useRef<(() => void) | null>(null);
-  const billingStartingRef = useRef(false);
-  const billingChargeInProgressRef = useRef(false);
   const peerRecoveryRef = useRef<(() => void) | null>(null);
   const callEndedRef = useRef(false);
   const callStartedTrackedRef = useRef(false);
@@ -148,6 +145,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
   const timerSnapshot = useRef<CallTimerSnapshot | null>(null);
   const serverClockOffset = useRef(0);
+  const displayClock = useRef({ elapsedMs: 0, sampledAt: 0 });
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -182,8 +180,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       ? Math.ceil(freeCallSecondsRemaining / 60)
       : displayedBalance === null
       ? null
-      : Math.floor(displayedBalance / callRatePerMinute) +
-        (billingStarted ? 1 : 0);
+      : Math.floor(displayedBalance / callRatePerMinute);
   const countdownBalance = gender === 'male' ? walletBalance : callerBalance;
 
   useEffect(() => {
@@ -264,9 +261,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       return;
     }
 
-    // The current minute is already paid. Two further payable minutes means
-    // the call has three minutes remaining, including the current minute.
-    const countdownThreshold = callRatePerMinute * (LOW_BALANCE_MINUTES - 1);
+    const countdownThreshold = callRatePerMinute * LOW_BALANCE_MINUTES;
     if (countdownBalance > countdownThreshold) {
       countdownAlertedRef.current = false;
       return;
@@ -310,15 +305,21 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
   const renderCallTime = useCallback(() => {
     if (callEndedRef.current) return;
-    setElapsedSeconds(
-      Math.floor(
-        callDisplayMilliseconds(
-          timerSnapshot.current,
-          Date.now() + serverClockOffset.current,
-          connectedRef.current,
-        ) / 1000,
-      ),
+    const now = performance.now();
+    const clock = displayClock.current;
+    const localElapsed =
+      clock.elapsedMs + (clock.sampledAt ? now - clock.sampledAt : 0);
+    const sharedElapsed = callDisplayMilliseconds(
+      timerSnapshot.current,
+      Date.now() + serverClockOffset.current,
+      connectedRef.current,
     );
+    // Keep the visible duration moving while RTC is connected, even if
+    // signaling is delayed. Only the backend clock controls billing.
+    clock.elapsedMs =
+      timerSnapshot.current?.status === 'active' ? sharedElapsed : localElapsed;
+    clock.sampledAt = connectedRef.current ? now : 0;
+    setElapsedSeconds(Math.floor(clock.elapsedMs / 1000));
   }, []);
 
   useEffect(() => {
@@ -330,23 +331,21 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     return () => clock.off('value', listener);
   }, [renderCallTime]);
 
-  const startTimer = useCallback(
-    (_startedAt?: number) => {
-      renderCallTime();
-      if (timerRef.current) return;
-      // Render near each second boundary; no request or billing write per tick.
-      const timer = setInterval(renderCallTime, 200);
-      timerRef.current = () => clearInterval(timer);
-    },
-    [renderCallTime],
-  );
+  const startTimer = useCallback(() => {
+    renderCallTime();
+    if (timerRef.current) return;
+    // Render near each second boundary; no request or billing write per tick.
+    const timer = setInterval(renderCallTime, 200);
+    timerRef.current = () => clearInterval(timer);
+  }, [renderCallTime]);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
+      renderCallTime();
       timerRef.current();
       timerRef.current = null;
     }
-  }, []);
+  }, [renderCallTime]);
 
   const formatCallTime = (totalSeconds: number) => {
     const safeSeconds = Math.max(0, Math.floor(totalSeconds));
@@ -364,18 +363,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
   const displayedCallTime = elapsedSeconds;
   const callTimerReady = connected;
-
-  const stopBilling = useCallback(() => {
-    if (billingTimerRef.current) {
-      billingTimerRef.current();
-      billingTimerRef.current = null;
-    }
-  }, []);
-
-  const pauseBilling = useCallback(() => {
-    stopBilling();
-    setBillingStarted(false);
-  }, [stopBilling]);
 
   const finishCall = useCallback(
     async (updateRoom = true, endReason?: CallFollowUpIntent['source']) => {
@@ -397,7 +384,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       }
       peerRecoveryRef.current?.();
       peerRecoveryRef.current = null;
-      pauseBilling();
+      setBillingStarted(false);
       stopTimer();
 
       const rtcEngine = engine.current;
@@ -462,7 +449,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       gender,
       isCaller,
       onFinished,
-      pauseBilling,
       stopTimer,
       tamilName,
     ],
@@ -510,77 +496,12 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     [finishCall, gender],
   );
 
-  const endForInsufficientBalance = useCallback(async () => {
-    if (callEndedRef.current) {
-      return;
-    }
-
-    const ending = finishCall(true, 'insufficient_balance');
-    await ending;
-  }, [finishCall]);
-
-  const chargeNextMinute = useCallback(async () => {
-    billingChargeInProgressRef.current = true;
-
-    try {
-      return await RoomService.chargeCallMinute(femaleUid, callId);
-    } finally {
-      billingChargeInProgressRef.current = false;
-    }
-  }, [femaleUid, callId]);
-
-  const startBilling = useCallback(async () => {
-    if (
-      gender !== 'male' ||
-      callEndedRef.current ||
-      billingTimerRef.current ||
-      billingStartingRef.current
-    ) {
-      return;
-    }
-
-    billingStartingRef.current = true;
-
-    try {
-      const firstMinuteCharged = await chargeNextMinute();
-
-      if (callEndedRef.current) {
-        return;
-      }
-
-      if (!firstMinuteCharged) {
-        await endForInsufficientBalance();
-        return;
-      }
-
-      setBillingStarted(true);
-      billingTimerRef.current = setCallInterval(async () => {
-        if (
-          callEndedRef.current ||
-          !connectedRef.current ||
-          peerRecoveryRef.current ||
-          (freeCallEndsAtRef.current > 0 &&
-            Date.now() >= freeCallEndsAtRef.current)
-        )
-          return;
-        try {
-          const nextMinuteCharged = await chargeNextMinute();
-          if (!nextMinuteCharged) {
-            await endForInsufficientBalance();
-          }
-        } catch {
-          if (!callEndedRef.current) setStatus(copy.call.reconnecting);
-        }
-      }, 5000);
-    } catch {
-      if (!callEndedRef.current) setStatus(copy.call.reconnecting);
-    } finally {
-      billingStartingRef.current = false;
-    }
-  }, [chargeNextMinute, endForInsufficientBalance, gender]);
-
   const initializeAgora = useCallback(
     async (generation: number) => {
+      const setupAt = Date.now();
+      const authorization = channelName
+        ? prepareAgoraToken(channelName).catch(() => null)
+        : Promise.resolve(null);
       const permission = await requestPermission();
 
       if (callEndedRef.current || generation !== rtcGeneration.current) {
@@ -617,8 +538,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
       let credentials;
       try {
-        credentials = await fetchAgoraToken(channelName);
-        if (!credentials.appId || credentials.channelName !== channelName)
+        credentials = await authorization;
+        if (!credentials?.appId || credentials.channelName !== channelName)
           throw new Error('RTC authorization failed');
       } catch {
         rtcEngine.release();
@@ -650,6 +571,11 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         },
         onJoinChannelSuccess: () => {
           if (!isCurrentSession()) return;
+          if (__DEV__)
+            console.info(
+              '[CallTiming] audio channel joined in ms',
+              Date.now() - setupAt,
+            );
           setStatus(copy.call.connecting);
         },
 
@@ -662,8 +588,14 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           peerRecoveryRef.current = null;
           connectedRef.current = true;
           setConnected(true);
+          startTimer();
           if (!callConnectedAtRef.current) {
             callConnectedAtRef.current = Date.now();
+            if (__DEV__)
+              console.info(
+                '[CallTiming] peer connected in ms',
+                Date.now() - setupAt,
+              );
             trackCallConnected(
               isCaller ? 'caller' : 'expert',
               callRatePerMinute,
@@ -677,48 +609,50 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
           setStatus(copy.call.connected);
 
-          const participantUid =
-            gender === 'male' ? auth().currentUser?.uid : femaleUid;
-          if (callId && participantUid) {
-            await RoomService.startCallPresence(callId, participantUid).catch(
-              error => console.warn('Unable to mark call presence:', error),
-            );
-          }
-
-          if (!isCurrentSession()) return;
-          let callStartedAt: number;
           try {
-            callStartedAt = await RoomService.callConnected(femaleUid, callId);
-          } catch {
+            await RoomService.callConnected(femaleUid, callId);
+          } catch (error) {
+            console.warn('Unable to confirm call connection:', error);
             if (isCurrentSession()) await finishCall(false);
             return;
           }
-          if (!isCurrentSession()) return;
-          startTimer(callStartedAt);
+          if (!isCurrentSession() || !connectedRef.current) return;
+          const participantUid =
+            gender === 'male' ? auth().currentUser?.uid : femaleUid;
+          if (callId && participantUid) {
+            void RoomService.startCallPresence(
+              callId,
+              participantUid,
+              isCurrentSession,
+            ).catch(error =>
+              console.warn('Unable to mark call presence:', error),
+            );
+          }
           if (isCaller && !callStartedTrackedRef.current) {
             callStartedTrackedRef.current = true;
             trackCallStarted('caller', callRatePerMinute);
           }
-          await startBilling();
         },
 
         onUserOffline: (_connection, _remoteUid, reason) => {
           if (!isCurrentSession()) return;
           if (_remoteUid !== (isCaller ? agora?.female?.uid : agora?.male?.uid))
             return;
-          RoomService.callSessionEvent(femaleUid, callId, 'disconnected').catch(
-            console.warn,
-          );
           if (reason === UserOfflineReasonType.UserOfflineQuit) {
             finishCallFromRemote(true, 'Expert ne call khatam kar di.');
           } else {
+            RoomService.callSessionEvent(
+              femaleUid,
+              callId,
+              'disconnected',
+            ).catch(console.warn);
             connectedRef.current = false;
             setConnected(false);
             trackCallLifecycle('CallConnectionLost', {
               role: isCaller ? 'caller' : 'expert',
               ...(callId ? { call_id: callId } : {}),
             });
-            pauseBilling();
+            setBillingStarted(false);
             stopTimer();
             setStatus(copy.call.reconnecting);
             if (!peerRecoveryRef.current) {
@@ -773,6 +707,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
                     if (isCurrentSession()) {
                       connectedRef.current = true;
                       setConnected(true);
+                      setStatus(copy.call.connected);
+                      startTimer();
                     }
                   })
                   .catch(console.warn);
@@ -790,7 +726,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
               if (!callEndedRef.current) {
                 connectedRef.current = false;
                 setConnected(false);
-                pauseBilling();
+                setBillingStarted(false);
                 stopTimer();
                 setStatus(copy.call.reconnecting);
               }
@@ -837,10 +773,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       isCaller,
       gender,
       requestPermission,
-      pauseBilling,
       startTimer,
       stopTimer,
-      startBilling,
       uid,
     ],
   );
@@ -848,10 +782,8 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
   useEffect(() => {
     if (!connected || !callId || !femaleUid) return;
     let active = true;
-    let pending = false;
     const heartbeat = async () => {
-      if (pending || callEndedRef.current) return;
-      pending = true;
+      if (callEndedRef.current || !connectedRef.current) return;
       try {
         const result = await RoomService.callSessionEvent(
           femaleUid,
@@ -870,18 +802,17 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           freeCallEndsAtRef.current = endsAt;
           setFreeCallEndsAt(endsAt);
         }
-        if (result.ended || result.insufficient) await finishCall(false);
+        if (result.insufficient)
+          await finishCall(false, 'insufficient_balance');
+        else if (result.ended) await finishCall(false);
       } catch {
         if (active) setStatus(copy.call.reconnecting);
-      } finally {
-        pending = false;
       }
     };
-    heartbeat();
-    const timer = setInterval(heartbeat, 5000);
+    const stopHeartbeat = setCallInterval(heartbeat, 5000);
     return () => {
       active = false;
-      clearInterval(timer);
+      stopHeartbeat();
     };
   }, [connected, femaleUid, callId, finishCall, freeCallMinutes]);
 
@@ -1026,7 +957,6 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       peerRecoveryRef.current?.();
       peerRecoveryRef.current = null;
       stopTimer();
-      stopBilling();
       stopCallRuntime();
 
       const participantUid =
@@ -1043,15 +973,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
         engine.current = null;
       }
     };
-  }, [
-    callId,
-    femaleUid,
-    finishCall,
-    gender,
-    initializeAgora,
-    stopBilling,
-    stopTimer,
-  ]);
+  }, [callId, femaleUid, finishCall, gender, initializeAgora, stopTimer]);
 
   useEffect(() => {
     if (!femaleUid) {
@@ -1066,12 +988,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       timerSnapshot.current = room;
       renderCallTime();
       if (connectedRef.current && room.status === 'active') startTimer();
-      if (
-        gender === 'female' &&
-        room?.status === 'active' &&
-        Number(room.chargedAmount || 0) >=
-          normalizeCallRate(room.callRatePerMinute)
-      ) {
+      if (connectedRef.current && room.status === 'active') {
         setBillingStarted(true);
       }
 

@@ -1,8 +1,9 @@
 import auth from '@react-native-firebase/auth';
 import DeviceInfo from 'react-native-device-info';
 import { Platform } from 'react-native';
+import { USE_LOCAL_BACKEND } from '../firebase/backendMode';
 
-export const API_BASE_URL = __DEV__
+export const API_BASE_URL = __DEV__ && USE_LOCAL_BACKEND
   ? `http://${
       Platform.OS === 'android' ? '10.0.2.2' : 'localhost'
     }:5001/recent-chat-7fd34/us-central1/api`

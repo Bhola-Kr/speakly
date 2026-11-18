@@ -1,4 +1,5 @@
 import Api from '../api/api';
+import auth from '@react-native-firebase/auth';
 
 export const fetchMyExpertCompensation = () => Api.getMyExpertCompensation();
 
@@ -136,6 +137,38 @@ export const fetchAgoraToken = async (
     throw error;
   }
 };
+
+let preparedCall:
+  | {
+      channelName: string;
+      uid: string;
+      expiresAt: number;
+      credentials: Promise<AgoraTokenResponse>;
+    }
+  | undefined;
+
+export function prepareAgoraToken(channelName: string) {
+  const uid = auth().currentUser?.uid;
+  if (!uid) return fetchAgoraToken(channelName);
+  if (
+    preparedCall?.channelName === channelName &&
+    preparedCall.uid === uid &&
+    preparedCall.expiresAt > Date.now()
+  ) {
+    return preparedCall.credentials;
+  }
+  const credentials = fetchAgoraToken(channelName);
+  preparedCall = {
+    channelName,
+    uid,
+    expiresAt: Date.now() + 45000,
+    credentials,
+  };
+  void credentials.catch(() => {
+    if (preparedCall?.credentials === credentials) preparedCall = undefined;
+  });
+  return credentials;
+}
 
 // ============================================
 // FIREBASE TOKEN

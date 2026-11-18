@@ -14,6 +14,7 @@ interface Props {
   avatar: string;
   userName: string;
   verified?: boolean;
+  accepting?: boolean;
   onAccept: () => void;
   onDecline: () => void;
 }
@@ -22,6 +23,7 @@ const IncomingCallModal = ({
   visible,
   userName,
   verified = true,
+  accepting = false,
   onAccept,
   onDecline,
 }: Props) => {
@@ -107,10 +109,12 @@ const IncomingCallModal = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>{copy.call.incoming}</Text>
+          <Text style={styles.title}>
+            {accepting ? copy.call.connecting : copy.call.incoming}
+          </Text>
 
           <Text style={styles.subtitle}>
-            Koi aapse connect karna chahta hai
+            {accepting ? '' : 'Koi aapse connect karna chahta hai'}
           </Text>
 
           <Animated.View
@@ -168,6 +172,7 @@ const IncomingCallModal = ({
               activeOpacity={0.9}
               style={styles.declineButton}
               onPress={handleDecline}
+              disabled={accepting}
             >
               <MaterialCommunityIcons
                 name="phone-hangup"
@@ -176,7 +181,12 @@ const IncomingCallModal = ({
               />
             </TouchableOpacity>
 
-            <TouchableOpacity activeOpacity={0.9} onPress={handleAccept}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={handleAccept}
+              disabled={accepting}
+              accessibilityState={{ busy: accepting }}
+            >
               <LinearGradient
                 colors={['#2563EB', '#1D4ED8']}
                 style={styles.acceptButton}

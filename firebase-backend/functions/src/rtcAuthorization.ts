@@ -29,36 +29,31 @@ export const createAgoraTokenHandler =
             .status(400)
             .json({ success: false, message: 'Call channel sahi nahi hai.' });
         }
-        const rooms = await admin
-          .database()
-          .ref(`${'speakly'}/rooms`)
-          .orderByChild('currentCallId')
-          .equalTo(requestedChannel.slice(5))
-          .once('value');
-        const authorized = Object.values(rooms.val() || {}).some(
+        const rooms = admin.database().ref('speakly/rooms');
+        const [matchingRooms, callerRooms] = await Promise.all([
+          rooms
+            .orderByChild('currentCallId')
+            .equalTo(requestedChannel.slice(5))
+            .once('value'),
+          rooms.orderByChild('male/uid').equalTo(caller.uid).once('value'),
+        ]);
+        const session: any = Object.values(matchingRooms.val() || {}).find(
           (room: any) =>
             ['calling', 'ringing', 'accepted', 'active'].includes(
               room.status,
             ) &&
             (room.male?.uid === caller.uid || room.female?.uid === caller.uid),
         );
-        const session: any = Object.values(rooms.val() || {})[0];
         participantRole =
           session?.male?.uid === caller.uid
             ? 'male'
             : session?.female?.uid === caller.uid
             ? 'female'
             : '';
-        if (!authorized)
+        if (!session)
           return res
             .status(403)
             .json({ success: false, message: 'Call access nahi mila.' });
-        const callerRooms = await admin
-          .database()
-          .ref(`${'speakly'}/rooms`)
-          .orderByChild('male/uid')
-          .equalTo(caller.uid)
-          .once('value');
         const conflicting = Object.values(callerRooms.val() || {}).some(
           (room: any) =>
             room.currentCallId !== requestedChannel.slice(5) &&

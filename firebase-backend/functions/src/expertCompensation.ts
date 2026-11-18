@@ -64,15 +64,13 @@ export async function requestExpertWithdrawal(req: Request, res: Response) {
       request: await reserveExpertWithdrawal(uid),
     });
   } catch (error: any) {
-    return res
-      .status(error?.message === 'UNAUTHENTICATED' ? 401 : 409)
-      .json({
-        success: false,
-        message:
-          error?.message === 'UNAUTHENTICATED'
-            ? 'Sign in zaroori hai.'
-            : error?.message || 'Withdrawal request nahi bani.',
-      });
+    return res.status(error?.message === 'UNAUTHENTICATED' ? 401 : 409).json({
+      success: false,
+      message:
+        error?.message === 'UNAUTHENTICATED'
+          ? 'Sign in zaroori hai.'
+          : error?.message || 'Withdrawal request nahi bani.',
+    });
   }
 }
 import { Request, Response } from 'express';
@@ -150,9 +148,16 @@ export const creditExpertEarningsForCall = async (
     expertRateSnapshot.val(),
     DEFAULT_EXPERT_CALL_RATE_PER_MINUTE,
   );
-  const paidMinutes = Math.floor(chargedAmount / callerRate);
+  const paidMinutes =
+    history.billingMode === 'prorated'
+      ? Math.min(
+          Math.ceil(Number(history.duration || 0) / 1000) / 60,
+          chargedAmount / callerRate,
+        )
+      : Math.floor(chargedAmount / callerRate);
   if (paidMinutes <= 0) return;
-  const expertAmount = paidMinutes * expertRate;
+  const expertAmount = Math.round(paidMinutes * expertRate * 100) / 100;
+  if (expertAmount <= 0) return;
   await admin
     .database()
     .ref(`${DATA_ROOT}/users/${expertUid}/expertEarnings`)
@@ -162,8 +167,11 @@ export const creditExpertEarningsForCall = async (
       if (creditedCalls[callId]) return;
       return {
         ...earnings,
-        total: Number(earnings.total || 0) + expertAmount,
-        available: Number(earnings.available || 0) + expertAmount,
+        total:
+          Math.round((Number(earnings.total || 0) + expertAmount) * 100) / 100,
+        available:
+          Math.round((Number(earnings.available || 0) + expertAmount) * 100) /
+          100,
         withdrawn: Number(earnings.withdrawn || 0),
         creditedCalls: {
           ...creditedCalls,
@@ -249,12 +257,10 @@ export const getExpertCompensationForAdmin = async (
         : error?.message === 'FORBIDDEN'
         ? 403
         : 500;
-    return res
-      .status(status)
-      .json({
-        success: false,
-        message: 'Expert ki kamai ka rate load nahi hua.',
-      });
+    return res.status(status).json({
+      success: false,
+      message: 'Expert ki kamai ka rate load nahi hua.',
+    });
   }
 };
 
@@ -499,12 +505,10 @@ export const settleExpertEarnings = async (req: Request, res: Response) => {
       !Number.isFinite(chargedAmount) ||
       chargedAmount <= 0
     ) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: 'Call ki billing details sahi nahi hain.',
-        });
+      return res.status(400).json({
+        success: false,
+        message: 'Call ki billing details sahi nahi hain.',
+      });
     }
     await creditExpertEarningsForCall(callId, history);
     return res.json({ success: true });

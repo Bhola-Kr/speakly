@@ -327,11 +327,20 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
       return;
     }
     let subscribed = true;
+    let roomRevision = 0;
     const unsubscribe = RoomService.listenCallStatus(femaleUid, async room => {
+      const revision = ++roomRevision;
       if (['ended', 'rejected', 'men_rejected'].includes(room?.status))
         refreshUser().catch(console.warn);
-      const pendingAction = await consumePendingAcceptedCall();
-      if (!subscribed) return;
+      const incoming =
+        ['calling', 'ringing'].includes(room?.status) &&
+        Date.now() - Number(room.callRequestedAt || 0) <= 30000 &&
+        room.male &&
+        !activeCall;
+      const pendingAction = incoming
+        ? await consumePendingAcceptedCall()
+        : null;
+      if (!subscribed || revision !== roomRevision) return;
       if (
         room?.status === 'calling' &&
         room.male &&
@@ -345,12 +354,7 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
           action: 'ring',
         }).catch(console.warn);
       }
-      if (
-        ['calling', 'ringing'].includes(room?.status) &&
-        Date.now() - Number(room.callRequestedAt || 0) <= 30000 &&
-        room.male &&
-        !activeCall
-      ) {
+      if (incoming && room.male) {
         setIncomingRoom(
           pendingAction?.callId === room.currentCallId ? null : room,
         );
@@ -403,14 +407,24 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
   }, [activeCall, femaleUid, refreshUser]);
 
   const acceptingIncomingRef = React.useRef(false);
+  const [acceptingIncoming, setAcceptingIncoming] = React.useState(false);
   const acceptIncomingCall = React.useCallback(async () => {
     if (!incomingRoom || !femaleUid || acceptingIncomingRef.current) return;
     acceptingIncomingRef.current = true;
+    setAcceptingIncoming(true);
+    const acceptedAt = Date.now();
+    const room = incomingRoom;
     try {
-      await RoomService.acceptCall(femaleUid, incomingRoom.currentCallId);
-      const room = incomingRoom;
-      await cancelIncomingCallNotification(room.currentCallId);
+      await RoomService.acceptCall(femaleUid, room.currentCallId);
+      if (__DEV__)
+        console.info(
+          '[CallTiming] answer confirmed in ms',
+          Date.now() - acceptedAt,
+        );
       setIncomingRoom(null);
+      void cancelIncomingCallNotification(room.currentCallId).catch(error =>
+        console.warn('Unable to clear incoming call notification:', error),
+      );
       if (navigationRef.isReady()) {
         navigationRef.navigate('Call', {
           gender: 'female',
@@ -429,6 +443,7 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
       Alert.alert('Call Join Nahi Hui', error?.message || 'Dobara try karo.');
     } finally {
       acceptingIncomingRef.current = false;
+      setAcceptingIncoming(false);
     }
   }, [femaleUid, incomingRoom]);
 
@@ -454,7 +469,7 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
       const pending = await consumePendingAcceptedCall();
       if (!pending || pending.femaleUid !== femaleUid) return;
       const snapshot = await databaseRef(`rooms/${femaleUid}`).once('value');
-      let room = snapshot.val() as Room | null;
+      const room = snapshot.val() as Room | null;
       if (
         !room ||
         !['calling', 'ringing', 'accepted'].includes(room.status) ||
@@ -471,16 +486,6 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
           return;
         }
         await RoomService.acceptCall(femaleUid, pending.callId);
-      }
-      const latest = await databaseRef(`rooms/${femaleUid}`).once('value');
-      room = latest.val() as Room | null;
-      if (
-        !room ||
-        room.currentCallId !== pending.callId ||
-        room.status !== 'accepted'
-      ) {
-        await clearPendingAcceptedCall(pending.callId);
-        return;
       }
       setIncomingRoom(null);
       navigationRef.navigate('Call', {
@@ -570,6 +575,7 @@ Registered Mobile: ${user?.phone || user?.profile?.phone || 'N/A'}
             incomingRoom && activeScreen !== 'OnlineRoom' && !activeCall,
           )}
           onAccept={acceptIncomingCall}
+          accepting={acceptingIncoming}
           onDecline={declineIncomingCall}
           userName={incomingRoom?.male?.name || 'N/A'}
           avatar=""

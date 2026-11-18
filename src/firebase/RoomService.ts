@@ -2,7 +2,7 @@ import auth from '@react-native-firebase/auth';
 import Api from '../api/api';
 import { scopedDatabase as database } from './firebase';
 import { normalizeCallRate } from '../constants/constants';
-import { sendIncomingCallPush } from '../api/calls';
+import { prepareAgoraToken, sendIncomingCallPush } from '../api/calls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FEMALE_AVAILABILITY_KEY = 'femaleAvailabilityEnabled';
@@ -273,11 +273,24 @@ class RoomService {
   async acceptCall(femaleUid: string, callId?: string) {
     if (this.getCurrentUser().uid !== femaleUid)
       throw new Error('Call access nahi mila.');
-    await Api.post('/transitionCall', {
-      hostUid: femaleUid,
-      callId,
-      action: 'accept',
+    if (!callId) throw new Error('Call ID zaroori hai.');
+    void prepareAgoraToken(`call_${callId}`).catch(() => {});
+    const ref = database().ref(`rooms/${femaleUid}`);
+    // Populate the native transaction cache before its first callback.
+    await ref.once('value');
+    const result = await ref.transaction(room => {
+      if (
+        !room ||
+        room.currentCallId !== callId ||
+        room.female?.uid !== femaleUid
+      )
+        return;
+      if (['accepted', 'active'].includes(room.status)) return room;
+      if (!['calling', 'ringing'].includes(room.status)) return;
+      if (Date.now() - Number(room.callRequestedAt || 0) > 30000) return;
+      return { ...room, status: 'accepted', updatedAt: Date.now() };
     });
+    if (!result.committed) throw new Error('Call ab available nahi hai.');
   }
 
   async rejectCall(femaleUid: string, callId?: string) {
@@ -315,10 +328,15 @@ class RoomService {
     }>('/callSessionEvent', { hostUid, callId, event });
   }
 
-  async startCallPresence(callId: string, uid: string) {
+  async startCallPresence(
+    callId: string,
+    uid: string,
+    isCurrent: () => boolean,
+  ) {
     const presenceRef = database().ref(`callPresence/${callId}/${uid}`);
     await presenceRef.onDisconnect().remove();
-    await presenceRef.set(true);
+    if (isCurrent()) await presenceRef.set(true);
+    else await this.stopCallPresence(callId, uid);
   }
 
   async stopCallPresence(callId: string, uid: string) {

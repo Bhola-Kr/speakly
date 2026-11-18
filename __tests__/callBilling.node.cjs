@@ -179,4 +179,39 @@ test('wallet/history transaction reconciles partial minutes and repeated settlem
   await event('user', 'connected');
   assert.equal(data.rooms.host.status, 'ended');
   assert.equal(data.users.user.wallet.balance, 8);
+  // History retains actual milliseconds; charging rounds duration once to
+  // whole seconds. Duplicate hangups must preserve both records and balance.
+  for (const duration of [1, 999, 1000, 1300, 30000]) {
+    now = 200000;
+    data = {
+      rooms: {
+        host: {
+          ...room(),
+          currentCallId: 'one',
+          callRequestedAt: now,
+          callRatePerMinute: 5,
+          chargedAmount: 0,
+          billingMode: 'prorated',
+        },
+      },
+      users: { user: { wallet: { balance: 10 } } },
+    };
+    await event('user', 'connected');
+    await event('host', 'connected');
+    for (let elapsed = 5000; elapsed < duration; elapsed += 5000) {
+      now = 200000 + elapsed;
+      await event('user', 'heartbeat');
+      await event('host', 'heartbeat');
+    }
+    now = 200000 + duration;
+    await event('user', 'end');
+    await event('host', 'end');
+    const seconds = Math.ceil(duration / 1000);
+    const charge = Math.round((seconds * 5 * 100) / 60) / 100;
+    assert.equal(data.callHistory.host.one.duration, duration);
+    assert.equal(data.callHistory.user.one.duration, duration);
+    assert.equal(data.callHistory.host.one.billableSeconds, seconds);
+    assert.equal(data.callHistory.user.one.amount, charge);
+    assert.equal(data.users.user.wallet.balance, (1000 - charge * 100) / 100);
+  }
 });

@@ -2,11 +2,12 @@ import { getApp } from '@react-native-firebase/app';
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
 import { Platform } from 'react-native';
+import { USE_LOCAL_BACKEND } from './backendMode';
 
 // Keep development emulator sessions self-contained: custom tokens minted by
 // the local Functions emulator must be consumed by the Auth emulator, and app
 // data should stay in the local Realtime Database emulator.
-if (__DEV__) {
+if (__DEV__ && USE_LOCAL_BACKEND) {
   const emulatorHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
   auth().useEmulator(`http://${emulatorHost}:9099`);
   database().useEmulator(emulatorHost, 9000);

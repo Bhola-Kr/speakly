@@ -216,12 +216,14 @@ app.post('/sendCallNotification', async (req: Request, res: Response) => {
       });
     }
 
-    const session = (
-      await admin
+    const [roomSnapshot, fcmToken] = await Promise.all([
+      admin
         .database()
         .ref(`${FIREBASE_DATA_ROOT}/rooms/${femaleUid}`)
-        .once('value')
-    ).val();
+        .once('value'),
+      getUserFcmToken(recipientUid.trim()),
+    ]);
+    const session = roomSnapshot.val();
     if (
       session?.male?.uid !== sender.uid ||
       session?.currentCallId !== callId ||
@@ -230,7 +232,6 @@ app.post('/sendCallNotification', async (req: Request, res: Response) => {
       return res
         .status(403)
         .json({ success: false, message: 'Call access nahi mila.' });
-    const fcmToken = await getUserFcmToken(recipientUid.trim());
     if (!fcmToken) {
       return res.status(200).json({ success: true, delivered: false });
     }

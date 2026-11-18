@@ -28,7 +28,7 @@ const formatDate = (time: number) => {
 };
 
 const formatDuration = (duration: number) => {
-  const totalSeconds = Math.floor(duration / 1000);
+  const totalSeconds = Math.max(0, Math.floor(duration / 1000));
 
   const min = Math.floor(totalSeconds / 60);
   const sec = totalSeconds % 60;

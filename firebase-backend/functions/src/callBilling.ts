@@ -112,6 +112,7 @@ export async function claimCallForUser(
       billingSince: null,
       billingConfirmedAt: 0,
       billableMs: 0,
+      billingMode: 'prorated',
       updatedAt: now,
       callRatePerMinute: rate,
       male: {
@@ -186,7 +187,9 @@ export function advanceBilling(
     return false;
   const reports = room.billingReports || {};
   const previous = reports[uid];
+  if (event !== 'end' && previous?.seenAt > now) return true;
   if (
+    event !== 'end' &&
     Object.values(reports).some((report: any) => now - report.seenAt > LEASE_MS)
   )
     room.billingSince = null;
@@ -201,8 +204,13 @@ export function advanceBilling(
     b?.connected &&
     now - a.seenAt <= LEASE_MS &&
     now - b.seenAt <= LEASE_MS;
+  // An explicit hangup closes the tail after the last heartbeat while both
+  // peers still have a live lease. Cleanup of an abandoned call cannot bill
+  // time after those leases expired.
   const confirmedUntil = both
-    ? Math.min(a.seenAt, b.seenAt)
+    ? event === 'end' && room.billingMode === 'prorated'
+      ? now
+      : Math.min(a.seenAt, b.seenAt)
     : Number(room.billingConfirmedAt || 0);
   if (room.billingSince && confirmedUntil > room.billingConfirmedAt) {
     room.billableMs =
@@ -263,18 +271,37 @@ export async function applyCallEvent(
     const wallet = data.users?.[room.male.uid]?.wallet;
     if (room.status === 'active' && data.users?.[hostUid]?.profile)
       data.users[hostUid].profile.status = 'busy';
-    const target = room.callStartedAt
-      ? Math.max(1, Math.ceil(Number(room.billableMs || 0) / 60000)) * rate
-      : 0;
-    const due = Math.max(0, target - Number(room.chargedAmount || 0));
-    if (due && (!wallet || Number(wallet.balance || 0) < due))
-      insufficient = true;
-    else if (due) {
-      wallet.balance = Number(wallet.balance || 0) - due;
-      room.chargedAmount = Number(room.chargedAmount || 0) + due;
+    const prorated = room.billingMode === 'prorated';
+    const billedMinutes = Number(room.billableMs || 0) / 60000;
+    if (prorated) {
+      const billableSeconds = Math.ceil(Number(room.billableMs || 0) / 1000);
+      const targetPaise = Math.round((billableSeconds * rate * 100) / 60);
+      const alreadyPaid = Math.round(Number(room.chargedAmount || 0) * 100);
+      const due = Math.max(0, targetPaise - alreadyPaid);
+      const available = Number(wallet?.balance || 0);
+      const balance = Number.isFinite(available)
+        ? Math.max(0, Math.round(available * 100))
+        : 0;
+      const payment = Math.min(balance, due);
+      insufficient = payment < due;
+      if (payment && wallet) {
+        wallet.balance = (balance - payment) / 100;
+        room.chargedAmount = (alreadyPaid + payment) / 100;
+      }
+    } else {
+      const target = room.callStartedAt
+        ? Math.max(1, Math.ceil(billedMinutes)) * rate
+        : 0;
+      const due = Math.max(0, target - Number(room.chargedAmount || 0));
+      if (due && (!wallet || Number(wallet.balance || 0) < due))
+        insufficient = true;
+      else if (due) {
+        wallet.balance = Number(wallet.balance || 0) - due;
+        room.chargedAmount = Number(room.chargedAmount || 0) + due;
+      }
     }
     if (event === 'end' || insufficient) {
-      if (insufficient)
+      if (insufficient && !prorated)
         room.billableMs = Math.min(
           Number(room.billableMs || 0),
           (Number(room.chargedAmount || 0) / rate) * 60000,
@@ -291,6 +318,12 @@ export async function applyCallEvent(
         startedAt: room.callStartedAt || room.callRequestedAt || now,
         endedAt: now,
         duration: Number(room.billableMs || 0),
+        ...(prorated
+          ? {
+              billingMode: 'prorated',
+              billableSeconds: Math.ceil(Number(room.billableMs || 0) / 1000),
+            }
+          : {}),
         amount: Number(room.chargedAmount || 0),
         callRatePerMinute: rate,
         status: room.callStartedAt
@@ -371,6 +404,44 @@ export async function transitionCall(req: Request, res: Response) {
       return res
         .status(400)
         .json({ success: false, message: 'Call action sahi nahi hai.' });
+    if (action === 'accept' || action === 'ring') {
+      const database = admin.database();
+      if (
+        actor.uid !== hostUid ||
+        (
+          await database.ref(`speakly/users/${hostUid}/isExpert`).once('value')
+        ).val() !== true
+      ) {
+        return res
+          .status(403)
+          .json({ success: false, message: 'Call access verify nahi hua.' });
+      }
+      const result = await runDataTransaction(
+        database.ref(`speakly/rooms/${hostUid}`),
+        room => {
+          if (room?.currentCallId !== callId || room.female?.uid !== hostUid)
+            return;
+          const nextStatus = action === 'accept' ? 'accepted' : 'ringing';
+          if (
+            room.status === nextStatus ||
+            (action === 'accept' && room.status === 'active')
+          )
+            return room;
+          if (
+            !['calling', 'ringing'].includes(room.status) ||
+            Date.now() - Number(room.callRequestedAt || 0) > 30000
+          )
+            return;
+          return { ...room, status: nextStatus, updatedAt: Date.now() };
+        },
+      );
+      return result.committed
+        ? res.json({ success: true })
+        : res.status(409).json({
+            success: false,
+            message: 'Call ab available nahi hai.',
+          });
+    }
     const result = await runDataTransaction(
       admin.database().ref('speakly'),
       data => {
@@ -383,24 +454,10 @@ export async function transitionCall(req: Request, res: Response) {
             : actor.uid !== hostUid || host?.isExpert !== true
         )
           return;
-        if (action === 'accept' && ['accepted', 'active'].includes(room.status))
-          return data;
         if (!['calling', 'ringing'].includes(room.status)) return;
-        if (
-          action === 'accept' &&
-          Date.now() - Number(room.callRequestedAt || 0) > 30000
-        )
-          return;
-        room.status =
-          action === 'ring'
-            ? 'ringing'
-            : action === 'accept'
-            ? 'accepted'
-            : action === 'reject'
-            ? 'rejected'
-            : 'men_rejected';
+        room.status = action === 'reject' ? 'rejected' : 'men_rejected';
         room.updatedAt = Date.now();
-        if (['reject', 'cancel'].includes(action) && host?.profile)
+        if (host?.profile)
           host.profile.status =
             host.settings?.voiceCallsEnabled === false ? 'offline' : 'online';
         return data;

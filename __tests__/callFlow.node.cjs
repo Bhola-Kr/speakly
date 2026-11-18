@@ -440,7 +440,9 @@ test('pending RTC initialization and old SDK callbacks cannot join or end a repl
     };
     const sandbox = {
       exports: {},
+      __DEV__: false,
       console,
+      performance,
       setTimeout,
       clearTimeout,
       setInterval,
@@ -492,7 +494,7 @@ test('pending RTC initialization and old SDK callbacks cannot join or end a repl
         if (name.includes('RoomService')) return asDefault(service);
         if (name.includes('api/calls'))
           return {
-            fetchAgoraToken: channel =>
+            prepareAgoraToken: channel =>
               channel === 'call_a'
                 ? mode === 'already-joined'
                   ? Promise.resolve({ ...credentials, channelName: 'call_a' })
