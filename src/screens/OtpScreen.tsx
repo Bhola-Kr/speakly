@@ -54,6 +54,7 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const [isOtpFocused, setIsOtpFocused] = useState(false);
   const otpInputRef = useRef<TextInput>(null);
   const autoSubmittedOtpRef = useRef('');
+  const verifyInFlightRef = useRef(false);
   const cursorOpacity = useRef(new Animated.Value(1)).current;
 
   const isValid = otp.length === 4;
@@ -119,10 +120,15 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const verifyOtp = async (otpToVerify: string = otp) => {
-    if (otpToVerify.length !== 4 || loading) {
+    if (
+      otpToVerify.length !== 4 ||
+      loading ||
+      verifyInFlightRef.current
+    ) {
       return;
     }
 
+    verifyInFlightRef.current = true;
     try {
       setLoading(true);
 
@@ -180,12 +186,13 @@ const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
 
       Alert.alert('Verification Nahi Hui', message);
     } finally {
+      verifyInFlightRef.current = false;
       setLoading(false);
     }
   };
 
   const resendOtp = async () => {
-    if (loading) {
+    if (loading || verifyInFlightRef.current) {
       return;
     }
 

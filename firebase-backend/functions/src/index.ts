@@ -517,9 +517,15 @@ app.post('/verifyOtp', async (req: Request, res: Response) => {
     });
 
     if (!verifyOtpResponse.ok || verifyOtpData?.type === 'error') {
+      const alreadyVerified =
+        String(verifyOtpData?.code || '') === '703' ||
+        /already\s+verif/i.test(String(verifyOtpData?.message || ''));
       return res.status(401).json({
         success: false,
-        message: 'OTP sahi nahi hai. Dobara try karo.',
+        code: alreadyVerified ? 'OTP_ALREADY_VERIFIED' : 'OTP_INVALID',
+        message: alreadyVerified
+          ? 'Yeh OTP pehle hi verify ho chuka hai. Naya OTP mangao aur dobara try karo.'
+          : 'OTP sahi nahi hai. Dobara try karo.',
       });
     }
 
