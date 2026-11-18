@@ -67,9 +67,17 @@ export const listenSignupOffer = (
   return () => ref.off('value', listener);
 };
 
-export const claimSignupOffer = async (): Promise<number> => {
-  const response = await Api.post<{ success: boolean; amount: number }>(
-    '/claimSignupOffer',
-  );
-  return response.amount;
+export const claimSignupOffer = async (): Promise<{
+  amount: number;
+  freeMinutes: number;
+}> => {
+  const response = await Api.post<{
+    success: boolean;
+    amount: number;
+    freeMinutes?: number;
+  }>('/claimSignupOffer');
+  return {
+    amount: response.amount,
+    freeMinutes: Number(response.freeMinutes || DEFAULT_FIRST_CALL_FREE_MINUTES),
+  };
 };

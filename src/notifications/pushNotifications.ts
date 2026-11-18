@@ -68,8 +68,8 @@ async function configureIncomingCallActions() {
     {
       id: 'incoming-call',
       actions: [
-        { id: 'reject-call', title: 'Mana Karo', destructive: true },
-        { id: 'accept-call', title: 'Call Uthao', foreground: true },
+        { id: 'reject-call', title: 'Decline', destructive: true },
+        { id: 'accept-call', title: 'Answer', foreground: true },
       ],
     },
   ]);
@@ -143,7 +143,7 @@ export async function displayIncomingCallNotification(
   const channelId = await notifee.createChannel({
     id: INCOMING_CALL_CHANNEL_ID,
     name: 'Incoming voice calls',
-    description: 'Customer ki nayi call aane par alert bajta hai',
+    description: 'Alerts you when a new call comes in',
     importance: AndroidImportance.HIGH,
     vibration: true,
     vibrationPattern: [300, 500, 300, 500],
@@ -151,8 +151,8 @@ export async function displayIncomingCallNotification(
   });
   await notifee.displayNotification({
     id: notificationId,
-    title: 'Nayi Call Aa Rahi Hai',
-    body: `${callerName || 'Koi'} aapko call kar rahe hain`,
+    title: 'Incoming call',
+    body: `${callerName || 'Someone'} is calling you`,
     data: { type: 'incoming_call', callId, femaleUid },
     android: {
       channelId,
@@ -168,12 +168,12 @@ export async function displayIncomingCallNotification(
       },
       actions: [
         {
-          title: 'Mana Karo',
+          title: 'Decline',
           icon: 'ic_call_reject',
           pressAction: { id: 'reject-call' },
         },
         {
-          title: 'Call Uthao',
+          title: 'Answer',
           icon: 'ic_call_accept',
           pressAction: { id: 'accept-call', launchActivity: 'default' },
         },
@@ -198,8 +198,8 @@ export async function displayIncomingCallNotification(
   await notifee.createTriggerNotification(
     {
       id: notificationId,
-      title: 'Call Miss Ho Gayi',
-      body: `Inki call miss ho gayi: ${callerName || 'Koi'}`,
+      title: 'Missed call',
+      body: `You missed a call from ${callerName || 'someone'}`,
       data: { type: 'missed_call', callId, femaleUid },
       android: {
         channelId,

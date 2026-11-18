@@ -208,9 +208,12 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
       const room = roomSnapshot.val();
       const billableMs = Number(room?.billableMs || 0);
       const creditedAmount = Number(user?.offers?.signupOffer?.amount);
+      const claimedFreeMinutes = Number(
+        user?.offers?.signupOffer?.freeMinutes,
+      );
 
       stopListeningForOffer = listenSignupOffer(config => {
-        if (!config.active || config.amount <= 0) {
+        if (!config.active || config.amount <= 0 || config.freeMinutes <= 0) {
           freeCallEndsAtRef.current = 0;
           setFreeCallEndsAt(0);
           setFreeCallSecondsRemaining(0);
@@ -218,10 +221,14 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
           return;
         }
 
+        const freeMinutes =
+          Number.isFinite(claimedFreeMinutes) && claimedFreeMinutes > 0
+            ? claimedFreeMinutes
+            : config.freeMinutes;
         const endsAt =
           Date.now() +
-          Math.max(0, config.freeMinutes * BILLING_INTERVAL_MS - billableMs);
-        setFreeCallMinutes(config.freeMinutes);
+          Math.max(0, freeMinutes * BILLING_INTERVAL_MS - billableMs);
+        setFreeCallMinutes(freeMinutes);
         setFreeCallAmount(
           Number.isFinite(creditedAmount) && creditedAmount > 0
             ? creditedAmount
@@ -248,6 +255,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     gender,
     user?.offers?.signupOffer?.amount,
     user?.offers?.signupOffer?.claimedAt,
+    user?.offers?.signupOffer?.freeMinutes,
     user?.uid,
   ]);
 

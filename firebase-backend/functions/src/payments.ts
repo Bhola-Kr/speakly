@@ -9,6 +9,7 @@ import { runDataTransaction } from './databaseTransaction';
 export async function claimSignupOfferForUser(uid: string) {
   const root = admin.database().ref('speakly');
   let failure = 'Yeh signup offer pehle hi liya ja chuka hai.';
+  let claimedFreeMinutes = 2;
   const result = await runDataTransaction(root, data => {
     const user = data?.users?.[uid];
     const config = data?.configs?.signupOffer || {};
@@ -19,12 +20,19 @@ export async function claimSignupOfferForUser(uid: string) {
         ? config.amount
         : 10;
     const active = config.active === undefined ? true : config.active === true;
+    const freeMinutes =
+      typeof config.freeMinutes === 'number' &&
+      Number.isFinite(config.freeMinutes) &&
+      config.freeMinutes > 0
+        ? config.freeMinutes
+        : 2;
     if (!active || amount <= 0) {
       failure = 'Yeh offer ab available nahi hai.';
       return;
     }
     if (!user || user.isExpert === true || user.offers?.signupOffer?.claimedAt)
       return;
+    claimedFreeMinutes = freeMinutes;
     const current = Number(user.wallet?.balance);
     user.wallet = {
       ...user.wallet,
@@ -32,21 +40,28 @@ export async function claimSignupOfferForUser(uid: string) {
     };
     user.offers = {
       ...user.offers,
-      signupOffer: { amount, claimedAt: Date.now() },
+      signupOffer: { amount, freeMinutes, claimedAt: Date.now() },
     };
     return data;
   });
   if (!result.committed) throw new Error(failure);
-  return Number(
-    result.snapshot.child(`users/${uid}/offers/signupOffer/amount`).val(),
-  );
+  return {
+    amount: Number(
+      result.snapshot.child(`users/${uid}/offers/signupOffer/amount`).val(),
+    ),
+    freeMinutes: Number(
+      result.snapshot
+        .child(`users/${uid}/offers/signupOffer/freeMinutes`)
+        .val() || claimedFreeMinutes,
+    ),
+  };
 }
 
 export async function claimSignupOffer(req: Request, res: Response) {
   try {
     return res.json({
       success: true,
-      amount: await claimSignupOfferForUser(await getAuthenticatedUid(req)),
+      ...await claimSignupOfferForUser(await getAuthenticatedUid(req)),
     });
   } catch (error: any) {
     return res

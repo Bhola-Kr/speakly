@@ -144,12 +144,16 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     () =>
       listenSignupOffer(nextOffer => {
         setOffer(current => {
-          if (
+          const changed =
             current.active !== nextOffer.active ||
             current.amount !== nextOffer.amount ||
-            current.freeMinutes !== nextOffer.freeMinutes
-          ) {
-            setOfferDismissed(false);
+            current.freeMinutes !== nextOffer.freeMinutes;
+
+          if (changed) {
+            setOfferDismissed(!nextOffer.active || nextOffer.amount <= 0);
+          }
+          if (!nextOffer.active || nextOffer.amount <= 0) {
+            setOfferDismissed(true);
           }
           return nextOffer;
         });
@@ -163,6 +167,7 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     (!signedIn || (Boolean(user) && user?.isExpert !== true)) &&
     offer.active &&
     offer.amount > 0 &&
+    offer.freeMinutes > 0 &&
     !offerClaimed &&
     !offerDismissed;
 
@@ -171,12 +176,12 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
     claimingOfferRef.current = true;
     try {
       setClaimingOffer(true);
-      const creditedAmount = await claimSignupOffer();
+      const claimedOffer = await claimSignupOffer();
       await refreshUser();
       Alert.alert(
-        `₹${creditedAmount} Free Balance Mil Gaya`,
-        `Available expert chuno aur pehli ${offer.freeMinutes} ${
-          offer.freeMinutes === 1 ? 'minute' : 'minutes'
+        `₹${claimedOffer.amount} Free Balance Mil Gaya`,
+        `Available expert chuno aur pehli ${claimedOffer.freeMinutes} ${
+          claimedOffer.freeMinutes === 1 ? 'minute' : 'minutes'
         } free.`,
       );
     } catch (error: any) {
@@ -513,9 +518,9 @@ const HomeScreen: React.FC<Props> = ({ navigation, route }) => {
           let creditedBonus = 0;
           if (!isExpert && !offerClaimed && offer.active && offer.amount > 0) {
             try {
-              const creditedAmount = await claimSignupOffer();
-              creditedBonus = creditedAmount;
-              trackFirstCallOfferApplied(creditedAmount);
+              const claimedOffer = await claimSignupOffer();
+              creditedBonus = claimedOffer.amount;
+              trackFirstCallOfferApplied(claimedOffer.amount);
             } catch (error) {
               // Existing users may already have claimed the offer. Authentication
               // and the pending call should continue even if the claim is stale.
