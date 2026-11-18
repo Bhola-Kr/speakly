@@ -1,4 +1,3 @@
-import { translate } from '../localization/language';
 import {
   AppState,
   DeviceEventEmitter,
@@ -100,9 +99,8 @@ export async function displayPushNotification(
   const channelId = await createNotificationChannel();
   await notifee.displayNotification({
     id: message.messageId,
-    title:
-      typeof title === 'string' ? translate(title, 'hinglish') : 'Speakly 121',
-    body: typeof body === 'string' ? translate(body, 'hinglish') : undefined,
+    title: typeof title === 'string' ? title : 'Speakly 121',
+    body: typeof body === 'string' ? body : undefined,
     data: message.data,
     android: {
       channelId,
@@ -489,8 +487,8 @@ export function startPushNotifications() {
           fcmOptions: {},
           messageId: `available_${alert.hostUid}_${alert.sentAt}`,
           notification: {
-            title: `${alert.hostName} Phir Se Available Hai! 🎉`,
-            body: `${alert.hostName} ab free hain. Connect Now!`,
+            title: `${alert.hostName} is available again! 🎉`,
+            body: `${alert.hostName} is free now. Connect now!`,
           },
           data: {
             type: 'expert_online',

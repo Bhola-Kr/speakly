@@ -152,7 +152,7 @@ app.post('/sendChatNotification', async (req: Request, res: Response) => {
       token: fcmToken,
       notification: {
         title: senderName.trim().slice(0, 100),
-        body: 'Aapke liye naya message aaya hai.',
+        body: 'You have a new message.',
       },
       data: {
         type: 'chat_message',
@@ -245,8 +245,8 @@ app.post('/sendCallNotification', async (req: Request, res: Response) => {
         payload: {
           aps: {
             alert: {
-              title: 'Nayi Call Aa Rahi Hai',
-              body: `${callerName.trim()} aapko call kar rahe hain`,
+              title: 'Incoming call',
+              body: `${callerName.trim()} is calling you`,
             },
             category: 'incoming-call',
             sound: 'default',

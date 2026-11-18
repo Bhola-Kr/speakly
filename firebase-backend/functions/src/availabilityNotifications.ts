@@ -62,8 +62,8 @@ export async function notifyInterestedCustomers(hostUid: string) {
         .sendEachForMulticast({
           tokens: tokens.slice(offset, offset + 500),
           notification: {
-            title: `${alert.hostName} Phir Se Available Hai! 🎉`,
-            body: `${alert.hostName} ab free hain. Connect Now!`,
+            title: `${alert.hostName} is available again! 🎉`,
+            body: `${alert.hostName} is free now. Connect now!`,
           },
           data: {
             type: 'expert_online',

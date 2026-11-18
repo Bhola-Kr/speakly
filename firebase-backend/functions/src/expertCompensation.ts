@@ -338,8 +338,8 @@ export const notifyExpertApproval = async (req: Request, res: Response) => {
     await admin.messaging().send({
       token: token.trim(),
       notification: {
-        title: '🎉 Congratulations! Aap Speakly Expert Ban Gayi Hain!',
-        body: '🥳 Aapka account activate ho gaya hai! Abhi online aaiye, calls par earning shuru kijiye aur special early-expert benefits ka fayda uthaiye! 💰',
+        title: '🎉 Congratulations! You are now a Speakly expert!',
+        body: '🥳 Your account is active. Go online to start earning from calls and enjoy your early expert benefits! 💰',
       },
       data: { type: 'expert_approved' },
       ...notificationDeliveryOptions,
@@ -405,8 +405,8 @@ const sendExpertApplicationNotificationToAdmins = async (
       const result = await admin.messaging().sendEachForMulticast({
         tokens: uniqueTokens.slice(offset, offset + 500),
         notification: {
-          title: 'Nayi Expert Application',
-          body: `${applicantName} ne expert verification bheji hai. Application check karke approve karo.`,
+          title: 'New expert application',
+          body: `${applicantName} submitted an expert verification application. Review it when you can.`,
         },
         data: {
           type: 'expert_application_submitted',

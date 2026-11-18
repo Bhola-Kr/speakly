@@ -80,8 +80,8 @@ export const notifyAdminsOnUserOnboarded = onValueWritten(
             await admin.messaging().sendEachForMulticast({
               tokens: recipients.slice(offset, offset + 500),
               notification: {
-                title: 'Speakly par Naya User Aaya Hai! 🎉',
-                body: 'Naya user connect hone ke liye ready hai. Online aao aur connect ho jao!',
+                title: 'A new user joined Speakly! 🎉',
+                body: 'A new user is ready to connect. Go online to get started!',
               },
               data: { type: 'new_customer', uid },
               android: {
@@ -102,8 +102,8 @@ export const notifyAdminsOnUserOnboarded = onValueWritten(
         const result = await admin.messaging().sendEachForMulticast({
           tokens: tokens.slice(offset, offset + 500),
           notification: {
-            title: 'Naya User Join Hua',
-            body: `${name} Speakly par jude hain: ${role}.`,
+            title: 'New user joined',
+            body: `${name} joined Speakly as a ${role}.`,
           },
           data: {
             type: 'user_onboarded',

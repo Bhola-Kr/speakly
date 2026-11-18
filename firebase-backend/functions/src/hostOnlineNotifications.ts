@@ -106,8 +106,8 @@ export const notifyAllUsersWhenExpertOnline = onValueWritten(
         const result = await admin.messaging().sendEachForMulticast({
           tokens: tokenList.slice(offset, offset + 500),
           notification: {
-            title: `${hostName} ab Online Hai! 🎉`,
-            body: `${hostName} aapse baat karne ke liye ready hai. Connect Now!`,
+            title: `${hostName} is online! 🎉`,
+            body: `${hostName} is ready to talk. Connect now!`,
           },
           data: {
             type: 'expert_online',
