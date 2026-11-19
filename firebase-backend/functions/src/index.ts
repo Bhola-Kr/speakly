@@ -646,8 +646,13 @@ app.post('/generateAgoraToken', (req: Request, res: Response) => {
       ? requestedChannel
       : 'voice_tamil';
 
-    const maleUid = Math.floor(Math.random() * 100000);
-    const femaleUid = Math.floor(Math.random() * 100000);
+    const maleUid = Math.floor(Math.random() * 100000) + 1;
+    let femaleUid = Math.floor(Math.random() * 100000) + 1;
+    // Agora requires each participant in a channel to have a distinct UID.
+    // A collision is rare, but would make the two clients appear as one user.
+    while (femaleUid === maleUid) {
+      femaleUid = Math.floor(Math.random() * 100000) + 1;
+    }
 
     const expireSeconds = 60 * 60 * 24;
 

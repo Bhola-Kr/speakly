@@ -110,7 +110,9 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
     callRatePerMinute: routeCallRate,
     agora,
   } = route?.params ?? {};
-  const channelName = String(routeChannelName || agora?.channelName || 'voice_tamil');
+  // Every call must use the unique Agora channel stored with its call record.
+  // Falling back to a shared channel can connect unrelated callers together.
+  const channelName = String(routeChannelName || agora?.channelName || '');
   const callRatePerMinute = normalizeCallRate(routeCallRate);
 
   const token = gender === 'male' ? agora?.male?.token : agora?.female?.token;
@@ -706,7 +708,7 @@ const CallScreen = ({ route, visible, onMinimize, onFinished }: Props) => {
 
     engine.current = rtcEngine;
 
-    if (!token || uid === undefined) {
+    if (!callId || !channelName || !token || uid === undefined) {
       Alert.alert('Call Error', 'Unable to initialize the call.');
       await finishCall();
       return;
