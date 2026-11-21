@@ -70,7 +70,6 @@ import {
   initializeMetaAppEvents,
   trackScreenView,
 } from './firebase/analytics';
-import { recordFirstInstall } from './firebase/installTracking';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
@@ -639,9 +638,6 @@ export default function App({ isHeadless = false }: { isHeadless?: boolean }) {
   }, [isHeadless]);
   React.useEffect(() => {
     if (!isHeadless) return startPushNotifications();
-  }, [isHeadless]);
-  React.useEffect(() => {
-    if (!isHeadless) recordFirstInstall();
   }, [isHeadless]);
   if (isHeadless) return null;
   return (

@@ -154,6 +154,12 @@ class Api {
     return this.get<PaymentsResponse>('/payments');
   }
 
+  getUserPaymentHistoryForAdmin(uid: string) {
+    return this.get<PaymentsResponse>(
+      `/admin/users/${encodeURIComponent(uid)}/payment-history`,
+    );
+  }
+
   getMyExpertCompensation() {
     return this.get<ExpertCompensationResponse>('/expert-compensation/me');
   }
@@ -198,6 +204,16 @@ class Api {
     return this.post<{ success: boolean; delivered?: boolean }>(
       '/sendCallNotification',
       { type: 'incoming_call', ...payload },
+    );
+  }
+
+  sendHostFollowUpNotification(payload: {
+    recipientUid: string;
+    callId: string;
+    message: string;
+  }) {
+    return this.post<{ success: boolean; delivered?: boolean }>(
+      '/sendHostFollowUpNotification', payload,
     );
   }
 }

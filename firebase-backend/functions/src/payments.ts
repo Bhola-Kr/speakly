@@ -106,6 +106,16 @@ const getAuthenticatedUid = async (req: Request) => {
   }
 };
 
+const requirePaymentAdmin = async (req: Request) => {
+  const uid = await getAuthenticatedUid(req);
+  const snapshot = await admin
+    .database()
+    .ref(`${DATA_ROOT}/users/${uid}/isAdmin`)
+    .once('value');
+  if (snapshot.val() !== true) throw new Error('FORBIDDEN');
+  return uid;
+};
+
 const publicPayment = (payment: PaymentRecord) => ({
   id: payment.transactionId,
   transactionId: payment.transactionId,
@@ -815,6 +825,31 @@ export const listPayments = async (req: Request, res: Response) => {
     return res.status(error?.message === 'UNAUTHENTICATED' ? 401 : 500).json({
       success: false,
       message: 'Unable to load payment history',
+    });
+  }
+};
+
+export const listUserPaymentsForAdmin = async (req: Request, res: Response) => {
+  try {
+    await requirePaymentAdmin(req);
+    const targetUid = String(req.params.uid || '').trim();
+    if (!targetUid) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+    const snapshot = await admin
+      .database()
+      .ref(`${DATA_ROOT}/users/${targetUid}/paymentHistory`)
+      .once('value');
+    const payments = Object.values(snapshot.val() || {}) as PaymentRecord[];
+    payments.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+    return res.json({ success: true, data: payments.slice(0, 100) });
+  } catch (error: any) {
+    logger.error('Admin list user payments failed', error);
+    const forbidden = error?.message === 'FORBIDDEN';
+    const unauthenticated = error?.message === 'UNAUTHENTICATED';
+    return res.status(forbidden ? 403 : unauthenticated ? 401 : 500).json({
+      success: false,
+      message: forbidden ? 'Administrator access required' : 'Unable to load payment history',
     });
   }
 };

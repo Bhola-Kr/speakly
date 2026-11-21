@@ -17,6 +17,9 @@ export const sendExpertApprovalNotification = (uid: string) =>
 export const notifyAdminsOfExpertApplication = () =>
   Api.notifyAdminsOfExpertApplication();
 
+export const fetchUserPaymentHistoryForAdmin = async (uid: string) =>
+  (await Api.getUserPaymentHistoryForAdmin(uid)).data;
+
 // ============================================
 // TYPES
 // ============================================
@@ -122,6 +125,12 @@ export const sendIncomingCallPush = (payload: {
   callId: string;
   callerName: string;
 }) => Api.sendIncomingCallNotification(payload);
+
+export const sendHostFollowUpPush = (payload: {
+  recipientUid: string;
+  callId: string;
+  message: string;
+}) => Api.sendHostFollowUpNotification(payload);
 
 // ============================================
 // AGORA TOKEN

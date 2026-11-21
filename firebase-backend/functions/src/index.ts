@@ -11,6 +11,7 @@ import {
   initiatePayment,
   initiateRazorpayPayment,
   listPayments,
+  listUserPaymentsForAdmin,
   payuWebhook,
   razorpayWebhook,
   reconcilePayuPayments,
@@ -222,6 +223,50 @@ app.post('/sendCallNotification', async (req: Request, res: Response) => {
   }
 });
 
+app.post('/sendHostFollowUpNotification', async (req: Request, res: Response) => {
+  try {
+    const match = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i);
+    if (!match) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    const hostUid = (await admin.auth().verifyIdToken(match[1])).uid;
+    const { recipientUid, callId, message } = req.body;
+    const callerUid = typeof recipientUid === 'string' ? recipientUid.trim() : '';
+    const historyId = typeof callId === 'string' ? callId.trim() : '';
+    const body = typeof message === 'string' ? message.trim() : '';
+    if (!callerUid || !historyId || !body || body.length > 240) {
+      return res.status(400).json({ success: false, message: 'A caller and message of 240 characters or less are required' });
+    }
+
+    const historySnapshot = await admin.database()
+      .ref(`${FIREBASE_DATA_ROOT}/callHistory/${hostUid}/${historyId}`)
+      .once('value');
+    const history = historySnapshot.val();
+    if (!history || history.femaleInfo?.uid !== hostUid || history.maleInfo?.uid !== callerUid) {
+      return res.status(403).json({ success: false, message: 'This caller is not in your call history' });
+    }
+
+    const fcmToken = await getUserFcmToken(callerUid);
+    if (!fcmToken) return res.status(200).json({ success: true, delivered: false });
+    const hostSnapshot = await admin.database()
+      .ref(`${FIREBASE_DATA_ROOT}/users/${hostUid}/profile`)
+      .once('value');
+    const profile = hostSnapshot.val() || {};
+    const hostName = String(profile.tamilName || profile.name || 'Your host').trim();
+    await admin.messaging().send({
+      token: fcmToken,
+      notification: { title: hostName.slice(0, 100), body },
+      data: { type: 'host_follow_up', senderUid: hostUid, senderName: hostName, callId: historyId },
+      android: { priority: 'high' },
+      apns: { payload: { aps: { sound: 'default' } } },
+    });
+    return res.status(200).json({ success: true, delivered: true });
+  } catch (error) {
+    logger.error('Send Host Follow Up Notification Error', error);
+    return res.status(500).json({ success: false, message: 'Unable to send notification' });
+  }
+});
+
 app.get('/rechargePacks', async (_req: Request, res: Response) => {
   try {
     return res.status(200).json({
@@ -245,6 +290,7 @@ app.post('/payments/:transactionId/confirm', confirmPayment);
 app.post('/payments/:transactionId/razorpay/confirm', confirmRazorpayPayment);
 app.post('/payments/:transactionId/verify', verifyPayment);
 app.get('/payments', listPayments);
+app.get('/admin/users/:uid/payment-history', listUserPaymentsForAdmin);
 app.post('/payu/callback', payuWebhook);
 app.post('/razorpay/webhook', razorpayWebhook);
 app.get('/expert-compensation/me', getMyExpertCompensation);

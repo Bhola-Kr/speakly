@@ -8,6 +8,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -19,6 +20,13 @@ import { getMaleAvatar } from '../constants/constants';
 import RoomService, { CallHistory } from '../firebase/RoomService';
 import Colors from '../constants/colors';
 import { copy } from '../constants/strings';
+import { sendHostFollowUpPush } from '../api/calls';
+
+const FOLLOW_UP_TEMPLATES = [
+  'Aapse baat karke bahut accha laga 😊 Jab free ho, phir call karna!',
+  'Aaj thoda time mile toh call karna, aapse baat karne ka mann hai 💬',
+  'Thank you for calling! Aapka call accha laga 😊 Phir jaldi baat karte hain!',
+];
 
 const COLORS = {
   background: Colors.background,
@@ -48,6 +56,9 @@ type HistoryListItem =
 const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [history, setHistory] = useState<CallHistory[]>([]);
+  const [messageTarget, setMessageTarget] = useState<CallHistory | null>(null);
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const unsubscribe = RoomService.listenCallHistory(setHistory);
@@ -85,6 +96,30 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
     const min = Math.floor(totalSeconds / 60);
     const sec = totalSeconds % 60;
     return `${min}m ${sec}s`;
+  };
+
+  const sendFollowUp = async () => {
+    if (!messageTarget || sending || !message.trim()) return;
+    setSending(true);
+    try {
+      const result = await sendHostFollowUpPush({
+        recipientUid: messageTarget.maleInfo.uid,
+        callId: messageTarget.callId,
+        message: message.trim(),
+      });
+      setMessageTarget(null);
+      setMessage('');
+      Alert.alert(
+        result.delivered ? 'Notification sent' : 'Notification not delivered',
+        result.delivered
+          ? `Your message was sent to ${messageTarget.maleInfo.name || 'the caller'}.`
+          : 'This caller has not enabled notifications on this device.',
+      );
+    } catch (error: any) {
+      Alert.alert('Unable to send', error?.message || 'Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   const renderItem = ({ item }: { item: HistoryListItem }) => {
@@ -152,12 +187,20 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        <Ionicons
-          name="chevron-forward"
-          size={24}
-          color={Colors.disabled}
-          style={styles.chevron}
-        />
+        <View style={styles.cardTrailing}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Send notification to ${item.maleInfo?.name || 'caller'}`}
+            style={styles.messageButton}
+            onPress={() => {
+              setMessageTarget(item);
+              setMessage('');
+            }}
+          >
+            <Ionicons name="notifications-outline" size={19} color={COLORS.white} />
+          </TouchableOpacity>
+          <Ionicons name="chevron-forward" size={20} color={Colors.disabled} />
+        </View>
       </View>
     );
   };
@@ -209,6 +252,56 @@ const FemaleHistoryScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         }
       />
+
+      <Modal
+        transparent
+        visible={!!messageTarget}
+        animationType="slide"
+        onRequestClose={() => !sending && setMessageTarget(null)}
+      >
+        <View style={styles.messageOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => !sending && setMessageTarget(null)} />
+          <View style={styles.messageSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Send a notification</Text>
+            <Text style={styles.sheetSubtitle}>
+              To {messageTarget?.maleInfo?.name || 'caller'} from your call history
+            </Text>
+            <Text style={styles.templateHeading}>Quick messages</Text>
+            {FOLLOW_UP_TEMPLATES.map(template => (
+              <TouchableOpacity
+                key={template}
+                style={[styles.template, message === template && styles.templateSelected]}
+                onPress={() => setMessage(template)}
+              >
+                <Text style={styles.templateText}>{template}</Text>
+              </TouchableOpacity>
+            ))}
+            <TextInput
+              value={message}
+              onChangeText={setMessage}
+              placeholder="Or type your own message..."
+              placeholderTextColor={COLORS.body}
+              maxLength={240}
+              multiline
+              textAlignVertical="top"
+              style={styles.messageInput}
+            />
+            <Text style={styles.characterCount}>{message.length}/240</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              disabled={sending || !message.trim()}
+              onPress={sendFollowUp}
+              style={[styles.sendButton, (sending || !message.trim()) && styles.sendButtonDisabled]}
+            >
+              {sending ? <Text style={styles.sendButtonText}>Sending...</Text> : <>
+                <Ionicons name="send" size={17} color={COLORS.white} />
+                <Text style={styles.sendButtonText}>Send notification</Text>
+              </>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal transparent visible={menuVisible} animationType="fade">
         <Pressable style={styles.overlay} onPress={() => setMenuVisible(false)}>
@@ -460,6 +553,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
+  cardTrailing: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+    gap: 7,
+  },
+  messageButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 18,
+    backgroundColor: COLORS.teal,
+  },
   chevron: {
     position: 'absolute',
     right: 10,
@@ -492,6 +599,66 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textAlign: 'center',
   },
+  messageOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(13, 24, 38, 0.48)',
+  },
+  messageSheet: {
+    paddingHorizontal: 22,
+    paddingTop: 12,
+    paddingBottom: 28,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    backgroundColor: COLORS.background,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 42,
+    height: 5,
+    marginBottom: 18,
+    borderRadius: 3,
+    backgroundColor: COLORS.border,
+  },
+  sheetTitle: { color: COLORS.navy, fontSize: 21, fontWeight: '800' },
+  sheetSubtitle: { marginTop: 4, marginBottom: 18, color: COLORS.body, fontSize: 13 },
+  templateHeading: { marginBottom: 8, color: COLORS.navy, fontSize: 14, fontWeight: '700' },
+  template: {
+    marginBottom: 7,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+  },
+  templateSelected: { borderColor: COLORS.teal, backgroundColor: COLORS.tealPale },
+  templateText: { color: COLORS.navy, fontSize: 13, lineHeight: 18 },
+  messageInput: {
+    minHeight: 76,
+    maxHeight: 120,
+    marginTop: 5,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 13,
+    color: COLORS.navy,
+    backgroundColor: COLORS.white,
+    fontSize: 14,
+  },
+  characterCount: { alignSelf: 'flex-end', marginTop: 4, color: COLORS.body, fontSize: 11 },
+  sendButton: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    marginTop: 11,
+    borderRadius: 15,
+    backgroundColor: COLORS.teal,
+  },
+  sendButtonDisabled: { opacity: 0.5 },
+  sendButtonText: { color: COLORS.white, fontSize: 15, fontWeight: '800' },
   overlay: {
     flex: 1,
     alignItems: 'flex-end',

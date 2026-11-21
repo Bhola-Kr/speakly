@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { scopedDatabase as database } from '../../firebase/firebase';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import Colors from '../../constants/colors';
 import { useUser } from '../../hooks/UserContext';
 import { CALL_RATE_PER_MINUTE } from '../../constants/constants';
@@ -27,9 +28,11 @@ import {
 } from '../../firebase/expertEarnings';
 import {
   fetchExpertCompensationForAdmin,
+  fetchUserPaymentHistoryForAdmin,
   saveExpertCompensation,
   sendExpertApprovalNotification,
 } from '../../api/calls';
+import type { PaymentTransaction } from '../../api/api';
 
 type UserRecord = Record<string, any> & { uid?: string };
 type ExpertApplication = {
@@ -315,6 +318,10 @@ export const AdminUsersScreen = ({ navigation }: any) => {
   const [processingWithdrawal, setProcessingWithdrawal] = useState('');
   const [error, setError] = useState('');
   const [selectedUid, setSelectedUid] = useState('');
+  const [paymentHistoryUid, setPaymentHistoryUid] = useState('');
+  const [paymentHistory, setPaymentHistory] = useState<PaymentTransaction[]>([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  const [paymentHistoryError, setPaymentHistoryError] = useState('');
   const [editingUser, setEditingUser] = useState<EditableUserFields | null>(
     null,
   );
@@ -819,6 +826,20 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       setEditingUser(null);
     }
   };
+  const loadPaymentHistory = async (uid: string) => {
+    setPaymentHistoryUid(uid);
+    setPaymentHistoryLoading(true);
+    setPaymentHistoryError('');
+    try {
+      setPaymentHistory(await fetchUserPaymentHistoryForAdmin(uid));
+    } catch (loadError: any) {
+      setPaymentHistoryError(
+        loadError?.message || 'Unable to load payment history.',
+      );
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
+  };
   const updateField = <K extends keyof EditableUserFields>(
     field: K,
     value: EditableUserFields[K],
@@ -1270,6 +1291,7 @@ export const AdminUsersScreen = ({ navigation }: any) => {
       Boolean(item.expertApplication);
     const availableEarnings = formatEarning(item.expertEarnings?.available);
     const totalEarnings = formatEarning(item.expertEarnings?.total);
+    const currentBalance = Number(item.wallet?.balance ?? 0);
     return (
       <TouchableOpacity style={styles.userRow} onPress={() => selectUser(item)}>
         <View style={styles.userAvatar}>
@@ -1286,6 +1308,15 @@ export const AdminUsersScreen = ({ navigation }: any) => {
           </Text>
           <Text style={styles.userCreated} numberOfLines={1}>
             Joined {formatCreatedAt(item.createdAt)}
+          </Text>
+          <Text
+            style={[
+              styles.userBalance,
+              currentBalance <= 0 && styles.userBalanceZero,
+            ]}
+            numberOfLines={1}
+          >
+            Balance: ₹{Number.isFinite(currentBalance) ? currentBalance.toFixed(2) : '0.00'}
           </Text>
           {isExpertAccount && preferredLanguage ? (
             <Text style={styles.userLanguage} numberOfLines={1}>
@@ -1583,6 +1614,20 @@ export const AdminUsersScreen = ({ navigation }: any) => {
                   />
                 </View>
                 <Text style={styles.sectionTitle}>My Coins</Text>
+                <TouchableOpacity
+                  style={styles.paymentHistoryButton}
+                  onPress={() => loadPaymentHistory(selectedUid)}
+                  disabled={paymentHistoryLoading}
+                >
+                  <Ionicons
+                    name="receipt-outline"
+                    size={19}
+                    color={Colors.primary}
+                  />
+                  <Text style={styles.paymentHistoryButtonText}>
+                    View Payment History
+                  </Text>
+                </TouchableOpacity>
                 <Text style={styles.label}>
                   User charge rate (coins per minute)
                 </Text>
@@ -1658,6 +1703,70 @@ export const AdminUsersScreen = ({ navigation }: any) => {
               </ScrollView>
             ) : null}
           </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+      <Modal
+        visible={Boolean(paymentHistoryUid)}
+        animationType="slide"
+        onRequestClose={() => setPaymentHistoryUid('')}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setPaymentHistoryUid('')}
+            >
+              <MaterialCommunityIcons name="arrow-left" size={25} color={Colors.text} />
+            </TouchableOpacity>
+            <View style={styles.modalTitleCopy}>
+              <Text style={styles.editorTitle}>Payment History</Text>
+              <Text style={styles.uidText} numberOfLines={1}>{paymentHistoryUid}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => loadPaymentHistory(paymentHistoryUid)}
+              disabled={paymentHistoryLoading}
+            >
+              <MaterialCommunityIcons name="refresh" size={23} color={Colors.primary} />
+            </TouchableOpacity>
+          </View>
+          {paymentHistoryLoading ? (
+            <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+          ) : paymentHistoryError ? (
+            <Text style={styles.empty}>{paymentHistoryError}</Text>
+          ) : paymentHistory.length === 0 ? (
+            <Text style={styles.empty}>No payment history found.</Text>
+          ) : (
+            <FlatList
+              data={paymentHistory}
+              keyExtractor={item => item.transactionId}
+              contentContainerStyle={styles.paymentHistoryContent}
+              renderItem={({ item }) => (
+                <View style={styles.paymentHistoryCard}>
+                  <View style={styles.paymentHistoryTopRow}>
+                    <Text style={styles.paymentHistoryAmount}>₹{item.amount}</Text>
+                    <Text style={[
+                      styles.paymentHistoryStatus,
+                      item.status === 'success' && styles.paymentHistorySuccess,
+                      item.status === 'failed' && styles.paymentHistoryFailed,
+                    ]}>{item.status.toUpperCase()}</Text>
+                  </View>
+                  <Text style={styles.paymentHistoryMeta}>
+                    {item.provider === 'razorpay' ? 'Razorpay' : 'PayU'} · {new Date(item.createdAt).toLocaleString()}
+                  </Text>
+                  <Text style={styles.paymentHistoryMeta}>
+                    Bonus: ₹{item.bonus} · Wallet credit: ₹{item.creditedAmount}
+                  </Text>
+                  <Text selectable style={styles.paymentHistoryId}>
+                    ID: {item.transactionId}
+                  </Text>
+                  {item.failureReason ? (
+                    <Text style={styles.paymentHistoryFailureReason}>{item.failureReason}</Text>
+                  ) : null}
+                </View>
+              )}
+            />
+          )}
         </SafeAreaView>
       </Modal>
       <Modal
@@ -2328,6 +2437,16 @@ const styles = StyleSheet.create({
     color: Colors.subText,
     fontSize: 11,
   },
+  userBalance: {
+    marginTop: 3,
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  userBalanceZero: {
+    color: Colors.subText,
+    fontWeight: '500',
+  },
   userLanguage: {
     marginTop: 3,
     color: Colors.secondary,
@@ -2347,6 +2466,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   editorContent: { padding: 20, paddingBottom: 80 },
+  paymentHistoryButton: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+  },
+  paymentHistoryButtonText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  paymentHistoryContent: { padding: 16, paddingBottom: 32 },
+  paymentHistoryCard: {
+    marginBottom: 12,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 14,
+    backgroundColor: Colors.white,
+  },
+  paymentHistoryTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  paymentHistoryAmount: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+  paymentHistoryStatus: { color: Colors.warningStrong, fontSize: 11, fontWeight: '800' },
+  paymentHistorySuccess: { color: Colors.successStrong },
+  paymentHistoryFailed: { color: Colors.danger },
+  paymentHistoryMeta: { marginTop: 7, color: Colors.subText, fontSize: 12 },
+  paymentHistoryId: { marginTop: 8, color: Colors.text, fontSize: 11 },
+  paymentHistoryFailureReason: { marginTop: 7, color: Colors.danger, fontSize: 12 },
   editorTitle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
   uidText: { color: Colors.subText, fontSize: 11, marginTop: 2, maxWidth: 250 },
   sectionTitle: {
